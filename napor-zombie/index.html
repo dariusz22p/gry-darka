@@ -65,8 +65,11 @@
       <div class="stat">Do fali <b id="nextWave" class="soft">22.0s</b></div>
       <div class="stat">Do bossa <b id="nextBoss" class="soft">4 spawny</b></div>
       <div class="stat">Ekipa <b id="squad">1</b></div>
+      <div class="stat">Ludzie cel <b id="recruitNeed" class="soft">0/0</b></div>
       <div class="stat">Moc <b id="power">0</b></div>
+      <div class="stat">Moc cel <b id="powerNeed" class="soft">0/0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
+      <div class="stat">Rozrzut <b id="spread" class="soft">off</b></div>
       <div class="stat">Efekt <b id="effect" class="soft">brak</b></div>
       <div class="stat">Best fala <b id="bestWave" class="soft">0</b></div>
       <div class="stat">Best zabici <b id="bestKills" class="soft">0</b></div>
@@ -112,7 +115,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 26, trackPlayerWeight: 0.35, trackSpread: 78, reactionWindow: 0.55, reactionLag: 1.2 },
+      zombie: { r: 6, hp: 16, speed: 46, dmg: 9, spawnEvery: 0.55, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 34, reactionWindow: 0.85, reactionLag: 2.0 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -121,11 +124,12 @@
         charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
+      pickup: { everySpawnCycle: 6, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
-      ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
+      ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 2 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
       difficulty: {
         easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 6, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
@@ -142,8 +146,8 @@
     // ---- Stan ----
     let state, baseHp, wave, waveTime, spawnEvery, spawnTimer, zHp, zSpeed, kills, powerLevel;
     let N, colY, targetY, fireTimer, fireRate, dmg;
-    let zombies, bullets, fx;
-    let recruitHits, powerHits;
+    let zombies, bullets, fx, pickups;
+    let recruitHits, powerHits, recruitNeed, powerNeed;
     let spawnCycles;
     let prepTimer = 0;
     let warnedBossCycle = -1;
@@ -155,6 +159,7 @@
     let aimWindowAvgY = 0;
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
+    let spreadBoostTimer = 0;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -262,15 +267,21 @@
     }
 
     function memberOffset(i) {
-      // Zwarta siatka, żeby przy mniejszych jednostkach zmieścić większą ekipę.
-      const cols = N <= 16 ? 4 : N <= 36 ? 6 : 8;
-      const row = Math.floor(i / cols);
-      const col = i % cols;
-      const rows = Math.ceil(Math.max(1, N) / cols);
-      const yGap = 6;
-      const xGap = 9;
-      const y0 = -((rows - 1) * yGap) / 2;
-      return { x: -col * xGap, y: y0 + row * yGap };
+      // Formacja kulista: gesty srodek i wiekszy zasieg na boki.
+      if (i === 0) return { x: -14, y: 0 };
+      let idx = i - 1;
+      const ringStep = 7;
+      let ring = 1;
+      while (true) {
+        const count = Math.max(6, Math.round(2 * Math.PI * ring));
+        if (idx < count) {
+          const a = (idx / count) * Math.PI * 2;
+          const r = ring * ringStep;
+          return { x: -14 + Math.cos(a) * r, y: Math.sin(a) * r };
+        }
+        idx -= count;
+        ring++;
+      }
     }
     function squadHalfHeight() {
       let m = 0;
@@ -329,10 +340,14 @@
       aimSampleCount = 0;
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
+      spreadBoostTimer = 0;
       fireTimer = 0;
       shotSfxCd = 0;
-      zombies = []; bullets = []; fx = [];
-      recruitHits = 0; powerHits = 0; spawnCycles = 0;
+      zombies = []; bullets = []; fx = []; pickups = [];
+      recruitHits = 0; powerHits = 0;
+      recruitNeed = CONFIG.panel.recruitPer;
+      powerNeed = CONFIG.panel.powerPer;
+      spawnCycles = 0;
       applyPower();
       hideAlert();
       hideOverlay();
@@ -408,6 +423,7 @@
       }
       if (recruitBoostTimer > 0) recruitBoostTimer = Math.max(0, recruitBoostTimer - dt);
       if (slowFieldTimer > 0) slowFieldTimer = Math.max(0, slowFieldTimer - dt);
+      if (spreadBoostTimer > 0) spreadBoostTimer = Math.max(0, spreadBoostTimer - dt);
 
       // fale
       if (prepTimer > 0) {
@@ -431,6 +447,7 @@
         waveTime = 0;
         prepTimer = CONFIG.waves.breakDuration;
         zombies = [];
+        pickups = [];
         bullets = [];
         showAlert('PRZYGOTUJ SIE - FALA ' + wave, Math.max(0.6, prepTimer - 0.2));
       }
@@ -477,8 +494,10 @@
         spawnCycles++;
         const burstBase = 3 + Math.floor((wave - 1) / 2);
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
+        const laneMid = (laneTop + laneBot) / 2;
+        const laneAmp = (laneBot - laneTop) * 0.24;
         for (let s = 0; s < burst; s++) {
-          const y = laneTop + 8 + Math.random() * Math.max(8, (laneBot - laneTop - 16));
+          const y = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 8, laneBot - 8);
           zombies.push(makeZombie(-18 - s * 12, y, {
             hp: zHp,
             r: CONFIG.zombie.r,
@@ -487,6 +506,10 @@
             boss: false,
             trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
           }));
+        }
+        if (spawnCycles % CONFIG.pickup.everySpawnCycle === 0 && pickups.length < 2) {
+          const py = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 10, laneBot - 10);
+          pickups.push({ x: -22, y: py, r: CONFIG.pickup.r, speed: zSpeed * CONFIG.pickup.speedMul, color: CONFIG.pickup.color });
         }
         if (spawnCycles % bossEvery === 0) {
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
@@ -512,11 +535,25 @@
       fireTimer -= dt;
       if (fireTimer <= 0) {
         fireTimer += 1 / fireRate;
+        const spreadVy = spreadBoostTimer > 0 ? 85 : 0;
         for (let i = 0; i < N; i++) {
           const o = memberOffset(i);
-          bullets.push({ x: CONFIG.squadX + o.x - 14, y: colY + o.y, vx: -CONFIG.shooter.bulletSpeed, dmg: dmg });
+          const sx = CONFIG.squadX + o.x - 14;
+          const sy = colY + o.y;
+          bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: 0, dmg: dmg });
+          if (spreadVy > 0) {
+            bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: spreadVy, dmg: dmg * 0.72 });
+            bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: -spreadVy, dmg: dmg * 0.72 });
+          }
         }
         if (shotSfxCd <= 0) { sfxVolley(); shotSfxCd = 0.11; }
+      }
+
+      for (let i = pickups.length - 1; i >= 0; i--) {
+        const p = pickups[i];
+        const speedMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
+        p.x += p.speed * speedMul * dt;
+        if (p.x >= CONFIG.breachX) pickups.splice(i, 1);
       }
 
       // ruch zombie + wyłom bazy
@@ -552,6 +589,7 @@
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
         b.x += b.vx * dt;
+        b.y += (b.vy || 0) * dt;
         let dead = b.x < -20;
         if (!dead) {
           for (let j = zombies.length - 1; j >= 0; j--) {
@@ -583,17 +621,41 @@
             }
           }
         }
+        if (!dead) {
+          for (let p = pickups.length - 1; p >= 0; p--) {
+            const it = pickups[p];
+            const dxp = it.x - b.x, dyp = it.y - b.y, rrp = it.r + 5;
+            if (dxp * dxp + dyp * dyp <= rrp * rrp) {
+              pickups.splice(p, 1);
+              spreadBoostTimer = Math.min(26, spreadBoostTimer + CONFIG.pickup.spreadDur);
+              showAlert('LOOT: ROZRZUT + ' + CONFIG.pickup.spreadDur + 's', 1.1);
+              dead = true;
+              break;
+            }
+          }
+        }
         if (!dead && b.x <= CONFIG.panel.x) {
           dead = true;
           if (b.y >= recruitBand.top && b.y <= recruitBand.bot) {
             recruitHits++;
             if (recruitBoostTimer > 0) recruitHits++;
             fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#8bd450', r: 10 });
-            if (recruitHits >= CONFIG.panel.recruitPer) { recruitHits = 0; addRecruit(); sfxUpgrade(false); }
+            if (recruitHits >= recruitNeed) {
+              recruitHits -= recruitNeed;
+              addRecruit();
+              recruitNeed = Math.min(1e9, recruitNeed * 2);
+              sfxUpgrade(false);
+            }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
             powerHits++;
             fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#ffb74d', r: 10 });
-            if (powerHits >= CONFIG.panel.powerPer) { powerHits = 0; powerLevel++; applyPower(); sfxUpgrade(true); }
+            if (powerHits >= powerNeed) {
+              powerHits -= powerNeed;
+              powerLevel++;
+              powerNeed = Math.min(1e9, powerNeed * 2);
+              applyPower();
+              sfxUpgrade(true);
+            }
           }
         }
         if (dead) bullets.splice(i, 1);
@@ -622,8 +684,8 @@
       ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#1a2230'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
       // pasy paneli na lewej ścianie
-      drawBand(recruitBand, '#8bd450', 'LUDZIE', recruitHits, CONFIG.panel.recruitPer);
-      drawBand(powerBand, '#ffb74d', 'MOC', powerHits, CONFIG.panel.powerPer);
+      drawBand(recruitBand, '#8bd450', 'LUDZIE', recruitHits, recruitNeed);
+      drawBand(powerBand, '#ffb74d', 'MOC', powerHits, powerNeed);
       // linia bazy
       ctx.strokeStyle = 'rgba(255,82,82,.7)'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
       ctx.beginPath(); ctx.moveTo(CONFIG.breachX, CONFIG.wallTop); ctx.lineTo(CONFIG.breachX, CONFIG.wallBottom); ctx.stroke();
@@ -642,6 +704,20 @@
           ctx.fillStyle = z.boss ? '#ffb199' : '#8bd450';
           ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw * (z.hp / z.maxhp), 5);
         }
+      }
+      // dropy broni
+      for (const p of pickups) {
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = '#0d2330';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - p.r);
+        ctx.lineTo(p.x + p.r, p.y);
+        ctx.lineTo(p.x, p.y + p.r);
+        ctx.lineTo(p.x - p.r, p.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
       }
       // zasięg pokrycia kolumny (pomocniczo)
       const half = squadHalfHeight();
@@ -673,7 +749,8 @@
     // ---- HUD ----
     const el = {
       hp: document.getElementById('hpfill'), wave: document.getElementById('wave'),
-      squad: document.getElementById('squad'), power: document.getElementById('power'),
+      squad: document.getElementById('squad'), recruitNeed: document.getElementById('recruitNeed'),
+      power: document.getElementById('power'), powerNeed: document.getElementById('powerNeed'),
       kills: document.getElementById('kills'), overlay: document.getElementById('overlay'),
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       restart: document.getElementById('restart'),
@@ -681,6 +758,7 @@
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
       alert: document.getElementById('alert'),
+      spread: document.getElementById('spread'),
       effect: document.getElementById('effect'),
       bestWave: document.getElementById('bestWave'),
       bestKills: document.getElementById('bestKills')
@@ -697,11 +775,16 @@
       const toBoss = (bossEvery - (spawnCycles % bossEvery)) || bossEvery;
       el.nextBoss.textContent = toBoss + (toBoss === 1 ? ' spawn' : ' spawny');
       el.squad.textContent = N;
+      el.recruitNeed.textContent = recruitHits + ' / ' + recruitNeed;
       el.power.textContent = powerLevel;
+      el.powerNeed.textContent = powerHits + ' / ' + powerNeed;
       el.kills.textContent = kills;
-      if (recruitBoostTimer > 0) el.effect.textContent = 'Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's';
-      else if (slowFieldTimer > 0) el.effect.textContent = 'Spowolnienie ' + slowFieldTimer.toFixed(1) + 's';
-      else el.effect.textContent = 'brak';
+      el.spread.textContent = spreadBoostTimer > 0 ? ('ON ' + spreadBoostTimer.toFixed(1) + 's') : 'off';
+      const fx = [];
+      if (recruitBoostTimer > 0) fx.push('Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's');
+      if (slowFieldTimer > 0) fx.push('Spowolnienie ' + slowFieldTimer.toFixed(1) + 's');
+      if (spreadBoostTimer > 0) fx.push('Rozrzut ' + spreadBoostTimer.toFixed(1) + 's');
+      el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestWave.textContent = bestWave;
       el.bestKills.textContent = bestKills;
     }
