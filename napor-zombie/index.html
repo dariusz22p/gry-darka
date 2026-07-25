@@ -110,10 +110,10 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { maxN: 40, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
-      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
-      panel: { x: 40, bandH: 86, recruitPer: 8, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 78 },
+      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.75 },
+      panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
@@ -247,12 +247,14 @@
 
     function memberOffset(i) {
       // Zwarta siatka, żeby przy mniejszych jednostkach zmieścić większą ekipę.
-      const cols = 4;
+      const cols = N <= 16 ? 4 : N <= 36 ? 6 : 8;
       const row = Math.floor(i / cols);
       const col = i % cols;
       const rows = Math.ceil(Math.max(1, N) / cols);
-      const y0 = -((rows - 1) * 7) / 2;
-      return { x: -col * 10, y: y0 + row * 7 };
+      const yGap = 6;
+      const xGap = 9;
+      const y0 = -((rows - 1) * yGap) / 2;
+      return { x: -col * xGap, y: y0 + row * yGap };
     }
     function squadHalfHeight() {
       let m = 0;
@@ -435,6 +437,10 @@
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
         z.x += z.speed * dt;
+        const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? CONFIG.boss.trackMul : 1);
+        const dy = colY - z.y;
+        const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
+        z.y = clamp(z.y + yStep, laneTop + z.r, laneBot - z.r);
         if (z.x >= CONFIG.breachX) {
           baseHp -= z.dmg;
           loseRecruit(z.boss ? 2 : 1);
