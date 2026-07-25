@@ -40,23 +40,6 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
-  #upgrade {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(8,12,17,.58); pointer-events: none;
-  }
-  #upgrade.hidden { display: none; }
-  #upgrade .box {
-    width: min(92%, 620px); background: rgba(20,28,38,.95); border: 1px solid #3a4c60;
-    border-radius: 12px; padding: 14px 12px;
-  }
-  #upgrade h3 { margin: 0 0 10px; text-align: center; letter-spacing: .5px; font-size: 20px; }
-  #upgrade .opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  #upgrade button {
-    pointer-events: auto; cursor: pointer; border: 1px solid #4b6179; border-radius: 10px;
-    background: #1d2a3a; color: #e8edf2; padding: 10px 8px; font-size: 14px; font-weight: 700;
-  }
-  #upgrade button:hover { background: #24364c; }
-  #upgrade button small { display: block; margin-top: 5px; font-size: 11px; color: #b7c6d6; font-weight: 500; }
   #alert {
     position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
     padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
@@ -97,16 +80,6 @@
     <div id="stage">
       <canvas id="game" width="1000" height="600"></canvas>
       <div id="alert" aria-live="polite"></div>
-      <div id="upgrade" class="hidden" aria-live="polite">
-        <div class="box">
-          <h3>Wybierz bonus po fali</h3>
-          <div class="opts">
-            <button type="button" data-up="recruit">Posiłki<small>+1 członek ekipy</small></button>
-            <button type="button" data-up="dmg">Amunicja AP<small>+10% obrażeń</small></button>
-            <button type="button" data-up="fire">Dyscyplina ognia<small>+8% fire rate</small></button>
-          </div>
-        </div>
-      </div>
       <div id="overlay" class="hidden">
         <h2 id="overTitle">Przegrana</h2>
         <p id="overSub"></p>
@@ -137,10 +110,10 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { maxN: 24, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      shooter: { maxN: 40, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
-      panel: { x: 40, bandH: 86, recruitPer: 12, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      panel: { x: 40, bandH: 86, recruitPer: 8, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
@@ -166,9 +139,6 @@
     let prepTimer = 0;
     let warnedBossCycle = -1;
     let alertTimer = 0;
-    let awaitingUpgrade = false;
-    let bonusDmgMul = 1;
-    let bonusFireMul = 1;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -294,8 +264,8 @@
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
     function applyPower() {
-      fireRate = (CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel) * bonusFireMul;
-      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel) * bonusDmgMul;
+      fireRate = CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel;
+      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel);
     }
 
     function loadRecords() {
@@ -330,9 +300,6 @@
       wave = 1; waveTime = 0;
       prepTimer = 0; warnedBossCycle = -1;
       alertTimer = 0;
-      awaitingUpgrade = false;
-      bonusDmgMul = 1;
-      bonusFireMul = 1;
       spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
@@ -343,7 +310,6 @@
       recruitHits = 0; powerHits = 0; spawnCycles = 0;
       applyPower();
       hideAlert();
-      hideUpgrade();
       hideOverlay();
       updateHud();
     }
@@ -367,27 +333,11 @@
       showAlert('FALA ' + wave, 0.9);
     }
 
-    function showUpgrade() {
-      el.upgrade.classList.remove('hidden');
-    }
-
-    function hideUpgrade() {
-      el.upgrade.classList.add('hidden');
-    }
-
-    function chooseUpgrade(kind) {
-      if (!awaitingUpgrade) return;
-      if (kind === 'recruit') addRecruit();
-      else if (kind === 'dmg') bonusDmgMul *= 1.10;
-      else if (kind === 'fire') bonusFireMul *= 1.08;
-      applyPower();
-      awaitingUpgrade = false;
-      hideUpgrade();
-      prepTimer = CONFIG.waves.breakDuration;
-      showAlert('PRZYGOTUJ SIE - FALA ' + wave, Math.max(0.6, prepTimer - 0.2));
-    }
-
     function addRecruit() { if (N < CONFIG.shooter.maxN) { N++; colY = clamp(colY, minY(), maxY()); } }
+    function loseRecruit(count) {
+      N = Math.max(0, N - count);
+      colY = clamp(colY, minY(), maxY());
+    }
 
     // ---- Aktualizacja ----
     function update(dt) {
@@ -416,12 +366,10 @@
         }
         wave++;
         waveTime = 0;
-        awaitingUpgrade = true;
-        prepTimer = 0;
+        prepTimer = CONFIG.waves.breakDuration;
         zombies = [];
         bullets = [];
-        hideAlert();
-        showUpgrade();
+        showAlert('PRZYGOTUJ SIE - FALA ' + wave, Math.max(0.6, prepTimer - 0.2));
       }
 
       // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
@@ -489,6 +437,7 @@
         z.x += z.speed * dt;
         if (z.x >= CONFIG.breachX) {
           baseHp -= z.dmg;
+          loseRecruit(z.boss ? 2 : 1);
           sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
           zombies.splice(i, 1);
@@ -619,15 +568,12 @@
       nextBoss: document.getElementById('nextBoss'),
       alert: document.getElementById('alert'),
       bestWave: document.getElementById('bestWave'),
-      bestKills: document.getElementById('bestKills'),
-      upgrade: document.getElementById('upgrade')
+      bestKills: document.getElementById('bestKills')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
       el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
-      if (awaitingUpgrade) {
-        el.nextWave.textContent = 'wybor bonusu';
-      } else if (prepTimer > 0) {
+      if (prepTimer > 0) {
         el.nextWave.textContent = 'przerwa ' + prepTimer.toFixed(1) + 's';
       } else {
         const left = Math.max(0, CONFIG.waves.duration - waveTime);
@@ -681,12 +627,6 @@
     el.difficulty.addEventListener('change', function () {
       difficultyKey = el.difficulty.value;
       reset();
-    });
-    el.upgrade.addEventListener('click', function (e) {
-      const btn = e.target.closest('button[data-up]');
-      if (!btn) return;
-      ensureAudio();
-      chooseUpgrade(btn.getAttribute('data-up'));
     });
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
 
