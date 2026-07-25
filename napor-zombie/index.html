@@ -70,6 +70,7 @@
       <div class="stat">Moc cel <b id="powerNeed" class="soft">0/0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
       <div class="stat">Rozrzut <b id="spread" class="soft">off</b></div>
+        <div class="stat">Bomby <b id="bombs" class="soft">0</b></div>
       <div class="stat">Efekt <b id="effect" class="soft">brak</b></div>
       <div class="stat">Best fala <b id="bestWave" class="soft">0</b></div>
       <div class="stat">Best zabici <b id="bestKills" class="soft">0</b></div>
@@ -96,6 +97,7 @@
       <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
       <span>Ekipa strzela sama prosto w lewo</span>
       <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
+        <span><kbd>Spacja</kbd> bomba</span>
       <span><kbd>M</kbd> wyciszenie</span>
       <span><kbd>R</kbd> restart</span>
     </div>
@@ -125,7 +127,8 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 6, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
+      spread: { levelMax: 8, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
+      bomb: { everyKills: 10000 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
@@ -164,6 +167,8 @@
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
     let spreadLevel = 0;
+    let bombs = 0;
+    let nextBombKills = 0;
     let spreadDecayTimer = 0;
     let bestWave = 0;
     let bestKills = 0;
@@ -346,6 +351,8 @@
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
+      bombs = 0;
+      nextBombKills = CONFIG.bomb.everyKills;
       spreadDecayTimer = 0;
       applyPower();
       memberShotTimers = new Array(CONFIG.shooter.maxN).fill(0).map(function () {
@@ -407,6 +414,32 @@
         recruitBoostTimer = CONFIG.loot.recruitDur;
         showAlert('LOOT: SZYBSZA REKRUTACJA ' + CONFIG.loot.recruitDur + 's', 1.1);
       }
+    }
+
+    function awardBombsByKills() {
+      while (kills >= nextBombKills) {
+        bombs++;
+        nextBombKills += CONFIG.bomb.everyKills;
+        showAlert('BOMBA +1', 1.0);
+      }
+    }
+
+    function useBomb() {
+      if (state !== 'play' || bombs <= 0 || zombies.length === 0) return false;
+      bombs--;
+      let bombScore = 0;
+      for (let i = zombies.length - 1; i >= 0; i--) {
+        const z = zombies[i];
+        bombScore += z.boss ? CONFIG.boss.killScore : 1;
+        waveKills++;
+        fx.push({ x: z.x, y: z.y, life: 0.32, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 22 : 16 });
+        if (z.miniType) grantMiniLoot(z.miniType);
+      }
+      zombies = [];
+      kills += bombScore;
+      awardBombsByKills();
+      showAlert('BOMBA: WSZYSTKIE ZOMBIE GINA', 1.0);
+      return true;
     }
 
     function startNextWave() {
@@ -681,6 +714,7 @@
                 zombies.splice(j, 1);
                 kills += deadZombie.boss ? CONFIG.boss.killScore : 1;
                 waveKills++;
+                awardBombsByKills();
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
@@ -840,6 +874,7 @@
       nextBoss: document.getElementById('nextBoss'),
       alert: document.getElementById('alert'),
       spread: document.getElementById('spread'),
+      bombs: document.getElementById('bombs'),
       effect: document.getElementById('effect'),
       bestWave: document.getElementById('bestWave'),
       bestKills: document.getElementById('bestKills')
@@ -860,10 +895,12 @@
       el.powerNeed.textContent = powerHits + ' / ' + powerNeed;
       el.kills.textContent = kills;
       el.spread.textContent = spreadLevel > 0 ? ('LVL ' + spreadLevel) : 'off';
+      el.bombs.textContent = bombs;
       const fx = [];
       if (recruitBoostTimer > 0) fx.push('Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's');
       if (slowFieldTimer > 0) fx.push('Spowolnienie ' + slowFieldTimer.toFixed(1) + 's');
       if (spreadLevel > 0) fx.push('Rozrzut lvl ' + spreadLevel);
+      if (bombs > 0) fx.push('Bomby ' + bombs);
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestWave.textContent = bestWave;
       el.bestKills.textContent = bestKills;
@@ -895,6 +932,11 @@
       if (e.key === 'm' || e.key === 'M') {
         muted = !muted;
         if (master) master.gain.value = muted ? 0 : 0.18;
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        useBomb();
         return;
       }
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { keys.up = true; e.preventDefault(); }
