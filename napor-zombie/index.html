@@ -40,6 +40,23 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
+  #upgrade {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(8,12,17,.58); pointer-events: none;
+  }
+  #upgrade.hidden { display: none; }
+  #upgrade .box {
+    width: min(92%, 620px); background: rgba(20,28,38,.95); border: 1px solid #3a4c60;
+    border-radius: 12px; padding: 14px 12px;
+  }
+  #upgrade h3 { margin: 0 0 10px; text-align: center; letter-spacing: .5px; font-size: 20px; }
+  #upgrade .opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  #upgrade button {
+    pointer-events: auto; cursor: pointer; border: 1px solid #4b6179; border-radius: 10px;
+    background: #1d2a3a; color: #e8edf2; padding: 10px 8px; font-size: 14px; font-weight: 700;
+  }
+  #upgrade button:hover { background: #24364c; }
+  #upgrade button small { display: block; margin-top: 5px; font-size: 11px; color: #b7c6d6; font-weight: 500; }
   #alert {
     position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
     padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
@@ -67,6 +84,8 @@
       <div class="stat">Ekipa <b id="squad">1</b></div>
       <div class="stat">Moc <b id="power">0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
+      <div class="stat">Best fala <b id="bestWave" class="soft">0</b></div>
+      <div class="stat">Best zabici <b id="bestKills" class="soft">0</b></div>
       <div class="stat">Tryb
         <select id="difficulty" aria-label="Poziom trudności">
           <option value="easy">Easy</option>
@@ -78,6 +97,16 @@
     <div id="stage">
       <canvas id="game" width="1000" height="600"></canvas>
       <div id="alert" aria-live="polite"></div>
+      <div id="upgrade" class="hidden" aria-live="polite">
+        <div class="box">
+          <h3>Wybierz bonus po fali</h3>
+          <div class="opts">
+            <button type="button" data-up="recruit">Posiłki<small>+1 członek ekipy</small></button>
+            <button type="button" data-up="dmg">Amunicja AP<small>+10% obrażeń</small></button>
+            <button type="button" data-up="fire">Dyscyplina ognia<small>+8% fire rate</small></button>
+          </div>
+        </div>
+      </div>
       <div id="overlay" class="hidden">
         <h2 id="overTitle">Przegrana</h2>
         <p id="overSub"></p>
@@ -137,6 +166,11 @@
     let prepTimer = 0;
     let warnedBossCycle = -1;
     let alertTimer = 0;
+    let awaitingUpgrade = false;
+    let bonusDmgMul = 1;
+    let bonusFireMul = 1;
+    let bestWave = 0;
+    let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
     let bossEvery = CONFIG.boss.everySpawnCycle;
     let keys = { up: false, down: false };
@@ -267,8 +301,28 @@
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
     function applyPower() {
-      fireRate = CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel;
-      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel);
+      fireRate = (CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel) * bonusFireMul;
+      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel) * bonusDmgMul;
+    }
+
+    function loadRecords() {
+      const w = parseInt(localStorage.getItem('nz_best_wave') || '0', 10);
+      const k = parseInt(localStorage.getItem('nz_best_kills') || '0', 10);
+      bestWave = Number.isFinite(w) ? w : 0;
+      bestKills = Number.isFinite(k) ? k : 0;
+    }
+
+    function saveRecords() {
+      localStorage.setItem('nz_best_wave', String(bestWave));
+      localStorage.setItem('nz_best_kills', String(bestKills));
+    }
+
+    function maybeUpdateRecords() {
+      const currentWave = Math.min(wave, CONFIG.waves.total);
+      let changed = false;
+      if (currentWave > bestWave) { bestWave = currentWave; changed = true; }
+      if (kills > bestKills) { bestKills = kills; changed = true; }
+      if (changed) saveRecords();
     }
 
     function applyDifficulty() {
@@ -283,6 +337,9 @@
       wave = 1; waveTime = 0;
       prepTimer = 0; warnedBossCycle = -1;
       alertTimer = 0;
+      awaitingUpgrade = false;
+      bonusDmgMul = 1;
+      bonusFireMul = 1;
       spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
@@ -293,6 +350,7 @@
       recruitHits = 0; powerHits = 0; spawnCycles = 0;
       applyPower();
       hideAlert();
+      hideUpgrade();
       hideOverlay();
       updateHud();
     }
@@ -314,6 +372,26 @@
       zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
       zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
       showAlert('FALA ' + wave, 0.9);
+    }
+
+    function showUpgrade() {
+      el.upgrade.classList.remove('hidden');
+    }
+
+    function hideUpgrade() {
+      el.upgrade.classList.add('hidden');
+    }
+
+    function chooseUpgrade(kind) {
+      if (!awaitingUpgrade) return;
+      if (kind === 'recruit') addRecruit();
+      else if (kind === 'dmg') bonusDmgMul *= 1.10;
+      else if (kind === 'fire') bonusFireMul *= 1.08;
+      applyPower();
+      awaitingUpgrade = false;
+      hideUpgrade();
+      prepTimer = CONFIG.waves.breakDuration;
+      showAlert('PRZYGOTUJ SIE - FALA ' + wave, Math.max(0.6, prepTimer - 0.2));
     }
 
     function addRecruit() { if (N < CONFIG.shooter.maxN) { N++; colY = clamp(colY, minY(), maxY()); } }
@@ -338,16 +416,19 @@
       if (waveTime >= CONFIG.waves.duration && prepTimer === 0) {
         if (wave >= CONFIG.waves.total) {
           state = 'win';
+          maybeUpdateRecords();
           sfxEnd(true);
           showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
           updateHud(); return;
         }
         wave++;
         waveTime = 0;
-        prepTimer = CONFIG.waves.breakDuration;
+        awaitingUpgrade = true;
+        prepTimer = 0;
         zombies = [];
         bullets = [];
-        showAlert('PRZYGOTUJ SIE - FALA ' + wave, CONFIG.waves.breakDuration - 0.2);
+        hideAlert();
+        showUpgrade();
       }
 
       // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
@@ -420,6 +501,7 @@
           zombies.splice(i, 1);
           if (baseHp <= 0) {
             baseHp = 0; state = 'lose';
+            maybeUpdateRecords();
             sfxEnd(false);
             showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
             updateHud(); return;
@@ -542,12 +624,17 @@
       difficulty: document.getElementById('difficulty'),
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
-      alert: document.getElementById('alert')
+      alert: document.getElementById('alert'),
+      bestWave: document.getElementById('bestWave'),
+      bestKills: document.getElementById('bestKills'),
+      upgrade: document.getElementById('upgrade')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
       el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
-      if (prepTimer > 0) {
+      if (awaitingUpgrade) {
+        el.nextWave.textContent = 'wybor bonusu';
+      } else if (prepTimer > 0) {
         el.nextWave.textContent = 'przerwa ' + prepTimer.toFixed(1) + 's';
       } else {
         const left = Math.max(0, CONFIG.waves.duration - waveTime);
@@ -558,6 +645,8 @@
       el.squad.textContent = N;
       el.power.textContent = powerLevel;
       el.kills.textContent = kills;
+      el.bestWave.textContent = bestWave;
+      el.bestKills.textContent = bestKills;
     }
     function showOverlay(title, sub) {
       el.overTitle.textContent = title;
@@ -600,6 +689,12 @@
       difficultyKey = el.difficulty.value;
       reset();
     });
+    el.upgrade.addEventListener('click', function (e) {
+      const btn = e.target.closest('button[data-up]');
+      if (!btn) return;
+      ensureAudio();
+      chooseUpgrade(btn.getAttribute('data-up'));
+    });
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
 
     // ---- Pętla ----
@@ -609,6 +704,7 @@
       render();
       requestAnimationFrame(frame);
     }
+    loadRecords();
     reset();
     requestAnimationFrame(frame);
   })();
