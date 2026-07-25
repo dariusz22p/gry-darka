@@ -18,6 +18,10 @@
   #hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 8px; font-size: 13px; }
   #hud .stat { display: flex; align-items: center; gap: 6px; }
   #hud b { color: #fff; }
+  #difficulty {
+    background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
+    border-radius: 6px; padding: 3px 8px; font-family: inherit; font-size: 12px;
+  }
   .base { flex: 1; min-width: 150px; }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
@@ -53,6 +57,13 @@
       <div class="stat">Ekipa <b id="squad">1</b></div>
       <div class="stat">Moc <b id="power">0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
+      <div class="stat">Tryb
+        <select id="difficulty" aria-label="Poziom trudności">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
     </div>
     <div id="stage">
       <canvas id="game" width="1000" height="600"></canvas>
@@ -92,7 +103,12 @@
       panel: { x: 40, bandH: 86, recruitPer: 14, powerPer: 30 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
-      powerStep: { fireAdd: 0.32, dmgMul: 1.08 }
+      powerStep: { fireAdd: 0.32, dmgMul: 1.08 },
+      difficulty: {
+        easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 6, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
+        normal: { spawnEveryMul: 1.00, burstAdd: 0,  burstCap: 8, bossEveryAdd: 0, zombieHpMul: 1.00, zombieSpeedMul: 1.00, bossHpMul: 1.00, bossDmgMul: 1.00, rampHpMul: 1.00, rampSpeedMul: 1.00 },
+        hard:   { spawnEveryMul: 0.82, burstAdd: 1,  burstCap: 10, bossEveryAdd: -1, zombieHpMul: 1.20, zombieSpeedMul: 1.10, bossHpMul: 1.25, bossDmgMul: 1.15, rampHpMul: 1.20, rampSpeedMul: 1.15 }
+      }
     };
     const W = CONFIG.W, H = CONFIG.H;
     const recruitBand = { top: CONFIG.wallTop, bot: CONFIG.wallTop + CONFIG.panel.bandH };
@@ -106,6 +122,8 @@
     let zombies, bullets, fx;
     let recruitHits, powerHits;
     let spawnCycles;
+    let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
+    let bossEvery = CONFIG.boss.everySpawnCycle;
     let keys = { up: false, down: false };
     let steering = false;
     let last = 0;
@@ -224,12 +242,18 @@
       dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel);
     }
 
+    function applyDifficulty() {
+      diff = CONFIG.difficulty[difficultyKey] || CONFIG.difficulty.normal;
+      bossEvery = Math.max(2, CONFIG.boss.everySpawnCycle + diff.bossEveryAdd);
+    }
+
     function reset() {
       state = 'play';
+      applyDifficulty();
       baseHp = CONFIG.baseHpMax;
       wave = 1; waveTime = 0;
-      spawnEvery = CONFIG.zombie.spawnEvery; spawnTimer = 0;
-      zHp = CONFIG.zombie.hp; zSpeed = CONFIG.zombie.speed;
+      spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
+      zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
       N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
       fireTimer = 0;
@@ -255,8 +279,9 @@
           showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
           updateHud(); return;
         }
-        spawnEvery = Math.max(0.35, spawnEvery * CONFIG.ramp.spawnMul);
-        zHp += CONFIG.ramp.hpAdd; zSpeed += CONFIG.ramp.speedAdd;
+        spawnEvery = Math.max(0.30, spawnEvery * CONFIG.ramp.spawnMul);
+        zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
+        zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
       }
       // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
       if (keys.up && !keys.down) targetY = minY();
@@ -271,21 +296,22 @@
       if (spawnTimer <= 0) {
         spawnTimer += spawnEvery;
         spawnCycles++;
-        const burst = Math.min(8, 3 + Math.floor((wave - 1) / 2));
+        const burstBase = 3 + Math.floor((wave - 1) / 2);
+        const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         for (let s = 0; s < burst; s++) {
           const y = laneTop + 8 + Math.random() * Math.max(8, (laneBot - laneTop - 16));
           zombies.push({ x: -18 - s * 12, y: y, hp: zHp, maxhp: zHp, r: CONFIG.zombie.r, speed: zSpeed, dmg: CONFIG.zombie.dmg, boss: false });
         }
-        if (spawnCycles % CONFIG.boss.everySpawnCycle === 0) {
+        if (spawnCycles % bossEvery === 0) {
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
           zombies.push({
             x: -34,
             y: y,
-            hp: zHp * CONFIG.boss.hpMul,
-            maxhp: zHp * CONFIG.boss.hpMul,
+            hp: zHp * CONFIG.boss.hpMul * diff.bossHpMul,
+            maxhp: zHp * CONFIG.boss.hpMul * diff.bossHpMul,
             r: CONFIG.boss.r,
             speed: zSpeed * CONFIG.boss.speedMul,
-            dmg: CONFIG.zombie.dmg * CONFIG.boss.dmgMul,
+            dmg: CONFIG.zombie.dmg * CONFIG.boss.dmgMul * diff.bossDmgMul,
             boss: true
           });
         }
@@ -432,7 +458,8 @@
       squad: document.getElementById('squad'), power: document.getElementById('power'),
       kills: document.getElementById('kills'), overlay: document.getElementById('overlay'),
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
-      restart: document.getElementById('restart')
+      restart: document.getElementById('restart'),
+      difficulty: document.getElementById('difficulty')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -477,6 +504,10 @@
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
       if (!keys.up && !keys.down) targetY = colY;
+    });
+    el.difficulty.addEventListener('change', function () {
+      difficultyKey = el.difficulty.value;
+      reset();
     });
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
 
