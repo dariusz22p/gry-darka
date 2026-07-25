@@ -657,8 +657,8 @@
               b.y = clamp(b.y + ny * overlap, laneTop + b.r, laneBot - b.r);
 
               // Nie pozwalamy na cofanie zombie daleko poza ekran przez korekte kolizji.
-              a.x = Math.max(-60, Math.min(CONFIG.breachX - 2, a.x));
-              b.x = Math.max(-60, Math.min(CONFIG.breachX - 2, b.x));
+              a.x = Math.max(-60, a.x);
+              b.x = Math.max(-60, b.x);
             }
           }
         }
