@@ -186,7 +186,6 @@
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
       spread: { levelMax: 8, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
-      bomb: { everyKills: 10000 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
@@ -226,7 +225,6 @@
     let slowFieldTimer = 0;
     let spreadLevel = 0;
     let bombs = 0;
-    let nextBombKills = 0;
     let spreadDecayTimer = 0;
     let bestWave = 0;
     let bestKills = 0;
@@ -409,8 +407,7 @@
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
-      bombs = 0;
-      nextBombKills = CONFIG.bomb.everyKills;
+      bombs = 1;
       spreadDecayTimer = 0;
       applyPower();
       memberShotTimers = new Array(CONFIG.shooter.maxN).fill(0).map(function () {
@@ -474,14 +471,6 @@
       }
     }
 
-    function awardBombsByKills() {
-      while (kills >= nextBombKills) {
-        bombs++;
-        nextBombKills += CONFIG.bomb.everyKills;
-        showAlert('BOMBA +1', 1.0);
-      }
-    }
-
     function useBomb() {
       if (state !== 'play' || bombs <= 0 || zombies.length === 0) return false;
       bombs--;
@@ -495,17 +484,17 @@
       }
       zombies = [];
       kills += bombScore;
-      awardBombsByKills();
       showAlert('BOMBA: WSZYSTKIE ZOMBIE GINA', 1.0);
       return true;
     }
 
     function startNextWave() {
       waveKills = 0;
+      bombs++;
       spawnEvery = Math.max(0.30, spawnEvery * CONFIG.ramp.spawnMul);
       zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
       zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
-      showAlert('FALA ' + wave, 0.9);
+      showAlert('FALA ' + wave + ' | BOMBA +1', 0.9);
     }
 
     function addRecruit() {
@@ -772,7 +761,6 @@
                 zombies.splice(j, 1);
                 kills += deadZombie.boss ? CONFIG.boss.killScore : 1;
                 waveKills++;
-                awardBombsByKills();
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
