@@ -1,17 +1,19 @@
 # Pojedynek Zamków — Backlog
 
 Gra artyleryjska 2-osobowa (hotseat). Plik gry: `pojedynek-zamkow/index.html`.
-Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyka 2D, CDN).
+Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyka 2D, self-hosted — offline). PWA: manifest + service worker.
 
 ## Struktura repo (layout pod wiele gier)
 - `index.html` — strona-hub z listą gier.
 - `pojedynek-zamkow/index.html` — gra „Pojedynek Zamków (Janek i Darek)".
+- `pojedynek-zamkow/` — PWA: `manifest.webmanifest`, `sw.js`, `icon.svg`, `matter.min.js` (self-host).
 - `gra-2/index.html` — placeholder na kolejną grę.
 - `.nojekyll` — wyłącza przetwarzanie Jekyll na GitHub Pages.
 
 ## Jak uruchomić
 - Online (GitHub Pages): <https://dariusz22p.github.io/gry-darka/>
-- Lokalnie: otwórz `index.html` (hub) lub `pojedynek-zamkow/index.html` (gra) — wymaga internetu (Matter.js z CDN).
+- Lokalnie: otwórz `index.html` (hub) lub `pojedynek-zamkow/index.html` (gra) — Matter.js jest lokalny, działa offline.
+- Na telefonie (PWA): wejdź na hosting, otwórz grę i „Dodaj do ekranu głównego" (instalowalna, offline).
 - Sterowanie: `↑`/`↓` kąt, `←`/`→` moc, `Spacja` strzał, `R` nowy mecz, `F` pełny ekran, `M` dźwięk.
 - 2 graczy na zmianę na jednej klawiaturze. Wygrywa ten, kto zbije HP przeciwnika do 0.
 
@@ -75,15 +77,32 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 - [x] Strona-hub z listą gier (layout pod kolejne gry) + placeholder `gra-2/`
 - [ ] Zapis lokalny (localStorage): wynik meczów, ustawienia
 - [ ] Podstawowe testy logiki (obrażenia, koniec tury, warunek zwycięstwa)
-- [ ] Self-host Matter.js (bez zależności od CDN) — działanie offline
+- [x] Self-host Matter.js (bez zależności od CDN) — działanie offline
 
 ## Etap 6 — Mobile / Android
 Cel: grać na telefonie/tablecie (hotseat świetnie działa na jednym ekranie).
 - [x] A. Sterowanie dotykowe: przyciski kąta/mocy (hold-repeat) + „OGNIA" (pointer/touch); tap „następna runda"
 - [x] B. Responsywny layout: skalowanie widoku do ekranu (fit-to-viewport, dvh), kompaktowy HUD i ukryte podpowiedzi na telefonie, podpowiedź obrotu w pionie
 - [x] C. Hosting pod URL (GitHub Pages) — zrobione w Etapie 5
-- [ ] D. PWA: `manifest.json` + service worker + self-host Matter.js (offline, „dodaj do ekranu głównego") — nakład mały
+- [x] D. PWA: manifest + service worker + self-host Matter.js (offline, „dodaj do ekranu głównego")
 - [ ] E. APK / Google Play: Capacitor lub TWA (build w Android Studio/Gradle) — nakład średni (dochodzi toolchain)
+
+## Balans / fair play
+Problem: w turowej artylerii pierwszy strzelający ma przewagę (może zadać śmiertelny cios wcześniej).
+
+- [x] Wyrównanie liczby strzałów w rundzie: obaj oddają tyle samo strzałów, więc startujący nie wygrywa tylko dlatego, że strzela pierwszy (drugi ma „wyrównanie"; oba zamki padają → remis i powtórka rundy)
+
+Quick wins:
+- [ ] Losowy startujący w rundzie decydującej przy 1:1
+- [ ] Opcjonalny handicap startującego (np. −5% mocy w 1. turze)
+- [ ] Wyraźniejszy wskaźnik „wyrównanie / ostatni strzał" (kolor/animacja + dźwięk)
+- [ ] Informacja „kto zaczyna rundę" na ekranie startu rundy
+
+Cięższe zadania:
+- [ ] Symultaniczne strzały: obaj celują w tajemnicy, potem jednoczesne rozwiązanie tury
+- [ ] Sudden death po serii remisów (kurczące się zamki / rosnący wiatr)
+- [ ] Statystyki celności + prosty ranking (localStorage)
+- [ ] AI z regulacją trudności (trening solo, dobór kąta/mocy)
 
 ## Parking lot (pomysły na później)
 - Zniszczalny teren (kratery po trafieniach)

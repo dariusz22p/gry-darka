@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Pojedynek Zamków (Janek i Darek)</title>
+<meta name="theme-color" content="#1b2430" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -180,7 +183,7 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script src="matter.min.js"></script>
   <script>
   (function () {
     const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
@@ -233,6 +236,7 @@
     };
     const hp = { 1: CONFIG.maxHp, 2: CONFIG.maxHp };
     const score = { 1: 0, 2: 0 };
+    const shots = { 1: 0, 2: 0 };   // liczba strzałów w rundzie (fair play)
     let projectile = null;
     let fireTime = 0, spentTime = 0, restFrames = 0, shotDamage = 0;
     let wind = 0;               // aktualny wiatr (dodatni = w prawo)
@@ -423,6 +427,7 @@
       Body.setVelocity(p, { x: Math.cos(rad) * v * dir, y: -Math.sin(rad) * v });
       projectile = p;
       state = 'RESOLVING';
+      shots[current]++;
       fireTime = performance.now();
       spentTime = 0; restFrames = 0; shotDamage = 0;
       sfxShoot();
@@ -470,7 +475,10 @@
     function endTurn() {
       stopFlightSound();
       if (projectile) { Composite.remove(engine.world, projectile); projectile = null; }
-      if (hp[1] <= 0 || hp[2] <= 0) { handleRoundEnd(); return; }
+      // Fair play: rundę kończymy dopiero gdy obaj oddali tyle samo strzałów,
+      // więc atakujący nie wygrywa tylko dlatego, że strzela pierwszy (drugi ma wyrównanie).
+      const shotsEqual = shots[1] === shots[2];
+      if (shotsEqual && (hp[1] <= 0 || hp[2] <= 0)) { handleRoundEnd(); return; }
       current = current === 1 ? 2 : 1;
       beginTurn();
     }
@@ -482,7 +490,15 @@
     }
 
     function handleRoundEnd() {
-      const winner = hp[1] <= 0 ? 2 : 1;
+      const dead1 = hp[1] <= 0, dead2 = hp[2] <= 0;
+      if (dead1 && dead2) {
+        // Oba zamki padły przy równej liczbie strzałów — remis, runda się powtarza (bez punktu).
+        state = 'ROUNDOVER';
+        showOverlay('Remis w rundzie!', 'Wynik ' + score[1] + ' : ' + score[2] + ' — powtórka', 'Następna runda (Spacja)', startNextRound, 0);
+        updateHud();
+        return;
+      }
+      const winner = dead1 ? 2 : 1;
       score[winner]++;
       sfxWin();
       if (score[winner] >= CONFIG.roundsToWin) {
@@ -630,7 +646,8 @@
       el.hp2.style.width = (hp[2] / CONFIG.maxHp * 100) + '%';
       el.turn.className = 'turn p' + current;
       const over = state === 'GAMEOVER' || state === 'ROUNDOVER';
-      el.turn.textContent = over ? 'Koniec rundy' : ('Tura: Gracz ' + current);
+      const equalizer = !over && (hp[1] <= 0 || hp[2] <= 0) && shots[1] !== shots[2];
+      el.turn.textContent = over ? 'Koniec rundy' : ('Tura: Gracz ' + current + (equalizer ? ' — wyrównanie!' : ''));
       const a = aim[current];
       el.aim.textContent = 'Kąt: ' + a.angle + '\u00B0   Moc: ' + a.power;
       el.wind.textContent = windLabel();
@@ -645,7 +662,7 @@
 
     function showOverlay(title, subtitle, btnLabel, action, winner) {
       el.winText.textContent = title;
-      el.winText.style.color = winner === 1 ? '#ef8354' : '#4f9dff';
+      el.winText.style.color = winner === 1 ? '#ef8354' : winner === 2 ? '#4f9dff' : '#e8edf2';
       el.winSub.textContent = subtitle;
       el.overlayBtn.textContent = btnLabel;
       overlayAction = action;
@@ -663,6 +680,7 @@
       aim[1] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
       aim[2] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
       projectile = null; hits.length = 0;
+      shots[1] = 0; shots[2] = 0;
       current = startingPlayer;
       hideOverlay();
       setupWorld();
@@ -781,6 +799,13 @@
     // ---- Start ----
     resetMatch();
   })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>
