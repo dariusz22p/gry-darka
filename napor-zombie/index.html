@@ -128,7 +128,7 @@
       spread: { levelMax: 4, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
-      growth: { recruitMul: 1.9, powerMul: 2.0 },
+      growth: { recruitMul: 1.65, powerMul: 2.0 },
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 2 },
@@ -423,8 +423,20 @@
         colY = clamp(colY, minY(), maxY());
       }
     }
+
+    function setRecruitNeed(nextNeed) {
+      const oldNeed = Math.max(1, recruitNeed);
+      const progress = Math.max(0, Math.min(1, recruitHits / oldNeed));
+      recruitNeed = Math.max(CONFIG.panel.recruitPer, Math.ceil(nextNeed));
+      recruitHits = Math.floor(progress * recruitNeed);
+    }
+
     function loseRecruit(count) {
+      const oldN = Math.max(1, N);
       N = Math.max(0, N - count);
+      const ratio = N / oldN;
+      // Gdy tracisz ludzi, prog kolejnej rekrutacji spada proporcjonalnie do liczebnosci ekipy.
+      setRecruitNeed(recruitNeed * Math.max(0.25, ratio));
       colY = clamp(colY, minY(), maxY());
     }
 
@@ -678,7 +690,7 @@
             if (recruitHits >= recruitNeed) {
               recruitHits -= recruitNeed;
               addRecruit();
-              recruitNeed = Math.min(1e9, Math.ceil(recruitNeed * CONFIG.growth.recruitMul));
+              setRecruitNeed(Math.min(1e9, recruitNeed * CONFIG.growth.recruitMul));
               sfxUpgrade(false);
             }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
