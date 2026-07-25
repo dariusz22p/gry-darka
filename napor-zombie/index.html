@@ -124,8 +124,8 @@
         charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
-      pickup: { everySpawnCycle: 6, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 6, pelletsPerLevel: 1, anglePerLevelDeg: 1.4, baseAngleDeg: 0.8, angleMaxDeg: 10, decayEvery: 14 },
+      pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
+      spread: { levelMax: 4, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.30, recruitNeedCap: 220, powerMul: 2.0 },
@@ -547,7 +547,7 @@
         fireTimer += 1 / fireRate;
         const cappedLevel = Math.min(CONFIG.spread.levelMax, spreadLevel);
         const extraPellets = cappedLevel * CONFIG.spread.pelletsPerLevel;
-        const spreadDeg = Math.min(CONFIG.spread.angleMaxDeg, CONFIG.spread.baseAngleDeg + cappedLevel * CONFIG.spread.anglePerLevelDeg);
+        const spreadDeg = Math.min(CONFIG.spread.angleMaxDeg, CONFIG.spread.baseAngleDeg + Math.sqrt(cappedLevel) * CONFIG.spread.anglePerLevelDeg);
         const spreadRad = (spreadDeg * Math.PI) / 180;
         for (let i = 0; i < N; i++) {
           const o = memberOffset(i);
