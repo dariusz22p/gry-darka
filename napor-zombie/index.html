@@ -67,7 +67,7 @@
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
   #stage { position: relative; border-radius: 0; overflow: hidden; box-shadow: none; }
-  #stageCol { min-width: 0; grid-area: stage; max-width: 920px; width: 92%; margin: 0 auto; }
+  #stageCol { min-width: 0; grid-area: stage; max-width: 920px; width: 100%; margin: 0 auto; }
   canvas#game { display: block; width: 100%; height: auto; background: #0f141b; touch-action: none; }
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -124,7 +124,7 @@
     <div id="layout">
       <div id="stageCol">
         <div id="stage">
-          <canvas id="game" width="1000" height="600"></canvas>
+          <canvas id="game" width="1000" height="520"></canvas>
           <div id="alert" aria-live="polite"></div>
           <div id="overlay" class="hidden">
             <h2 id="overTitle">Przegrana</h2>
@@ -176,8 +176,8 @@
 
     // ---- CONFIG: pokrętła balansu (stroimy próbami) ----
     const CONFIG = {
-      W: 1000, H: 600,
-      wallTop: 0, wallBottom: 600,      // pelna wysokosc planszy, bez pustych pasow
+      W: 1000, H: 520,
+      wallTop: 0, wallBottom: 520,      // pelna wysokosc planszy, bez pustych pasow
       squadX: 930,                       // pozycja X kolumny (strzela w lewo)
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
