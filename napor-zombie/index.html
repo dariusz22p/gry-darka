@@ -13,8 +13,7 @@
     font-family: "Segoe UI", system-ui, sans-serif;
     -webkit-user-select: none; user-select: none;
   }
-  #wrap { max-width: 1320px; margin: 12px auto; padding: 0 10px; }
-  h1 { font-size: 20px; text-align: center; letter-spacing: 3px; margin: 4px 0 10px; }
+  #wrap { max-width: 1320px; margin: 0 auto; padding: 0 10px; }
   #layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 220px;
@@ -29,7 +28,7 @@
   #hud {
     grid-area: hud;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 5px;
     font-size: 12px;
     padding: 0;
@@ -113,16 +112,15 @@
       row-gap: 0;
       column-gap: 0;
     }
-    #hud { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #hud { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   }
   @media (max-width: 640px) {
-    #hud { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #hud { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 </style>
 </head>
 <body>
   <div id="wrap">
-    <h1>NAPÓR ZOMBIE</h1>
     <div id="layout">
       <div id="stageCol">
         <div id="stage">
@@ -140,7 +138,7 @@
           <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
           <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
           <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
-          <div class="stat"><span>Do bossa</span><b id="nextBoss" class="soft">4 spawny</b></div>
+          <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
           <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
           <div class="stat"><span>Moc</span><b id="power">0</b></div>
           <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
@@ -148,7 +146,7 @@
           <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
           <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
           <div class="stat"><span>Best fala</span><b id="bestWave" class="soft">0</b></div>
-          <div class="stat"><span>Best zabici</span><b id="bestKills" class="soft">0</b></div>
+          <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
           <div class="stat"><span>Tryb</span>
             <select id="difficulty" aria-label="Poziom trudności">
               <option value="easy">Easy</option>
@@ -179,7 +177,7 @@
     // ---- CONFIG: pokrętła balansu (stroimy próbami) ----
     const CONFIG = {
       W: 1000, H: 600,
-      wallTop: 80, wallBottom: 520,     // pas korytarza
+      wallTop: 0, wallBottom: 600,      // pelna wysokosc planszy, bez pustych pasow
       squadX: 930,                       // pozycja X kolumny (strzela w lewo)
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
