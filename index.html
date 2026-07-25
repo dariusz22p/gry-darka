@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pojedynek Zamków</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #1b2430;
+    color: #e8edf2;
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  #game { max-width: 1000px; margin: 16px auto; padding: 0 12px; }
+  h1 { font-size: 20px; text-align: center; margin: 4px 0 12px; letter-spacing: 2px; }
+  #hud { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .player { flex: 1; }
+  .player .name { font-size: 13px; margin-bottom: 4px; font-weight: 600; }
+  .p1 .name { color: #ef8354; }
+  .p2 .name { color: #4f9dff; }
+  .bar {
+    height: 16px; border-radius: 8px; background: #2c3a4b; overflow: hidden;
+    border: 1px solid #3a4c60;
+  }
+  .bar > span { display: block; height: 100%; width: 100%; transition: width .25s ease; }
+  .p1 .bar > span { background: linear-gradient(90deg, #ef8354, #c0552b); }
+  .p2 .bar > span { background: linear-gradient(90deg, #4f9dff, #2b6cc0); }
+  .player.right { text-align: right; }
+  .center { text-align: center; min-width: 190px; }
+  .turn { font-size: 15px; font-weight: 700; }
+  .turn.p1 { color: #ef8354; }
+  .turn.p2 { color: #4f9dff; }
+  .aim { font-size: 13px; opacity: .85; margin-top: 2px; }
+  #stage { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  canvas#board { display: block; width: 100%; height: auto; background: #87CEEB; }
+  #overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: rgba(10,15,22,.72);
+  }
+  #overlay.hidden { display: none; }
+  #overlay h2 { margin: 0; font-size: 28px; }
+  #overlay button {
+    cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
+    font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff;
+  }
+  #overlay button:hover { background: #3b8bf0; }
+  #help {
+    margin-top: 10px; font-size: 13px; line-height: 1.6; opacity: .9;
+    display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center;
+  }
+  kbd {
+    background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px;
+    border-radius: 5px; padding: 1px 7px; font-family: inherit; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div id="game">
+    <h1>POJEDYNEK ZAMKÓW</h1>
+    <div id="hud">
+      <div class="player p1">
+        <div class="name">Gracz 1</div>
+        <div class="bar"><span id="hp1"></span></div>
+      </div>
+      <div class="center">
+        <div class="turn p1" id="turn">Tura: Gracz 1</div>
+        <div class="aim" id="aiminfo">Kąt: 45°  Moc: 32</div>
+      </div>
+      <div class="player p2 right">
+        <div class="name">Gracz 2</div>
+        <div class="bar"><span id="hp2"></span></div>
+      </div>
+    </div>
+    <div id="stage">
+      <canvas id="board"></canvas>
+      <div id="overlay" class="hidden">
+        <h2 id="winText">Gracz 1 wygrywa!</h2>
+        <button id="restart">Zagraj ponownie (R)</button>
+      </div>
+    </div>
+    <div id="help">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> kąt</span>
+      <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> moc</span>
+      <span><kbd>Spacja</kbd> strzał</span>
+      <span><kbd>R</kbd> restart</span>
+      <span>Gra na zmianę (hotseat) — 2 graczy na jednej klawiaturze</span>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script>
+  (function () {
+    const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
+
+    // ---- CONFIG: łatwe strojenie balansu w jednym miejscu ----
+    const CONFIG = {
+      width: 1000, height: 600, groundH: 40,
+      gravity: 1,
+      angle: { min: 10, max: 85, step: 1, def: 45 },
+      power: { min: 15, max: 60, step: 1, def: 32 },
+      powerScale: 1.0,          // mnożnik prędkości pocisku
+      maxHp: 100,
+      dmgScale: 3,              // obrażenia = prędkość_pocisku * dmgScale
+      dmgMin: 5, dmgMax: 40,    // dmgMax = też limit obrażeń na 1 strzał
+      castle: { cols: 3, rows: 4, bw: 44, bh: 28 },
+      p1x: 260, p2x: 740
+    };
+
+    const W = CONFIG.width, H = CONFIG.height;
+    const groundTop = H - CONFIG.groundH;
+    const castleHalfW = (CONFIG.castle.cols * CONFIG.castle.bw) / 2;
+    const castleTopY = groundTop - CONFIG.castle.rows * CONFIG.castle.bh;
+    const muzzle = {
+      1: { x: CONFIG.p1x + castleHalfW + 14, y: castleTopY - 8 },
+      2: { x: CONFIG.p2x - castleHalfW - 14, y: castleTopY - 8 }
+    };
+
+    // ---- Silnik i render ----
+    const engine = Engine.create();
+    engine.gravity.y = CONFIG.gravity;
+
+    const render = Render.create({
+      canvas: document.getElementById('board'),
+      engine: engine,
+      options: { width: W, height: H, wireframes: false, background: '#87CEEB' }
+    });
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+
+    // ---- Stan gry ----
+    let state = 'AIMING';           // AIMING | RESOLVING | GAMEOVER
+    let current = 1;
+    const aim = {
+      1: { angle: CONFIG.angle.def, power: CONFIG.power.def },
+      2: { angle: CONFIG.angle.def, power: CONFIG.power.def }
+    };
+    const hp = { 1: CONFIG.maxHp, 2: CONFIG.maxHp };
+    let projectile = null;
+    let fireTime = 0, spentTime = 0, restFrames = 0, shotDamage = 0;
+    const hits = [];
+
+    // ---- Budowa świata ----
+    function buildCastle(cx, player) {
+      const { cols, rows, bw, bh } = CONFIG.castle;
+      const startX = cx - (cols * bw) / 2 + bw / 2;
+      const bodies = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const b = Bodies.rectangle(
+            startX + c * bw, groundTop - bh / 2 - r * bh, bw - 2, bh - 2,
+            {
+              friction: 0.9, frictionStatic: 3, restitution: 0, density: 0.005,
+              render: { fillStyle: player === 1 ? '#c0552b' : '#2b6cc0' }
+            }
+          );
+          b.castleOwner = player;
+          bodies.push(b);
+        }
+      }
+      Composite.add(engine.world, bodies);
+      return bodies;
+    }
+
+    function setupWorld() {
+      Composite.clear(engine.world, false);
+      const ground = Bodies.rectangle(
+        W / 2, groundTop + CONFIG.groundH / 2, W, CONFIG.groundH,
+        { isStatic: true, friction: 1, render: { fillStyle: '#5a7d3c' } }
+      );
+      Composite.add(engine.world, ground);
+      buildCastle(CONFIG.p1x, 1);
+      buildCastle(CONFIG.p2x, 2);
+    }
+
+    // ---- Strzał ----
+    function fire() {
+      if (state !== 'AIMING') return;
+      const a = aim[current];
+      const dir = current === 1 ? 1 : -1;
+      const rad = a.angle * Math.PI / 180;
+      const v = a.power * CONFIG.powerScale;
+      const m = muzzle[current];
+      const p = Bodies.circle(
+        m.x + Math.cos(rad) * 28 * dir, m.y - Math.sin(rad) * 28, 9,
+        { density: 0.06, restitution: 0.25, friction: 0.05, render: { fillStyle: '#20242b' } }
+      );
+      p.isProjectile = true;
+      Composite.add(engine.world, p);
+      Body.setVelocity(p, { x: Math.cos(rad) * v * dir, y: -Math.sin(rad) * v });
+      projectile = p;
+      state = 'RESOLVING';
+      fireTime = performance.now();
+      spentTime = 0; restFrames = 0; shotDamage = 0;
+      updateHud();
+    }
+
+    // ---- Kolizje / obrażenia ----
+    Events.on(engine, 'collisionStart', function (ev) {
+      if (!projectile) return;
+      for (const pair of ev.pairs) {
+        let other = null;
+        if (pair.bodyA === projectile) other = pair.bodyB;
+        else if (pair.bodyB === projectile) other = pair.bodyA;
+        else continue;
+        if (other && other.castleOwner) {
+          const remaining = CONFIG.dmgMax - shotDamage;
+          if (remaining <= 0) continue;
+          let dmg = Math.round(projectile.speed * CONFIG.dmgScale);
+          dmg = Math.max(CONFIG.dmgMin, Math.min(dmg, remaining));
+          shotDamage += dmg;
+          hp[other.castleOwner] = Math.max(0, hp[other.castleOwner] - dmg);
+          hits.push({ x: projectile.position.x, y: projectile.position.y, txt: '-' + dmg, life: 1 });
+          if (spentTime === 0) spentTime = performance.now();
+          updateHud();
+        }
+      }
+    });
+
+    // ---- Pętla logiki tury ----
+    Events.on(engine, 'afterUpdate', function () {
+      if (state !== 'RESOLVING' || !projectile) return;
+      const now = performance.now();
+      const p = projectile;
+      if (p.position.y > H + 150 || p.position.x < -150 || p.position.x > W + 150) { endTurn(); return; }
+      if (now - fireTime > 700 && p.speed < 0.6) restFrames++; else restFrames = 0;
+      if (restFrames > 25) { endTurn(); return; }
+      if (spentTime && now - spentTime > 800) { endTurn(); return; }
+      if (now - fireTime > 6000) { endTurn(); return; }
+    });
+
+    function endTurn() {
+      if (projectile) { Composite.remove(engine.world, projectile); projectile = null; }
+      if (hp[1] <= 0 || hp[2] <= 0) {
+        state = 'GAMEOVER';
+        showOverlay(hp[1] <= 0 ? 2 : 1);
+        updateHud();
+        return;
+      }
+      current = current === 1 ? 2 : 1;
+      state = 'AIMING';
+      updateHud();
+    }
+
+    // ---- Rysowanie dodatków (armaty, celownik, efekty) ----
+    Events.on(render, 'afterRender', function () {
+      const ctx = render.context;
+      drawCannon(ctx, 1);
+      drawCannon(ctx, 2);
+      if (state === 'AIMING') drawAim(ctx);
+      drawHits(ctx);
+    });
+
+    function drawCannon(ctx, player) {
+      const m = muzzle[player], a = aim[player], dir = player === 1 ? 1 : -1;
+      const rad = a.angle * Math.PI / 180;
+      ctx.save();
+      ctx.fillStyle = '#3a3f46';
+      ctx.beginPath(); ctx.arc(m.x, m.y + 4, 14, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#26292f'; ctx.lineCap = 'round'; ctx.lineWidth = 11;
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y);
+      ctx.lineTo(m.x + Math.cos(rad) * 30 * dir, m.y - Math.sin(rad) * 30);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawAim(ctx) {
+      const m = muzzle[current], a = aim[current], dir = current === 1 ? 1 : -1;
+      const rad = a.angle * Math.PI / 180;
+      const len = 40 + a.power * 2.4;
+      ctx.save();
+      ctx.strokeStyle = current === 1 ? '#ef8354' : '#4f9dff';
+      ctx.lineWidth = 3; ctx.setLineDash([9, 7]);
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y);
+      ctx.lineTo(m.x + Math.cos(rad) * len * dir, m.y - Math.sin(rad) * len);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawHits(ctx) {
+      for (let i = hits.length - 1; i >= 0; i--) {
+        const h = hits[i];
+        h.life -= 0.02; h.y -= 0.8;
+        if (h.life <= 0) { hits.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, h.life);
+        ctx.fillStyle = '#ff4d4d';
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.txt, h.x, h.y);
+        ctx.restore();
+      }
+    }
+
+    // ---- HUD / DOM ----
+    const el = {
+      hp1: document.getElementById('hp1'),
+      hp2: document.getElementById('hp2'),
+      turn: document.getElementById('turn'),
+      aim: document.getElementById('aiminfo'),
+      overlay: document.getElementById('overlay'),
+      winText: document.getElementById('winText'),
+      restart: document.getElementById('restart')
+    };
+
+    function updateHud() {
+      el.hp1.style.width = (hp[1] / CONFIG.maxHp * 100) + '%';
+      el.hp2.style.width = (hp[2] / CONFIG.maxHp * 100) + '%';
+      el.turn.className = 'turn p' + current;
+      el.turn.textContent = state === 'GAMEOVER' ? 'Koniec gry' : ('Tura: Gracz ' + current);
+      const a = aim[current];
+      el.aim.textContent = 'Kąt: ' + a.angle + '\u00B0   Moc: ' + a.power;
+    }
+
+    function showOverlay(winner) {
+      el.winText.textContent = 'Gracz ' + winner + ' wygrywa!';
+      el.winText.style.color = winner === 1 ? '#ef8354' : '#4f9dff';
+      el.overlay.classList.remove('hidden');
+    }
+
+    function resetGame() {
+      hp[1] = CONFIG.maxHp; hp[2] = CONFIG.maxHp;
+      aim[1] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
+      aim[2] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
+      projectile = null; hits.length = 0;
+      current = 1; state = 'AIMING';
+      el.overlay.classList.add('hidden');
+      setupWorld();
+      updateHud();
+    }
+
+    // ---- Sterowanie (hotseat) ----
+    window.addEventListener('keydown', function (e) {
+      if (state === 'GAMEOVER') {
+        if (e.key === 'r' || e.key === 'R') resetGame();
+        return;
+      }
+      if (state !== 'AIMING') return;
+      const a = aim[current];
+      switch (e.key) {
+        case 'ArrowUp': a.angle = Math.min(CONFIG.angle.max, a.angle + CONFIG.angle.step); break;
+        case 'ArrowDown': a.angle = Math.max(CONFIG.angle.min, a.angle - CONFIG.angle.step); break;
+        case 'ArrowRight': a.power = Math.min(CONFIG.power.max, a.power + CONFIG.power.step); break;
+        case 'ArrowLeft': a.power = Math.max(CONFIG.power.min, a.power - CONFIG.power.step); break;
+        case ' ': case 'Spacebar': fire(); break;
+        default: return;
+      }
+      e.preventDefault();
+      updateHud();
+    }, { passive: false });
+
+    el.restart.addEventListener('click', resetGame);
+
+    // ---- Start ----
+    setupWorld();
+    updateHud();
+  })();
+  </script>
+</body>
+</html>

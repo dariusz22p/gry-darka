@@ -1,0 +1,82 @@
+# Pojedynek Zamków — Backlog
+
+Gra artyleryjska 2-osobowa (hotseat) w jednym pliku `index.html`.
+Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyka 2D, CDN).
+
+## Jak uruchomić
+- Otwórz `index.html` w przeglądarce (dwuklik) — wymaga internetu (Matter.js z CDN).
+- Sterowanie: `↑`/`↓` kąt, `←`/`→` moc, `Spacja` strzał, `R` restart.
+- 2 graczy na zmianę na jednej klawiaturze. Wygrywa ten, kto zbije HP przeciwnika do 0.
+
+## Gdzie co jest (mapa kodu w index.html)
+- `CONFIG` (góra `<script>`) — wszystkie liczby do strojenia balansu: kąt, moc, HP, obrażenia, grawitacja, rozmiar/pozycja zamków.
+- `setupWorld()` / `buildCastle()` — budowa planszy i zamków (cegły to fizyczne bryły).
+- `fire()` — tworzenie i wystrzelenie pocisku.
+- `collisionStart` — naliczanie obrażeń (skalowane prędkością, z limitem na strzał).
+- `afterUpdate` — logika końca tury (spoczynek / poza planszą / timeout).
+- `afterRender` — rysowanie armat, celownika i efektów trafień.
+- HUD/DOM — paski HP, wskaźnik tury, ekran zwycięstwa.
+
+## Strojenie balansu (szybkie pokrętła w CONFIG)
+- Pocisk za słaby/za mocny → `power.max`, `power.def`, `powerScale`.
+- Za szybkie/za wolne niszczenie → `dmgScale`, `dmgMax`, `maxHp`.
+- Łuk lotu za płaski/za stromy → `gravity`.
+- Trudniej/łatwiej trafić → odległość zamków `p1x`/`p2x`, wielkość zamku `castle`.
+
+---
+
+## Etap 1 — MVP (ZROBIONE)
+- [x] Szkielet: `index.html`, canvas, pętla Matter.js
+- [x] Plansza: ziemia + dwa zamki z cegieł + paski HP
+- [x] Wskaźnik tury i celowania (kąt/moc)
+- [x] Sterowanie klawiaturą (hotseat)
+- [x] Pocisk z grawitacją (lot po paraboli)
+- [x] Kolizje i obrażenia zależne od siły uderzenia
+- [x] Zmiana tury po strzale (auto-wykrycie końca lotu)
+- [x] Warunek zwycięstwa + ekran „Zagraj ponownie"
+- [x] Fizyczne rozpadanie się cegieł (Matter.js)
+
+## Etap 2 — Głębia rozgrywki
+- [ ] Wiatr losowany co turę (wskaźnik + wpływ na tor lotu)
+- [ ] Podgląd trajektorii (linia kropkowana / „ghost shot")
+- [ ] Przeszkody/teren w połowie planszy do przestrzelenia
+- [ ] Warunek zwycięstwa „przewrócenie wieży" (nie tylko HP) — kolor/„korona" na szczycie
+- [ ] Punktacja i rundy (best of 3)
+- [ ] Ograniczony czas/tura albo licznik amunicji
+- [ ] Losowe rozstawienie/wysokość zamków
+
+## Etap 3 — Grafika, audio, UX
+- [ ] Sprite'y zamków i tła (zamiast prostokątów)
+- [ ] Efekty cząsteczkowe wybuchu i dymu
+- [ ] Dźwięki: strzał, lot, wybuch, trafienie, wygrana (Web Audio / `<audio>`)
+- [ ] Animowany pasek mocy (naciśnij i przytrzymaj Spację)
+- [ ] Wstrząs ekranu przy trafieniu (screen shake)
+- [ ] Ekran startowy + menu (start / instrukcja / ustawienia)
+- [ ] Responsywność i skalowanie do rozmiaru okna
+
+## Etap 4 — Tryby i przeciwnicy
+- [ ] Tryb 1-osobowy: przeciwnik AI (łatwy/średni/trudny — dobór kąta i mocy)
+- [ ] Split-keyboard: obaj gracze na raz (WASD vs strzałki)
+- [ ] Multiplayer online (WebSocket + mały serwer Node)
+- [ ] Różne typy pocisków / power-upy (rozłupujący, cięższy, wybuchowy)
+- [ ] Wybór postaci/zamku i kolorów
+
+## Etap 5 — Jakość i infrastruktura
+- [ ] Rozdzielenie na moduły (`game.js`, `render.js`, `ui.js`, `physics.js`) + `styles.css`
+- [ ] Build/hosting: publikacja na GitHub Pages
+- [ ] Zapis lokalny (localStorage): wynik meczów, ustawienia
+- [ ] Sterowanie dotykowe (mobile) + testy na telefonie
+- [ ] Podstawowe testy logiki (obrażenia, koniec tury, warunek zwycięstwa)
+- [ ] Self-host Matter.js (bez zależności od CDN) — działanie offline
+
+## Parking lot (pomysły na później)
+- Zniszczalny teren (kratery po trafieniach)
+- Grawitacja/pogoda jako modyfikatory rundy
+- Edytor plansz
+- Tabela wyników / statystyki celności
+- Tryb turniejowy dla wielu graczy
+
+## Znane ograniczenia MVP
+- Wartości fizyki są wstępne — mogą wymagać dostrojenia w `CONFIG` po pierwszych partiach.
+- Można trafić własny zamek przy bardzo niskim kącie (celowe — element strategii; do zmiany w `collisionStart`).
+- Wymaga połączenia z internetem (Matter.js z CDN) — patrz Etap 5 (self-host).
