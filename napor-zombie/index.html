@@ -129,7 +129,7 @@
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.45, powerMul: 2.0 },
-      waves: { total: 10, duration: 32, breakDuration: 2.4 },
+      waves: { total: 10, killsBase: 24, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 1 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
@@ -146,7 +146,7 @@
     const laneBot = powerBand.top - 8;
 
     // ---- Stan ----
-    let state, baseHp, wave, waveTime, spawnEvery, spawnTimer, zHp, zSpeed, kills, powerLevel;
+    let state, baseHp, wave, waveKills, waveKillNeed, spawnEvery, spawnTimer, zHp, zSpeed, kills, powerLevel;
     let N, colY, targetY, fireRate, dmg;
     let memberShotTimers;
     let zombies, bullets, fx, pickups;
@@ -330,7 +330,7 @@
       state = 'play';
       applyDifficulty();
       baseHp = CONFIG.baseHpMax;
-      wave = 1; waveTime = 0;
+      wave = 1; waveKills = 0; waveKillNeed = CONFIG.waves.killsBase;
       prepTimer = 0; warnedBossCycle = -1;
       alertTimer = 0;
       spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
@@ -409,7 +409,7 @@
     }
 
     function startNextWave() {
-      waveTime = 0;
+      waveKills = 0;
       spawnEvery = Math.max(0.30, spawnEvery * CONFIG.ramp.spawnMul);
       zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
       zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
@@ -462,11 +462,9 @@
         if (prepTimer === 0) {
           startNextWave();
         }
-      } else {
-        waveTime += dt;
       }
 
-      if (waveTime >= CONFIG.waves.duration && prepTimer === 0) {
+      if (waveKills >= waveKillNeed && prepTimer === 0) {
         if (wave >= CONFIG.waves.total) {
           state = 'win';
           maybeUpdateRecords();
@@ -475,7 +473,7 @@
           updateHud(); return;
         }
         wave++;
-        waveTime = 0;
+        waveKillNeed *= 2;
         prepTimer = CONFIG.waves.breakDuration;
         zombies = [];
         pickups = [];
@@ -647,6 +645,7 @@
                 const deadZombie = z;
                 zombies.splice(j, 1);
                 kills += deadZombie.boss ? CONFIG.boss.killScore : 1;
+                waveKills++;
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
@@ -816,8 +815,7 @@
       if (prepTimer > 0) {
         el.nextWave.textContent = 'przerwa ' + prepTimer.toFixed(1) + 's';
       } else {
-        const left = Math.max(0, CONFIG.waves.duration - waveTime);
-        el.nextWave.textContent = left.toFixed(1) + 's';
+        el.nextWave.textContent = waveKills + ' / ' + waveKillNeed + ' zabic';
       }
       const toBoss = (bossEvery - (spawnCycles % bossEvery)) || bossEvery;
       el.nextBoss.textContent = toBoss + (toBoss === 1 ? ' spawn' : ' spawny');
