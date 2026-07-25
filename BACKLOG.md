@@ -1,14 +1,21 @@
 # Pojedynek Zamków — Backlog
 
-Gra artyleryjska 2-osobowa (hotseat) w jednym pliku `index.html`.
+Gra artyleryjska 2-osobowa (hotseat). Plik gry: `pojedynek-zamkow/index.html`.
 Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyka 2D, CDN).
 
+## Struktura repo (layout pod wiele gier)
+- `index.html` — strona-hub z listą gier.
+- `pojedynek-zamkow/index.html` — gra „Pojedynek Zamków (Janek i Darek)".
+- `gra-2/index.html` — placeholder na kolejną grę.
+- `.nojekyll` — wyłącza przetwarzanie Jekyll na GitHub Pages.
+
 ## Jak uruchomić
-- Otwórz `index.html` w przeglądarce (dwuklik) — wymaga internetu (Matter.js z CDN).
-- Sterowanie: `↑`/`↓` kąt, `←`/`→` moc, `Spacja` strzał, `R` restart.
+- Online (GitHub Pages): https://dariusz22p.github.io/gry-darka/
+- Lokalnie: otwórz `index.html` (hub) lub `pojedynek-zamkow/index.html` (gra) — wymaga internetu (Matter.js z CDN).
+- Sterowanie: `↑`/`↓` kąt, `←`/`→` moc, `Spacja` strzał, `R` nowy mecz, `F` pełny ekran, `M` dźwięk.
 - 2 graczy na zmianę na jednej klawiaturze. Wygrywa ten, kto zbije HP przeciwnika do 0.
 
-## Gdzie co jest (mapa kodu w index.html)
+## Gdzie co jest (mapa kodu w pojedynek-zamkow/index.html)
 - `CONFIG` (góra `<script>`) — wszystkie liczby do strojenia balansu: kąt, moc, HP, obrażenia, grawitacja, rozmiar/pozycja zamków.
 - `setupWorld()` / `buildCastle()` — budowa planszy i zamków (cegły to fizyczne bryły).
 - `fire()` — tworzenie i wystrzelenie pocisku.
@@ -64,11 +71,19 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 
 ## Etap 5 — Jakość i infrastruktura
 - [ ] Rozdzielenie na moduły (`game.js`, `render.js`, `ui.js`, `physics.js`) + `styles.css`
-- [ ] Build/hosting: publikacja na GitHub Pages
+- [x] Build/hosting: publikacja na GitHub Pages (https://dariusz22p.github.io/gry-darka/)
+- [x] Strona-hub z listą gier (layout pod kolejne gry) + placeholder `gra-2/`
 - [ ] Zapis lokalny (localStorage): wynik meczów, ustawienia
-- [ ] Sterowanie dotykowe (mobile) + testy na telefonie
 - [ ] Podstawowe testy logiki (obrażenia, koniec tury, warunek zwycięstwa)
 - [ ] Self-host Matter.js (bez zależności od CDN) — działanie offline
+
+## Etap 6 — Mobile / Android
+Cel: grać na telefonie/tablecie (hotseat świetnie działa na jednym ekranie).
+- [ ] A. Sterowanie dotykowe: suwaki/przyciski kąta+mocy, przycisk „Ognia", tap „następna runda" (pointer/touch) — nakład mały–średni
+- [ ] B. Responsywny layout (wariant B): canvas = rozmiar okna, layout z `W`/`H`, orientacja pozioma — nakład średni
+- [x] C. Hosting pod URL (GitHub Pages) — zrobione w Etapie 5
+- [ ] D. PWA: `manifest.json` + service worker + self-host Matter.js (offline, „dodaj do ekranu głównego") — nakład mały
+- [ ] E. APK / Google Play: Capacitor lub TWA (build w Android Studio/Gradle) — nakład średni (dochodzi toolchain)
 
 ## Parking lot (pomysły na później)
 - Zniszczalny teren (kratery po trafieniach)

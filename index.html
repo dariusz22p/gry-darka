@@ -3,688 +3,74 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pojedynek Zamków (Janek i Darek)</title>
+<title>Gry Darka</title>
 <style>
   * { box-sizing: border-box; }
   html, body {
-    margin: 0; padding: 0;
-    background: #1b2430;
+    margin: 0; padding: 0; min-height: 100%;
+    background: radial-gradient(1200px 600px at 50% -10%, #223047, #161d27 60%);
     color: #e8edf2;
     font-family: "Segoe UI", system-ui, sans-serif;
   }
-  #game { max-width: 1000px; margin: 16px auto; padding: 0 12px; }
-  h1 { font-size: 20px; text-align: center; margin: 4px 0 12px; letter-spacing: 2px; }
-  #hud { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .player { flex: 1; }
-  .player .name { font-size: 13px; margin-bottom: 4px; font-weight: 600; }
-  .p1 .name { color: #ef8354; }
-  .p2 .name { color: #4f9dff; }
-  .bar {
-    height: 16px; border-radius: 8px; background: #2c3a4b; overflow: hidden;
-    border: 1px solid #3a4c60;
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 16px 60px; }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-size: 34px; letter-spacing: 3px; margin: 0 0 8px; }
+  .sub { opacity: .75; font-size: 15px; margin: 0; }
+  .grid {
+    display: grid; gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
-  .bar > span { display: block; height: 100%; width: 100%; transition: width .25s ease; }
-  .p1 .bar > span { background: linear-gradient(90deg, #ef8354, #c0552b); }
-  .p2 .bar > span { background: linear-gradient(90deg, #4f9dff, #2b6cc0); }
-  .player.right { text-align: right; }
-  .center { text-align: center; min-width: 190px; }
-  .turn { font-size: 15px; font-weight: 700; }
-  .turn.p1 { color: #ef8354; }
-  .turn.p2 { color: #4f9dff; }
-  .aim { font-size: 13px; opacity: .85; margin-top: 2px; }
-  .wind { font-size: 12px; opacity: .85; margin-top: 3px; }
-  .score { font-size: 13px; font-weight: 600; margin-top: 2px; letter-spacing: .5px; }
-  #winSub { margin: 0; font-size: 15px; opacity: .9; }
-  #stage { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-  canvas#board { display: block; width: 100%; height: auto; background: #87CEEB; }
-  #overlay {
-    position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px;
-    background: rgba(10,15,22,.72);
+  .card {
+    display: flex; flex-direction: column;
+    background: #202b3a; border: 1px solid #33465c; border-radius: 14px;
+    padding: 18px; text-decoration: none; color: inherit;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
   }
-  #overlay.hidden { display: none; }
-  #overlay h2 { margin: 0; font-size: 28px; }
-  #overlay button {
-    cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
-    font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff;
+  .card:hover { transform: translateY(-3px); border-color: #4f9dff; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+  .card.soon { opacity: .6; }
+  .card.soon:hover { transform: none; border-color: #33465c; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .thumb {
+    height: 120px; border-radius: 10px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; font-weight: 800; letter-spacing: 2px;
   }
-  #overlay button:hover { background: #3b8bf0; }
-  #help {
-    margin-top: 10px; font-size: 13px; line-height: 1.6; opacity: .9;
-    display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center;
+  .thumb.castle { background: linear-gradient(135deg, #ef8354 0%, #2b6cc0 100%); color: #fff; }
+  .thumb.blank { background: repeating-linear-gradient(45deg, #2a3646, #2a3646 12px, #26313f 12px, #26313f 24px); color: #6c7d90; }
+  .card h2 { margin: 0 0 6px; font-size: 19px; }
+  .card p { margin: 0 0 14px; font-size: 13px; line-height: 1.5; opacity: .82; flex: 1; }
+  .btn {
+    align-self: flex-start; border-radius: 8px; padding: 8px 16px;
+    font-size: 14px; font-weight: 600; background: #4f9dff; color: #fff;
   }
-  kbd {
-    background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px;
-    border-radius: 5px; padding: 1px 7px; font-family: inherit; font-size: 12px;
-  }
-  #fsBtn {
-    cursor: pointer; border: 1px solid #3a4c60; background: #2c3a4b; color: #e8edf2;
-    border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; font-family: inherit;
-  }
-  #fsBtn:hover { background: #34465b; }
-  /* Wariant A: pełny ekran — skalowanie z zachowaniem proporcji (letterbox) */
-  #game.fs {
-    width: 100vw; height: 100vh; max-width: none; margin: 0; padding: 8px 12px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; background: #1b2430;
-  }
-  #game.fs h1 { margin: 0; }
-  #game.fs #hud, #game.fs #help { width: min(1100px, 96vw); margin: 0; }
-  #game.fs #stage { width: auto; height: auto; }
-  #game.fs canvas#board {
-    height: min(calc(100vh - 185px), calc(96vw * 0.6));
-    width: min(calc((100vh - 185px) * 1.6667), 96vw);
-    max-width: 96vw;
-  }
+  .btn.ghost { background: #2c3a4b; color: #9fb2c6; }
+  footer { text-align: center; margin-top: 36px; font-size: 12px; opacity: .55; }
 </style>
 </head>
 <body>
-  <div id="game">
-    <h1>POJEDYNEK ZAMKÓW (JANEK I DAREK)</h1>
-    <div id="hud">
-      <div class="player p1">
-        <div class="name">Gracz 1</div>
-        <div class="bar"><span id="hp1"></span></div>
-      </div>
-      <div class="center">
-        <div class="turn p1" id="turn">Tura: Gracz 1</div>
-        <div class="aim" id="aiminfo">Kąt: 45°  Moc: 32</div>
-        <div class="wind" id="windinfo">Wiatr: cisza</div>
-        <div class="score" id="scoreinfo">Wynik&nbsp; 0 : 0</div>
-      </div>
-      <div class="player p2 right">
-        <div class="name">Gracz 2</div>
-        <div class="bar"><span id="hp2"></span></div>
-      </div>
-    </div>
-    <div id="stage">
-      <canvas id="board"></canvas>
-      <div id="overlay" class="hidden">
-        <h2 id="winText">Gracz 1 wygrywa!</h2>
-        <p id="winSub"></p>
-        <button id="overlayBtn">Zagraj ponownie</button>
-      </div>
-    </div>
-    <div id="help">
-      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> kąt</span>
-      <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> moc</span>
-      <span><kbd>Spacja</kbd> strzał / następna runda</span>
-      <span><kbd>R</kbd> nowy mecz</span>
-      <span><kbd>F</kbd> pełny ekran</span>
-      <span><kbd>M</kbd> dźwięk</span>
-      <span>Best of 3 — wiatr zmienia się co turę</span>
-      <span>Hotseat: 2 graczy na jednej klawiaturze</span>
-      <button id="fsBtn" type="button">Pełny ekran</button>
-      <button id="muteBtn" type="button">Dźwięk: wł.</button>
-    </div>
+  <div class="wrap">
+    <header>
+      <h1>GRY DARKA</h1>
+      <p class="sub">Zbiór małych gier w przeglądarce — graj od razu, bez instalacji.</p>
+    </header>
+
+    <main class="grid">
+      <a class="card" href="pojedynek-zamkow/">
+        <div class="thumb castle">PZ</div>
+        <h2>Pojedynek Zamków (Janek i Darek)</h2>
+        <p>Artyleria turowa dla 2 graczy (hotseat). Ustaw kąt i moc, uwzględnij wiatr i zniszcz zamek przeciwnika.</p>
+        <span class="btn">Graj</span>
+      </a>
+
+      <a class="card soon" href="gra-2/">
+        <div class="thumb blank">?</div>
+        <h2>Gra 2</h2>
+        <p>Miejsce na kolejną grę. Wkrótce...</p>
+        <span class="btn ghost">Wkrótce</span>
+      </a>
+    </main>
+
+    <footer>github.com/dariusz22p/gry-darka</footer>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-  <script>
-  (function () {
-    const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
-
-    // ---- CONFIG: łatwe strojenie balansu w jednym miejscu ----
-    const CONFIG = {
-      width: 1000, height: 600, groundH: 40,
-      gravity: 1,
-      angle: { min: 10, max: 85, step: 1, def: 45 },
-      power: { min: 15, max: 60, step: 1, def: 32 },
-      powerScale: 1.0,          // mnożnik prędkości pocisku
-      maxHp: 100,
-      dmgScale: 3,              // obrażenia = prędkość_pocisku * dmgScale
-      dmgMin: 5, dmgMax: 40,    // dmgMax = też limit obrażeń na 1 strzał
-      castle: { cols: 3, rows: 4, bw: 44, bh: 28 },
-      p1x: 260, p2x: 740,
-      wind: { max: 0.28 },           // maks. siła wiatru (ułamek grawitacji)
-      preview: { steps: 70, dotEvery: 2 }, // podgląd trajektorii
-      obstacle: { width: 46, minH: 60, maxH: 210 }, // przeszkoda centralna
-      roundsToWin: 2                 // best of 3
-    };
-
-    const W = CONFIG.width, H = CONFIG.height;
-    const groundTop = H - CONFIG.groundH;
-    const castleHalfW = (CONFIG.castle.cols * CONFIG.castle.bw) / 2;
-    const castleTopY = groundTop - CONFIG.castle.rows * CONFIG.castle.bh;
-    const muzzle = {
-      1: { x: CONFIG.p1x + castleHalfW + 14, y: castleTopY - 8 },
-      2: { x: CONFIG.p2x - castleHalfW - 14, y: castleTopY - 8 }
-    };
-
-    // ---- Silnik i render ----
-    const engine = Engine.create();
-    engine.gravity.y = CONFIG.gravity;
-
-    const render = Render.create({
-      canvas: document.getElementById('board'),
-      engine: engine,
-      options: { width: W, height: H, wireframes: false, background: '#87CEEB' }
-    });
-    Render.run(render);
-    Runner.run(Runner.create({ isFixed: true, delta: 1000 / 60 }), engine);
-
-    // ---- Stan gry ----
-    let state = 'AIMING';           // AIMING | RESOLVING | GAMEOVER
-    let current = 1;
-    const aim = {
-      1: { angle: CONFIG.angle.def, power: CONFIG.power.def },
-      2: { angle: CONFIG.angle.def, power: CONFIG.power.def }
-    };
-    const hp = { 1: CONFIG.maxHp, 2: CONFIG.maxHp };
-    const score = { 1: 0, 2: 0 };
-    let projectile = null;
-    let fireTime = 0, spentTime = 0, restFrames = 0, shotDamage = 0;
-    let wind = 0;               // aktualny wiatr (dodatni = w prawo)
-    let startingPlayer = 1;     // kto zaczyna rundę (naprzemiennie)
-    let obstacleBounds = null;  // do kolizji podglądu trajektorii
-    let overlayAction = null;   // akcja przycisku na nakładce
-    const hits = [];
-    // Przyrost pozycji na krok = accel * scale * dt^2 (dopasowanie podglądu do Matter)
-    const STEP2 = engine.gravity.scale * (1000 / 60) * (1000 / 60);
-
-    // ---- Dźwięk (Web Audio, syntezowany — bez plików, działa offline) ----
-    let audioCtx = null, masterGain = null, muted = false, flight = null;
-
-    function ensureAudio() {
-      if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        audioCtx = new AC();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = muted ? 0 : 0.85;
-        masterGain.connect(audioCtx.destination);
-      }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-
-    function noiseBuffer(dur) {
-      const n = Math.floor(audioCtx.sampleRate * dur);
-      const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
-      return buf;
-    }
-
-    function envGain(peak, dur, attack) {
-      const g = audioCtx.createGain();
-      const t = audioCtx.currentTime;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(peak, t + (attack || 0.005));
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      return g;
-    }
-
-    function sfxShoot() {
-      if (!audioCtx) return;
-      const t = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, t);
-      osc.frequency.exponentialRampToValueAtTime(50, t + 0.25);
-      const g = envGain(0.5, 0.3, 0.005);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(t); osc.stop(t + 0.32);
-      const src = audioCtx.createBufferSource();
-      src.buffer = noiseBuffer(0.2);
-      const hpf = audioCtx.createBiquadFilter();
-      hpf.type = 'highpass'; hpf.frequency.value = 500;
-      const ng = envGain(0.3, 0.18, 0.002);
-      src.connect(hpf); hpf.connect(ng); ng.connect(masterGain);
-      src.start(t); src.stop(t + 0.2);
-    }
-
-    function sfxHit() {
-      if (!audioCtx) return;
-      const t = audioCtx.currentTime;
-      const src = audioCtx.createBufferSource();
-      src.buffer = noiseBuffer(0.25);
-      const bp = audioCtx.createBiquadFilter();
-      bp.type = 'bandpass'; bp.frequency.value = 850; bp.Q.value = 0.7;
-      const ng = envGain(0.45, 0.22, 0.002);
-      src.connect(bp); bp.connect(ng); ng.connect(masterGain);
-      src.start(t); src.stop(t + 0.25);
-      const osc = audioCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(140, t);
-      osc.frequency.exponentialRampToValueAtTime(70, t + 0.15);
-      const g = envGain(0.4, 0.18, 0.004);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(t); osc.stop(t + 0.2);
-    }
-
-    function sfxWin() {
-      if (!audioCtx) return;
-      const base = audioCtx.currentTime;
-      const notes = [523.25, 659.25, 783.99, 1046.5];
-      notes.forEach(function (f, i) {
-        const t = base + i * 0.12;
-        const osc = audioCtx.createOscillator();
-        osc.type = 'square';
-        osc.frequency.value = f;
-        const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(0.32, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
-        osc.connect(g); g.connect(masterGain);
-        osc.start(t); osc.stop(t + 0.26);
-      });
-    }
-
-    // Subtelny, ciągły dźwięk lotu pocisku (whistle śledzący prędkość)
-    function startFlightSound() {
-      if (!audioCtx) return;
-      stopFlightSound();
-      const t = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(320, t);
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.045, t + 0.08);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(t);
-      flight = { osc: osc, gain: g };
-    }
-
-    function updateFlightSound(speed) {
-      if (!flight) return;
-      const f = Math.max(180, Math.min(760, 180 + speed * 22));
-      flight.osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.03);
-    }
-
-    function stopFlightSound() {
-      if (!flight) return;
-      const t = audioCtx.currentTime;
-      const f = flight;
-      flight = null;
-      f.gain.gain.cancelScheduledValues(t);
-      f.gain.gain.setValueAtTime(f.gain.gain.value, t);
-      f.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      f.osc.stop(t + 0.14);
-    }
-
-    // ---- Budowa świata ----
-    function buildCastle(cx, player) {
-      const { cols, rows, bw, bh } = CONFIG.castle;
-      const startX = cx - (cols * bw) / 2 + bw / 2;
-      const bodies = [];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const b = Bodies.rectangle(
-            startX + c * bw, groundTop - bh / 2 - r * bh, bw - 2, bh - 2,
-            {
-              friction: 0.9, frictionStatic: 3, restitution: 0, density: 0.005,
-              render: { fillStyle: player === 1 ? '#c0552b' : '#2b6cc0' }
-            }
-          );
-          b.castleOwner = player;
-          bodies.push(b);
-        }
-      }
-      Composite.add(engine.world, bodies);
-      return bodies;
-    }
-
-    function setupWorld() {
-      Composite.clear(engine.world, false);
-      const ground = Bodies.rectangle(
-        W / 2, groundTop + CONFIG.groundH / 2, W, CONFIG.groundH,
-        { isStatic: true, friction: 1, render: { fillStyle: '#5a7d3c' } }
-      );
-      Composite.add(engine.world, ground);
-      // Przeszkoda centralna o losowej wysokości (trzeba przestrzelić nad nią)
-      const oh = Math.round(CONFIG.obstacle.minH + Math.random() * (CONFIG.obstacle.maxH - CONFIG.obstacle.minH));
-      const ow = CONFIG.obstacle.width;
-      const obstacle = Bodies.rectangle(
-        W / 2, groundTop - oh / 2, ow, oh,
-        { isStatic: true, friction: 0.8, render: { fillStyle: '#6b6f76' } }
-      );
-      Composite.add(engine.world, obstacle);
-      obstacleBounds = { minX: W / 2 - ow / 2, maxX: W / 2 + ow / 2, topY: groundTop - oh };
-      buildCastle(CONFIG.p1x, 1);
-      buildCastle(CONFIG.p2x, 2);
-    }
-
-    // ---- Strzał ----
-    function fire() {
-      if (state !== 'AIMING') return;
-      const a = aim[current];
-      const dir = current === 1 ? 1 : -1;
-      const rad = a.angle * Math.PI / 180;
-      const v = a.power * CONFIG.powerScale;
-      const m = muzzle[current];
-      const p = Bodies.circle(
-        m.x + Math.cos(rad) * 28 * dir, m.y - Math.sin(rad) * 28, 9,
-        { density: 0.06, restitution: 0.25, friction: 0.05, frictionAir: 0, render: { fillStyle: '#20242b' } }
-      );
-      p.isProjectile = true;
-      Composite.add(engine.world, p);
-      Body.setVelocity(p, { x: Math.cos(rad) * v * dir, y: -Math.sin(rad) * v });
-      projectile = p;
-      state = 'RESOLVING';
-      fireTime = performance.now();
-      spentTime = 0; restFrames = 0; shotDamage = 0;
-      sfxShoot();
-      startFlightSound();
-      updateHud();
-    }
-
-    // ---- Kolizje / obrażenia ----
-    Events.on(engine, 'collisionStart', function (ev) {
-      if (!projectile) return;
-      for (const pair of ev.pairs) {
-        let other = null;
-        if (pair.bodyA === projectile) other = pair.bodyB;
-        else if (pair.bodyB === projectile) other = pair.bodyA;
-        else continue;
-        if (other && other.castleOwner) {
-          const remaining = CONFIG.dmgMax - shotDamage;
-          if (remaining <= 0) continue;
-          let dmg = Math.round(projectile.speed * CONFIG.dmgScale);
-          dmg = Math.max(CONFIG.dmgMin, Math.min(dmg, remaining));
-          shotDamage += dmg;
-          hp[other.castleOwner] = Math.max(0, hp[other.castleOwner] - dmg);
-          hits.push({ x: projectile.position.x, y: projectile.position.y, txt: '-' + dmg, life: 1 });
-          if (spentTime === 0) { spentTime = performance.now(); sfxHit(); }
-          updateHud();
-        }
-      }
-    });
-
-    // ---- Pętla logiki tury ----
-    Events.on(engine, 'afterUpdate', function () {
-      if (state !== 'RESOLVING' || !projectile) return;
-      const now = performance.now();
-      const p = projectile;
-      // Wiatr: siła pozioma proporcjonalna do masy (analogicznie do grawitacji)
-      Body.applyForce(p, p.position, { x: p.mass * wind * engine.gravity.scale, y: 0 });
-      updateFlightSound(p.speed);
-      if (p.position.y > H + 150 || p.position.x < -150 || p.position.x > W + 150) { endTurn(); return; }
-      if (now - fireTime > 700 && p.speed < 0.6) restFrames++; else restFrames = 0;
-      if (restFrames > 25) { endTurn(); return; }
-      if (spentTime && now - spentTime > 800) { endTurn(); return; }
-      if (now - fireTime > 6000) { endTurn(); return; }
-    });
-
-    function endTurn() {
-      stopFlightSound();
-      if (projectile) { Composite.remove(engine.world, projectile); projectile = null; }
-      if (hp[1] <= 0 || hp[2] <= 0) { handleRoundEnd(); return; }
-      current = current === 1 ? 2 : 1;
-      beginTurn();
-    }
-
-    function beginTurn() {
-      state = 'AIMING';
-      wind = +(((Math.random() * 2) - 1) * CONFIG.wind.max).toFixed(3);
-      updateHud();
-    }
-
-    function handleRoundEnd() {
-      const winner = hp[1] <= 0 ? 2 : 1;
-      score[winner]++;
-      sfxWin();
-      if (score[winner] >= CONFIG.roundsToWin) {
-        state = 'GAMEOVER';
-        showOverlay('Gracz ' + winner + ' wygrywa mecz!', 'Wynik ' + score[1] + ' : ' + score[2], 'Nowy mecz (R)', resetMatch, winner);
-      } else {
-        state = 'ROUNDOVER';
-        showOverlay('Gracz ' + winner + ' wygrywa rundę!', 'Wynik ' + score[1] + ' : ' + score[2], 'Następna runda (Spacja)', startNextRound, winner);
-      }
-      updateHud();
-    }
-
-    // ---- Rysowanie dodatków (armaty, celownik, efekty) ----
-    Events.on(render, 'afterRender', function () {
-      const ctx = render.context;
-      drawWindArrow(ctx);
-      drawCannon(ctx, 1);
-      drawCannon(ctx, 2);
-      if (state === 'AIMING') { drawTrajectory(ctx); drawAim(ctx); }
-      drawHits(ctx);
-    });
-
-    function drawCannon(ctx, player) {
-      const m = muzzle[player], a = aim[player], dir = player === 1 ? 1 : -1;
-      const rad = a.angle * Math.PI / 180;
-      ctx.save();
-      ctx.fillStyle = '#3a3f46';
-      ctx.beginPath(); ctx.arc(m.x, m.y + 4, 14, Math.PI, 0); ctx.fill();
-      ctx.strokeStyle = '#26292f'; ctx.lineCap = 'round'; ctx.lineWidth = 11;
-      ctx.beginPath();
-      ctx.moveTo(m.x, m.y);
-      ctx.lineTo(m.x + Math.cos(rad) * 30 * dir, m.y - Math.sin(rad) * 30);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawAim(ctx) {
-      const m = muzzle[current], a = aim[current], dir = current === 1 ? 1 : -1;
-      const rad = a.angle * Math.PI / 180;
-      const len = 40 + a.power * 2.4;
-      ctx.save();
-      ctx.strokeStyle = current === 1 ? '#ef8354' : '#4f9dff';
-      ctx.lineWidth = 3; ctx.setLineDash([9, 7]);
-      ctx.beginPath();
-      ctx.moveTo(m.x, m.y);
-      ctx.lineTo(m.x + Math.cos(rad) * len * dir, m.y - Math.sin(rad) * len);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Podgląd trajektorii — symulacja zgodna z fizyką (grawitacja + wiatr),
-    // zatrzymuje się na ziemi / przeszkodzie / krawędzi ekranu.
-    function drawTrajectory(ctx) {
-      const a = aim[current], dir = current === 1 ? 1 : -1;
-      const rad = a.angle * Math.PI / 180;
-      const v = a.power * CONFIG.powerScale;
-      const m = muzzle[current];
-      let px = m.x + Math.cos(rad) * 28 * dir;
-      let py = m.y - Math.sin(rad) * 28;
-      let vx = Math.cos(rad) * v * dir;
-      let vy = -Math.sin(rad) * v;
-      const g = engine.gravity.y * STEP2;
-      const wc = wind * STEP2;
-      ctx.save();
-      ctx.fillStyle = current === 1 ? '#ef8354' : '#4f9dff';
-      for (let i = 0; i < CONFIG.preview.steps; i++) {
-        vy += g; vx += wc; px += vx; py += vy;
-        if (py >= groundTop || px < 0 || px > W) break;
-        if (obstacleBounds && px >= obstacleBounds.minX && px <= obstacleBounds.maxX && py >= obstacleBounds.topY) break;
-        if (i % CONFIG.preview.dotEvery === 0) {
-          ctx.globalAlpha = Math.max(0.15, 1 - i / CONFIG.preview.steps);
-          ctx.beginPath();
-          ctx.arc(px, py, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.restore();
-    }
-
-    // Wskaźnik wiatru u góry planszy
-    function drawWindArrow(ctx) {
-      const cx = W / 2, cy = 34;
-      ctx.save();
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px "Segoe UI", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('WIATR', cx, cy - 12);
-      if (Math.abs(wind) < 0.03) {
-        ctx.fillStyle = '#dfe6ee';
-        ctx.fillText('cisza', cx, cy + 6);
-        ctx.restore();
-        return;
-      }
-      const len = (wind / CONFIG.wind.max) * 90;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(cx - len, cy);
-      ctx.lineTo(cx + len, cy);
-      ctx.stroke();
-      const s = Math.sign(len);
-      ctx.beginPath();
-      ctx.moveTo(cx + len, cy);
-      ctx.lineTo(cx + len - s * 10, cy - 6);
-      ctx.lineTo(cx + len - s * 10, cy + 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function drawHits(ctx) {
-      for (let i = hits.length - 1; i >= 0; i--) {
-        const h = hits[i];
-        h.life -= 0.02; h.y -= 0.8;
-        if (h.life <= 0) { hits.splice(i, 1); continue; }
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, h.life);
-        ctx.fillStyle = '#ff4d4d';
-        ctx.font = 'bold 20px "Segoe UI", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(h.txt, h.x, h.y);
-        ctx.restore();
-      }
-    }
-
-    // ---- HUD / DOM ----
-    const el = {
-      hp1: document.getElementById('hp1'),
-      hp2: document.getElementById('hp2'),
-      turn: document.getElementById('turn'),
-      aim: document.getElementById('aiminfo'),
-      wind: document.getElementById('windinfo'),
-      score: document.getElementById('scoreinfo'),
-      overlay: document.getElementById('overlay'),
-      winText: document.getElementById('winText'),
-      winSub: document.getElementById('winSub'),
-      overlayBtn: document.getElementById('overlayBtn'),
-      fsBtn: document.getElementById('fsBtn'),
-      muteBtn: document.getElementById('muteBtn')
-    };
-
-    function updateHud() {
-      el.hp1.style.width = (hp[1] / CONFIG.maxHp * 100) + '%';
-      el.hp2.style.width = (hp[2] / CONFIG.maxHp * 100) + '%';
-      el.turn.className = 'turn p' + current;
-      const over = state === 'GAMEOVER' || state === 'ROUNDOVER';
-      el.turn.textContent = over ? 'Koniec rundy' : ('Tura: Gracz ' + current);
-      const a = aim[current];
-      el.aim.textContent = 'Kąt: ' + a.angle + '\u00B0   Moc: ' + a.power;
-      el.wind.textContent = windLabel();
-      el.score.innerHTML = 'Wynik&nbsp; ' + score[1] + ' : ' + score[2];
-    }
-
-    function windLabel() {
-      const s = Math.abs(wind);
-      if (s < 0.03) return 'Wiatr: cisza';
-      return 'Wiatr: ' + (wind > 0 ? '\u2192' : '\u2190') + ' ' + s.toFixed(2);
-    }
-
-    function showOverlay(title, subtitle, btnLabel, action, winner) {
-      el.winText.textContent = title;
-      el.winText.style.color = winner === 1 ? '#ef8354' : '#4f9dff';
-      el.winSub.textContent = subtitle;
-      el.overlayBtn.textContent = btnLabel;
-      overlayAction = action;
-      el.overlay.classList.remove('hidden');
-    }
-
-    function hideOverlay() {
-      el.overlay.classList.add('hidden');
-      overlayAction = null;
-    }
-
-    // Rozpoczyna rundę z aktualnym startingPlayer (nowy świat, pełne HP)
-    function startRound() {
-      hp[1] = CONFIG.maxHp; hp[2] = CONFIG.maxHp;
-      aim[1] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
-      aim[2] = { angle: CONFIG.angle.def, power: CONFIG.power.def };
-      projectile = null; hits.length = 0;
-      current = startingPlayer;
-      hideOverlay();
-      setupWorld();
-      beginTurn();
-    }
-
-    function startNextRound() {
-      startingPlayer = startingPlayer === 1 ? 2 : 1;
-      startRound();
-    }
-
-    function resetMatch() {
-      score[1] = 0; score[2] = 0;
-      startingPlayer = 1;
-      startRound();
-    }
-
-    // ---- Sterowanie (hotseat) ----
-    window.addEventListener('keydown', function (e) {
-      ensureAudio();
-      if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
-      if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
-      if (state === 'GAMEOVER') {
-        if ((e.key === 'r' || e.key === 'R') && overlayAction) overlayAction();
-        return;
-      }
-      if (state === 'ROUNDOVER') {
-        if ((e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter' || e.key === 'n' || e.key === 'N') && overlayAction) {
-          e.preventDefault();
-          overlayAction();
-        }
-        return;
-      }
-      if (state !== 'AIMING') return;
-      const a = aim[current];
-      switch (e.key) {
-        case 'ArrowUp': a.angle = Math.min(CONFIG.angle.max, a.angle + CONFIG.angle.step); break;
-        case 'ArrowDown': a.angle = Math.max(CONFIG.angle.min, a.angle - CONFIG.angle.step); break;
-        case 'ArrowRight': a.power = Math.min(CONFIG.power.max, a.power + CONFIG.power.step); break;
-        case 'ArrowLeft': a.power = Math.max(CONFIG.power.min, a.power - CONFIG.power.step); break;
-        case ' ': case 'Spacebar': fire(); break;
-        default: return;
-      }
-      e.preventDefault();
-      updateHud();
-    }, { passive: false });
-
-    el.overlayBtn.addEventListener('click', function () { if (overlayAction) overlayAction(); });
-
-    // ---- Pełny ekran (wariant A) ----
-    function toggleFullscreen() {
-      const g = document.getElementById('game');
-      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-      if (!fsEl) {
-        const req = g.requestFullscreen || g.webkitRequestFullscreen;
-        if (req) req.call(g);
-      } else {
-        const exit = document.exitFullscreen || document.webkitExitFullscreen;
-        if (exit) exit.call(document);
-      }
-    }
-
-    function onFullscreenChange() {
-      const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      document.getElementById('game').classList.toggle('fs', active);
-      el.fsBtn.textContent = active ? 'Zamknij pełny ekran' : 'Pełny ekran';
-    }
-
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-    el.fsBtn.addEventListener('click', toggleFullscreen);
-
-    // ---- Wyciszenie dźwięku ----
-    function toggleMute() {
-      muted = !muted;
-      if (masterGain) masterGain.gain.value = muted ? 0 : 0.85;
-      el.muteBtn.textContent = muted ? 'Dźwięk: wył.' : 'Dźwięk: wł.';
-    }
-    el.muteBtn.addEventListener('click', function () { ensureAudio(); toggleMute(); });
-
-    // ---- Start ----
-    resetMatch();
-  })();
-  </script>
 </body>
 </html>
