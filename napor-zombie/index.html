@@ -125,7 +125,7 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 6, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 8, pelletsPerLevel: 1, anglePerLevelDeg: 4.5, baseAngleDeg: 1.2 },
+      spread: { levelMax: 6, pelletsPerLevel: 1, anglePerLevelDeg: 1.4, baseAngleDeg: 0.8, angleMaxDeg: 10, decayEvery: 14 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.30, recruitNeedCap: 220, powerMul: 2.0 },
@@ -162,6 +162,7 @@
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
     let spreadLevel = 0;
+    let spreadDecayTimer = 0;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -343,6 +344,7 @@
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
+      spreadDecayTimer = 0;
       fireTimer = 0;
       shotSfxCd = 0;
       zombies = []; bullets = []; fx = []; pickups = [];
@@ -425,6 +427,13 @@
       }
       if (recruitBoostTimer > 0) recruitBoostTimer = Math.max(0, recruitBoostTimer - dt);
       if (slowFieldTimer > 0) slowFieldTimer = Math.max(0, slowFieldTimer - dt);
+      if (spreadLevel > 0) {
+        spreadDecayTimer += dt;
+        if (spreadDecayTimer >= CONFIG.spread.decayEvery) {
+          spreadDecayTimer = 0;
+          spreadLevel--;
+        }
+      }
 
       // fale
       if (prepTimer > 0) {
@@ -536,8 +545,10 @@
       fireTimer -= dt;
       if (fireTimer <= 0) {
         fireTimer += 1 / fireRate;
-        const extraPellets = Math.min(CONFIG.spread.levelMax, spreadLevel) * CONFIG.spread.pelletsPerLevel;
-        const spreadRad = ((CONFIG.spread.baseAngleDeg + spreadLevel * CONFIG.spread.anglePerLevelDeg) * Math.PI) / 180;
+        const cappedLevel = Math.min(CONFIG.spread.levelMax, spreadLevel);
+        const extraPellets = cappedLevel * CONFIG.spread.pelletsPerLevel;
+        const spreadDeg = Math.min(CONFIG.spread.angleMaxDeg, CONFIG.spread.baseAngleDeg + cappedLevel * CONFIG.spread.anglePerLevelDeg);
+        const spreadRad = (spreadDeg * Math.PI) / 180;
         for (let i = 0; i < N; i++) {
           const o = memberOffset(i);
           const sx = CONFIG.squadX + o.x - 14;
@@ -636,6 +647,7 @@
             if (dxp * dxp + dyp * dyp <= rrp * rrp) {
               pickups.splice(p, 1);
               spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + 1);
+              spreadDecayTimer = 0;
               showAlert('LOOT: ROZRZUT LVL ' + spreadLevel, 1.1);
               dead = true;
               break;
