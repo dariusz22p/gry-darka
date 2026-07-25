@@ -125,18 +125,18 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 4, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
+      spread: { levelMax: 6, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
-      growth: { recruitMul: 1.45, powerMul: 2.0 },
+      growth: { recruitMul: 1.3, powerMul: 1.55 },
       waves: { total: 10, killsBase: 24, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 1 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
       difficulty: {
-        easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 6, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
-        normal: { spawnEveryMul: 1.00, burstAdd: 0,  burstCap: 8, bossEveryAdd: 0, zombieHpMul: 1.00, zombieSpeedMul: 1.00, bossHpMul: 1.00, bossDmgMul: 1.00, rampHpMul: 1.00, rampSpeedMul: 1.00 },
-        hard:   { spawnEveryMul: 0.82, burstAdd: 1,  burstCap: 10, bossEveryAdd: -1, zombieHpMul: 1.20, zombieSpeedMul: 1.10, bossHpMul: 1.25, bossDmgMul: 1.15, rampHpMul: 1.20, rampSpeedMul: 1.15 }
+        easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 9, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
+        normal: { spawnEveryMul: 1.00, burstAdd: 0,  burstCap: 12, bossEveryAdd: 0, zombieHpMul: 1.00, zombieSpeedMul: 1.00, bossHpMul: 1.00, bossDmgMul: 1.00, rampHpMul: 1.00, rampSpeedMul: 1.00 },
+        hard:   { spawnEveryMul: 0.82, burstAdd: 1,  burstCap: 15, bossEveryAdd: -1, zombieHpMul: 1.20, zombieSpeedMul: 1.10, bossHpMul: 1.25, bossDmgMul: 1.15, rampHpMul: 1.20, rampSpeedMul: 1.15 }
       }
     };
     const W = CONFIG.W, H = CONFIG.H;
@@ -274,7 +274,7 @@
       // Formacja kulista: gesty srodek i wiekszy zasieg na boki.
       if (i === 0) return { x: -14, y: 0 };
       let idx = i - 1;
-      const ringStep = 7;
+      const ringStep = 10;
       let ring = 1;
       while (true) {
         const count = Math.max(6, Math.round(2 * Math.PI * ring));
@@ -521,12 +521,16 @@
       if (spawnTimer <= 0) {
         spawnTimer += spawnEvery;
         spawnCycles++;
-        const burstBase = 3 + Math.floor((wave - 1) / 2);
+        const burstBase = 5 + Math.floor((wave - 1) / 2);
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         const laneMid = (laneTop + laneBot) / 2;
-        const laneAmp = (laneBot - laneTop) * 0.24;
+        const laneAmp = (laneBot - laneTop) * 0.22;
+        const minGap = CONFIG.zombie.r * 2 + 1;
+        const totalSpan = (burst - 1) * minGap;
+        const centerShift = -totalSpan / 2;
         for (let s = 0; s < burst; s++) {
-          const y = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 8, laneBot - 8);
+          const slotY = laneMid + centerShift + s * minGap;
+          const y = clamp(slotY + (Math.random() * 2 - 1) * Math.min(1.2, minGap * 0.2), laneTop + 8, laneBot - 8);
           zombies.push(makeZombie(-18 - s * 12, y, {
             hp: zHp,
             r: CONFIG.zombie.r,
@@ -625,6 +629,21 @@
             sfxEnd(false);
             showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
             updateHud(); return;
+          }
+        }
+      }
+
+      // Jednowymiarowa separacja po osi Y: zombie ida gesto obok siebie, ale bez nachodzenia.
+      if (zombies.length > 1) {
+        const ordered = zombies.slice().sort(function (a, b) { return a.y - b.y; });
+        for (let i = 1; i < ordered.length; i++) {
+          const a = ordered[i - 1], b = ordered[i];
+          const minDist = a.r + b.r + 1;
+          const dist = b.y - a.y;
+          if (dist < minDist) {
+            const push = (minDist - dist) * 0.5;
+            a.y = clamp(a.y - push, laneTop + a.r, laneBot - a.r);
+            b.y = clamp(b.y + push, laneTop + b.r, laneBot - b.r);
           }
         }
       }
