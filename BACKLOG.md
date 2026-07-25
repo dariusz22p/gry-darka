@@ -37,11 +37,11 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 - [x] Fizyczne rozpadanie się cegieł (Matter.js)
 
 ## Etap 2 — Głębia rozgrywki
-- [ ] Wiatr losowany co turę (wskaźnik + wpływ na tor lotu)
-- [ ] Podgląd trajektorii (linia kropkowana / „ghost shot")
-- [ ] Przeszkody/teren w połowie planszy do przestrzelenia
+- [x] Wiatr losowany co turę (wskaźnik + wpływ na tor lotu)
+- [x] Podgląd trajektorii (linia kropkowana / „ghost shot")
+- [x] Przeszkody/teren w połowie planszy do przestrzelenia (losowa wysokość co rundę)
+- [x] Punktacja i rundy (best of 3)
 - [ ] Warunek zwycięstwa „przewrócenie wieży" (nie tylko HP) — kolor/„korona" na szczycie
-- [ ] Punktacja i rundy (best of 3)
 - [ ] Ograniczony czas/tura albo licznik amunicji
 - [ ] Losowe rozstawienie/wysokość zamków
 
