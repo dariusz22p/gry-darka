@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Pojedynek Zamków (Janek i Darek)</title>
 <style>
   * { box-sizing: border-box; }
@@ -81,11 +81,55 @@
     width: min(calc((100vh - 185px) * 1.6667), 96vw);
     max-width: 96vw;
   }
+
+  /* ---- Sterowanie dotykowe + responsywnosc (mobile) ---- */
+  #stage { touch-action: none; }
+  #touch {
+    display: none; position: absolute; left: 0; right: 0; bottom: 0;
+    justify-content: space-between; align-items: flex-end; gap: 10px;
+    padding: 10px 12px; pointer-events: none;
+  }
+  #touch .tcluster { display: flex; gap: 8px; pointer-events: auto; }
+  #touch .tbtn {
+    pointer-events: auto; touch-action: none; -webkit-user-select: none; user-select: none;
+    border: 1px solid rgba(120,150,180,.5); border-radius: 12px;
+    padding: 12px 14px; min-width: 60px;
+    font-size: 15px; font-weight: 700; font-family: inherit; color: #fff;
+    background: rgba(30,42,58,.82); box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  }
+  #touch .tbtn:active { background: rgba(60,90,120,.95); }
+  #touch .tbtn.fire { background: rgba(210,70,50,.92); border-color: rgba(255,150,130,.6); padding: 14px 22px; font-size: 17px; }
+  #touch .tbtn.fire:active { background: rgba(240,95,65,.98); }
+  #rotate { display: none; }
+  @media (pointer: coarse), (max-width: 560px) {
+    h1 { display: none; }
+    #help span { display: none; }
+    #help { margin: 6px 8px 8px; gap: 8px; }
+    #touch { display: flex; }
+    #game { margin: 0 auto; padding: 0 6px; }
+    #hud { margin: 6px 8px; gap: 8px; }
+    .center { min-width: 0; }
+    .turn { font-size: 13px; }
+    .aim, .wind { font-size: 11px; }
+    .score { font-size: 12px; }
+    canvas#board {
+      height: min( calc(100dvh - 118px), calc(100vw * 0.6) );
+      width: min( calc((100dvh - 118px) * 1.6667), 100vw );
+      max-width: 100%; margin: 0 auto;
+    }
+  }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #rotate {
+      display: block; text-align: center; font-size: 12px;
+      background: #2c3a4b; color: #cfe0f0; padding: 6px; border-radius: 8px; margin: 6px 8px;
+    }
+  }
 </style>
 </head>
 <body>
   <div id="game">
     <h1>POJEDYNEK ZAMKÓW (JANEK I DAREK)</h1>
+    <div id="rotate">Obróć telefon poziomo — wygodniej gra się w orientacji poziomej.</div>
     <div id="hud">
       <div class="player p1">
         <div class="name">Gracz 1</div>
@@ -104,6 +148,17 @@
     </div>
     <div id="stage">
       <canvas id="board"></canvas>
+      <div id="touch" aria-hidden="true">
+        <div class="tcluster">
+          <button class="tbtn" id="angUp" type="button">Kąt&nbsp;▲</button>
+          <button class="tbtn" id="angDn" type="button">Kąt&nbsp;▼</button>
+        </div>
+        <button class="tbtn fire" id="fireBtn" type="button">OGNIA</button>
+        <div class="tcluster">
+          <button class="tbtn" id="powDn" type="button">Moc&nbsp;−</button>
+          <button class="tbtn" id="powUp" type="button">Moc&nbsp;+</button>
+        </div>
+      </div>
       <div id="overlay" class="hidden">
         <h2 id="winText">Gracz 1 wygrywa!</h2>
         <p id="winSub"></p>
@@ -687,6 +742,41 @@
       el.muteBtn.textContent = muted ? 'Dźwięk: wył.' : 'Dźwięk: wł.';
     }
     el.muteBtn.addEventListener('click', function () { ensureAudio(); toggleMute(); });
+
+    // ---- Sterowanie dotykowe (mobile) ----
+    function adjAngle(d) {
+      if (state !== 'AIMING') return;
+      const a = aim[current];
+      a.angle = Math.max(CONFIG.angle.min, Math.min(CONFIG.angle.max, a.angle + d));
+      updateHud();
+    }
+    function adjPower(d) {
+      if (state !== 'AIMING') return;
+      const a = aim[current];
+      a.power = Math.max(CONFIG.power.min, Math.min(CONFIG.power.max, a.power + d));
+      updateHud();
+    }
+    function bindHold(id, fn) {
+      const b = document.getElementById(id);
+      if (!b) return;
+      let to = null, iv = null;
+      const stop = function () { clearTimeout(to); clearInterval(iv); to = null; iv = null; };
+      b.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); ensureAudio(); fn();
+        to = setTimeout(function () { iv = setInterval(fn, 60); }, 300);
+      });
+      b.addEventListener('pointerup', stop);
+      b.addEventListener('pointerleave', stop);
+      b.addEventListener('pointercancel', stop);
+    }
+    bindHold('angUp', function () { adjAngle(CONFIG.angle.step); });
+    bindHold('angDn', function () { adjAngle(-CONFIG.angle.step); });
+    bindHold('powUp', function () { adjPower(CONFIG.power.step); });
+    bindHold('powDn', function () { adjPower(-CONFIG.power.step); });
+    document.getElementById('fireBtn').addEventListener('pointerdown', function (e) {
+      e.preventDefault(); ensureAudio();
+      if (state === 'AIMING') fire();
+    });
 
     // ---- Start ----
     resetMatch();

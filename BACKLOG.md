@@ -10,7 +10,7 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 - `.nojekyll` — wyłącza przetwarzanie Jekyll na GitHub Pages.
 
 ## Jak uruchomić
-- Online (GitHub Pages): https://dariusz22p.github.io/gry-darka/
+- Online (GitHub Pages): <https://dariusz22p.github.io/gry-darka/>
 - Lokalnie: otwórz `index.html` (hub) lub `pojedynek-zamkow/index.html` (gra) — wymaga internetu (Matter.js z CDN).
 - Sterowanie: `↑`/`↓` kąt, `←`/`→` moc, `Spacja` strzał, `R` nowy mecz, `F` pełny ekran, `M` dźwięk.
 - 2 graczy na zmianę na jednej klawiaturze. Wygrywa ten, kto zbije HP przeciwnika do 0.
@@ -71,7 +71,7 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 
 ## Etap 5 — Jakość i infrastruktura
 - [ ] Rozdzielenie na moduły (`game.js`, `render.js`, `ui.js`, `physics.js`) + `styles.css`
-- [x] Build/hosting: publikacja na GitHub Pages (https://dariusz22p.github.io/gry-darka/)
+- [x] Build/hosting: publikacja na GitHub Pages (<https://dariusz22p.github.io/gry-darka/>)
 - [x] Strona-hub z listą gier (layout pod kolejne gry) + placeholder `gra-2/`
 - [ ] Zapis lokalny (localStorage): wynik meczów, ustawienia
 - [ ] Podstawowe testy logiki (obrażenia, koniec tury, warunek zwycięstwa)
@@ -79,8 +79,8 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 
 ## Etap 6 — Mobile / Android
 Cel: grać na telefonie/tablecie (hotseat świetnie działa na jednym ekranie).
-- [ ] A. Sterowanie dotykowe: suwaki/przyciski kąta+mocy, przycisk „Ognia", tap „następna runda" (pointer/touch) — nakład mały–średni
-- [ ] B. Responsywny layout (wariant B): canvas = rozmiar okna, layout z `W`/`H`, orientacja pozioma — nakład średni
+- [x] A. Sterowanie dotykowe: przyciski kąta/mocy (hold-repeat) + „OGNIA" (pointer/touch); tap „następna runda"
+- [x] B. Responsywny layout: skalowanie widoku do ekranu (fit-to-viewport, dvh), kompaktowy HUD i ukryte podpowiedzi na telefonie, podpowiedź obrotu w pionie
 - [x] C. Hosting pod URL (GitHub Pages) — zrobione w Etapie 5
 - [ ] D. PWA: `manifest.json` + service worker + self-host Matter.js (offline, „dodaj do ekranu głównego") — nakład mały
 - [ ] E. APK / Google Play: Capacitor lub TWA (build w Android Studio/Gradle) — nakład średni (dochodzi toolchain)
