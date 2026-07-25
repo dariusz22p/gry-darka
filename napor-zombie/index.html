@@ -21,7 +21,8 @@
     grid-template-areas:
       "hud hud"
       "stage help";
-    gap: 14px;
+    row-gap: 0;
+    column-gap: 14px;
     align-items: start;
   }
   #sidebar { display: contents; }
@@ -108,6 +109,8 @@
         "hud"
         "stage"
         "help";
+      row-gap: 0;
+      column-gap: 0;
     }
     #hud { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
