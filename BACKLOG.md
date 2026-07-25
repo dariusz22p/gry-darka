@@ -7,7 +7,7 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 - `index.html` — strona-hub z listą gier.
 - `pojedynek-zamkow/index.html` — gra „Pojedynek Zamków (Janek i Darek)".
 - `pojedynek-zamkow/` — PWA: `manifest.webmanifest`, `sw.js`, `icon.svg`, `matter.min.js` (self-host).
-- `gra-2/index.html` — placeholder na kolejną grę.
+- `napor-zombie/index.html` — gra „Napór Zombie" (top-down survival, jeden plik).
 - `.nojekyll` — wyłącza przetwarzanie Jekyll na GitHub Pages.
 
 ## Jak uruchomić
@@ -114,4 +114,38 @@ Cięższe zadania:
 ## Znane ograniczenia MVP
 - Wartości fizyki są wstępne — mogą wymagać dostrojenia w `CONFIG` po pierwszych partiach.
 - Można trafić własny zamek przy bardzo niskim kącie (celowe — element strategii; do zmiany w `collisionStart`).
-- Wymaga połączenia z internetem (Matter.js z CDN) — patrz Etap 5 (self-host).
+- Matter.js jest self-hosted lokalnie — Pojedynek Zamków działa offline (PWA).
+
+---
+
+# Napór Zombie (Gra 2)
+
+Top-down 2D survival. Plik: `napor-zombie/index.html` (jeden plik, Canvas + JS, bez zależności).
+
+## Koncept
+- Zombie napierają z lewej korytarzem; bronisz bazy po prawej.
+- Ekipa to pionowa kolumna strzelców strzelających automatycznie prosto w lewo (nikt nie celuje osobno).
+- Celowanie = pionowa pozycja kolumny; sterujesz TYLKO w osi góra/dół, STAŁĄ prędkością (utrudnienie).
+- Panele na lewej ścianie: górny pas „LUDZIE" (dobiera strzelców = wyższa kolumna), dolny „MOC" (szybkostrzelność + obrażenia). Ładujesz je, gdy tor w danym pasie jest czysty.
+- Napięcie: farmienie paneli odsłania inne tory → zombie przechodzą do bazy.
+
+## Sterowanie
+- PC: rolka myszy lub `↑`/`↓` (W/S) — ruch góra/dół; ogień automatyczny.
+- Telefon: przeciągnij palcem w pionie (jedna oś, ta sama ograniczona prędkość).
+- `R` restart.
+
+## Pokrętła balansu (CONFIG) — do strojenia próbami
+- Ruch: `move.speed` (stała prędkość kolumny).
+- Zombie: `zombie.speed/hp/dmg/spawnEvery`, `ramp.*` (narastanie fal).
+- Panele: `panel.recruitPer`, `panel.powerPer` (ile trafień na +1), `panel.bandH` (wysokość pasów).
+- Strzał: `shooter.baseFireRate/baseDmg/bulletSpeed`, `shooter.maxN` (limit ekipy), `powerStep.*`.
+- Baza/fale: `baseHpMax`, `waves.total/duration`.
+
+## Backlog (kolejne kroki)
+- [ ] Dostrojenie balansu — na starcie ekipa dobija do maks. za szybko; podbić `recruitPer/powerPer` lub gęstość hordy
+- [ ] Amunicja/przeładowanie jako dodatkowy limiter (panel MOC daje naboje)
+- [ ] Typy zombie (szybki/gruby/biegacz), boss na fali 10
+- [ ] Dźwięki (Web Audio) + efekty trafień/śmierci
+- [ ] Wynik/rekord (localStorage), ekran startowy
+- [ ] PWA dla tej gry (manifest + SW), spójnie z Pojedynkiem Zamków
+- [ ] Responsywność mobilna dopracowana (kompaktowy HUD)

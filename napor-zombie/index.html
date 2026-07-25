@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Napór Zombie</title>
+<meta name="theme-color" content="#12181f" />
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; overscroll-behavior: none;
+    background: #12181f; color: #e8edf2;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none;
+  }
+  #wrap { max-width: 1000px; margin: 12px auto; padding: 0 10px; }
+  h1 { font-size: 20px; text-align: center; letter-spacing: 3px; margin: 4px 0 10px; }
+  #hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 8px; font-size: 13px; }
+  #hud .stat { display: flex; align-items: center; gap: 6px; }
+  #hud b { color: #fff; }
+  .base { flex: 1; min-width: 150px; }
+  .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
+  #stage { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  canvas#game { display: block; width: 100%; height: auto; background: #0f141b; touch-action: none; }
+  #overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; background: rgba(8,12,17,.78);
+  }
+  #overlay.hidden { display: none; }
+  #overlay h2 { margin: 0; font-size: 30px; }
+  #overlay p { margin: 0; opacity: .85; }
+  #overlay button, .back {
+    cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
+    font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
+  }
+  #overlay button:hover { background: #3b8bf0; }
+  #help {
+    margin-top: 10px; font-size: 13px; line-height: 1.7; opacity: .9;
+    display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; align-items: center;
+  }
+  .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
+  .back:hover { background: #34465b; color: #e8edf2; }
+  kbd { background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <h1>NAPÓR ZOMBIE</h1>
+    <div id="hud">
+      <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
+      <div class="stat">Fala <b id="wave">1 / 10</b></div>
+      <div class="stat">Ekipa <b id="squad">1</b></div>
+      <div class="stat">Moc <b id="power">0</b></div>
+      <div class="stat">Zabici <b id="kills">0</b></div>
+    </div>
+    <div id="stage">
+      <canvas id="game" width="1000" height="600"></canvas>
+      <div id="overlay" class="hidden">
+        <h2 id="overTitle">Przegrana</h2>
+        <p id="overSub"></p>
+        <button id="restart">Zagraj ponownie (R)</button>
+      </div>
+    </div>
+    <div id="help">
+      <a class="back" href="../">&larr; Gry</a>
+      <span>PC: <kbd>rolka</kbd> lub <kbd>&uarr;</kbd><kbd>&darr;</kbd> &mdash; ruch g&oacute;ra/d&oacute;&#322;</span>
+      <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
+      <span>Ekipa strzela sama prosto w lewo</span>
+      <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
+      <span><kbd>R</kbd> restart</span>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // ---- CONFIG: pokrętła balansu (stroimy próbami) ----
+    const CONFIG = {
+      W: 1000, H: 600,
+      wallTop: 80, wallBottom: 520,     // pas korytarza
+      squadX: 930,                       // pozycja X kolumny (strzela w lewo)
+      breachX: 900,                      // zombie za tą linią rani bazę
+      baseHpMax: 100,
+      move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
+      shooter: { gap: 26, maxN: 9, r: 12, baseFireRate: 4.5, baseDmg: 12, bulletSpeed: 720 },
+      zombie: { r: 14, hp: 30, speed: 52, dmg: 10, spawnEvery: 1.15 },
+      panel: { x: 66, bandH: 165, recruitPer: 10, powerPer: 14 }, // pasy: góra=ludzie, dół=moc
+      waves: { total: 10, duration: 22 },
+      ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
+      powerStep: { fireAdd: 0.7, dmgMul: 1.13 }
+    };
+    const W = CONFIG.W, H = CONFIG.H;
+    const recruitBand = { top: CONFIG.wallTop, bot: CONFIG.wallTop + CONFIG.panel.bandH };
+    const powerBand = { top: CONFIG.wallBottom - CONFIG.panel.bandH, bot: CONFIG.wallBottom };
+
+    // ---- Stan ----
+    let state, baseHp, wave, waveTime, spawnEvery, spawnTimer, zHp, zSpeed, kills, powerLevel;
+    let N, colY, targetY, fireTimer, fireRate, dmg;
+    let zombies, bullets, fx;
+    let recruitHits, powerHits;
+    let keys = { up: false, down: false };
+    let steering = false;
+    let last = 0;
+
+    function halfCol() { return (N - 1) * CONFIG.shooter.gap / 2; }
+    function minY() { return CONFIG.wallTop + halfCol() + 6; }
+    function maxY() { return CONFIG.wallBottom - halfCol() - 6; }
+    function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+    function applyPower() {
+      fireRate = CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel;
+      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel);
+    }
+
+    function reset() {
+      state = 'play';
+      baseHp = CONFIG.baseHpMax;
+      wave = 1; waveTime = 0;
+      spawnEvery = CONFIG.zombie.spawnEvery; spawnTimer = 0;
+      zHp = CONFIG.zombie.hp; zSpeed = CONFIG.zombie.speed;
+      kills = 0; powerLevel = 0;
+      N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
+      fireTimer = 0;
+      zombies = []; bullets = []; fx = [];
+      recruitHits = 0; powerHits = 0;
+      applyPower();
+      hideOverlay();
+      updateHud();
+    }
+
+    function addRecruit() { if (N < CONFIG.shooter.maxN) { N++; colY = clamp(colY, minY(), maxY()); } }
+
+    // ---- Aktualizacja ----
+    function update(dt) {
+      // fale
+      waveTime += dt;
+      if (waveTime >= CONFIG.waves.duration) {
+        waveTime = 0; wave++;
+        if (wave > CONFIG.waves.total) {
+          state = 'win';
+          showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
+          updateHud(); return;
+        }
+        spawnEvery = Math.max(0.35, spawnEvery * CONFIG.ramp.spawnMul);
+        zHp += CONFIG.ramp.hpAdd; zSpeed += CONFIG.ramp.speedAdd;
+      }
+      // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
+      if (keys.up && !keys.down) targetY = minY();
+      else if (keys.down && !keys.up) targetY = maxY();
+      targetY = clamp(targetY, minY(), maxY());
+      const step = CONFIG.move.speed * dt;
+      if (Math.abs(targetY - colY) <= step) colY = targetY;
+      else colY += Math.sign(targetY - colY) * step;
+
+      // spawn zombie
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnTimer += spawnEvery;
+        const y = CONFIG.wallTop + 20 + Math.random() * (CONFIG.wallBottom - CONFIG.wallTop - 40);
+        zombies.push({ x: -22, y: y, hp: zHp, maxhp: zHp });
+      }
+
+      // auto-ogień: salwa (1 pocisk na strzelca) prosto w lewo
+      fireTimer -= dt;
+      if (fireTimer <= 0) {
+        fireTimer += 1 / fireRate;
+        const half = halfCol();
+        for (let i = 0; i < N; i++) {
+          const y = colY - half + i * CONFIG.shooter.gap;
+          bullets.push({ x: CONFIG.squadX - 18, y: y, vx: -CONFIG.shooter.bulletSpeed, dmg: dmg });
+        }
+      }
+
+      // ruch zombie + wyłom bazy
+      for (let i = zombies.length - 1; i >= 0; i--) {
+        const z = zombies[i];
+        z.x += zSpeed * dt;
+        if (z.x >= CONFIG.breachX) {
+          baseHp -= CONFIG.zombie.dmg;
+          fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
+          zombies.splice(i, 1);
+          if (baseHp <= 0) {
+            baseHp = 0; state = 'lose';
+            showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
+            updateHud(); return;
+          }
+        }
+      }
+
+      // pociski (prosto w lewo): zombie, potem panele na lewej ścianie
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx * dt;
+        let dead = b.x < -20;
+        if (!dead) {
+          for (let j = zombies.length - 1; j >= 0; j--) {
+            const z = zombies[j];
+            const dx = z.x - b.x, dy = z.y - b.y, rr = CONFIG.zombie.r + 4;
+            if (dx * dx + dy * dy <= rr * rr) {
+              z.hp -= b.dmg; dead = true;
+              if (z.hp <= 0) { zombies.splice(j, 1); kills++; fx.push({ x: z.x, y: z.y, life: 0.25, c: '#8bd450', r: 14 }); }
+              break;
+            }
+          }
+        }
+        if (!dead && b.x <= CONFIG.panel.x) {
+          dead = true;
+          if (b.y >= recruitBand.top && b.y <= recruitBand.bot) {
+            recruitHits++;
+            fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#8bd450', r: 10 });
+            if (recruitHits >= CONFIG.panel.recruitPer) { recruitHits = 0; addRecruit(); }
+          } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
+            powerHits++;
+            fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#ffb74d', r: 10 });
+            if (powerHits >= CONFIG.panel.powerPer) { powerHits = 0; powerLevel++; applyPower(); }
+          }
+        }
+        if (dead) bullets.splice(i, 1);
+      }
+
+      for (let i = fx.length - 1; i >= 0; i--) { fx[i].life -= dt; if (fx[i].life <= 0) fx.splice(i, 1); }
+      updateHud();
+    }
+
+    // ---- Rysowanie ----
+    function drawBand(band, color, label, hits, per) {
+      ctx.fillStyle = 'rgba(255,255,255,.03)'; ctx.fillRect(0, band.top, CONFIG.panel.x, band.bot - band.top);
+      const frac = Math.max(0, Math.min(1, hits / per));
+      ctx.fillStyle = color; ctx.globalAlpha = 0.30;
+      ctx.fillRect(0, band.bot - (band.bot - band.top) * frac, CONFIG.panel.x, (band.bot - band.top) * frac);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.strokeRect(1, band.top + 1, CONFIG.panel.x - 2, band.bot - band.top - 2);
+      ctx.save();
+      ctx.translate(CONFIG.panel.x / 2, (band.top + band.bot) / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = color; ctx.font = 'bold 16px "Segoe UI", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    }
+
+    function render() {
+      ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#1a2230'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
+      // pasy paneli na lewej ścianie
+      drawBand(recruitBand, '#8bd450', 'LUDZIE', recruitHits, CONFIG.panel.recruitPer);
+      drawBand(powerBand, '#ffb74d', 'MOC', powerHits, CONFIG.panel.powerPer);
+      // linia bazy
+      ctx.strokeStyle = 'rgba(255,82,82,.7)'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
+      ctx.beginPath(); ctx.moveTo(CONFIG.breachX, CONFIG.wallTop); ctx.lineTo(CONFIG.breachX, CONFIG.wallBottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,82,82,.10)'; ctx.fillRect(CONFIG.breachX, CONFIG.wallTop, W - CONFIG.breachX, CONFIG.wallBottom - CONFIG.wallTop);
+      // zombie
+      for (const z of zombies) {
+        ctx.fillStyle = '#6aa84f'; ctx.strokeStyle = '#3d6b2e'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(z.x, z.y, CONFIG.zombie.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (z.hp < z.maxhp) {
+          ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - 14, z.y - 24, 28, 5);
+          ctx.fillStyle = '#8bd450'; ctx.fillRect(z.x - 14, z.y - 24, 28 * (z.hp / z.maxhp), 5);
+        }
+      }
+      // zasięg pokrycia kolumny (pomocniczo)
+      const half = halfCol();
+      ctx.fillStyle = 'rgba(79,157,255,.12)';
+      ctx.fillRect(CONFIG.breachX, colY - half - 8, W - CONFIG.breachX, (half + 8) * 2);
+      // kolumna ekipy
+      for (let i = 0; i < N; i++) {
+        const y = colY - half + i * CONFIG.shooter.gap;
+        ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(CONFIG.squadX, y); ctx.lineTo(CONFIG.squadX - 22, y); ctx.stroke();
+        ctx.fillStyle = i === 0 ? '#dbe6f2' : '#4f9dff';
+        ctx.beginPath(); ctx.arc(CONFIG.squadX, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      // pociski
+      ctx.fillStyle = '#ffe082';
+      for (const b of bullets) { ctx.fillRect(b.x - 5, b.y - 2, 10, 4); }
+      // efekty
+      for (const f of fx) {
+        ctx.globalAlpha = Math.max(0, f.life * 3.5);
+        ctx.fillStyle = f.c;
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (2 - f.life * 4), 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ---- HUD ----
+    const el = {
+      hp: document.getElementById('hpfill'), wave: document.getElementById('wave'),
+      squad: document.getElementById('squad'), power: document.getElementById('power'),
+      kills: document.getElementById('kills'), overlay: document.getElementById('overlay'),
+      overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
+      restart: document.getElementById('restart')
+    };
+    function updateHud() {
+      el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
+      el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
+      el.squad.textContent = N;
+      el.power.textContent = powerLevel;
+      el.kills.textContent = kills;
+    }
+    function showOverlay(title, sub) {
+      el.overTitle.textContent = title;
+      el.overTitle.style.color = title.indexOf('Wygrana') === 0 ? '#8bd450' : '#ef5350';
+      el.overSub.textContent = sub;
+      el.overlay.classList.remove('hidden');
+    }
+    function hideOverlay() { el.overlay.classList.add('hidden'); }
+
+    // ---- Wejście (jedna oś, stała prędkość) ----
+    function pointerY(e) {
+      const r = canvas.getBoundingClientRect();
+      return clamp((e.clientY - r.top) * (H / r.height), minY(), maxY());
+    }
+    canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); if (state === 'play') { steering = true; targetY = pointerY(e); } });
+    canvas.addEventListener('pointermove', function (e) { if (steering && state === 'play') targetY = pointerY(e); });
+    window.addEventListener('pointerup', function () { steering = false; });
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      if (state === 'play') targetY = clamp(targetY + Math.sign(e.deltaY) * 40, minY(), maxY());
+    }, { passive: false });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'r' || e.key === 'R') { reset(); return; }
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { keys.up = true; e.preventDefault(); }
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { keys.down = true; e.preventDefault(); }
+    });
+    window.addEventListener('keyup', function (e) {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+      if (!keys.up && !keys.down) targetY = colY;
+    });
+    el.restart.addEventListener('click', reset);
+
+    // ---- Pętla ----
+    function frame(t) {
+      const dt = Math.min(0.05, last ? (t - last) / 1000 : 0); last = t;
+      if (state === 'play') update(dt);
+      render();
+      requestAnimationFrame(frame);
+    }
+    reset();
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
