@@ -524,14 +524,14 @@
         const burstBase = 5 + Math.floor((wave - 1) / 2);
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         const laneMid = (laneTop + laneBot) / 2;
-        const laneAmp = (laneBot - laneTop) * 0.1;
+        const laneAmp = (laneBot - laneTop) * 0.05;
         const minGap = CONFIG.zombie.r * 2 + 1;
         const packCenter = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 12, laneBot - 12);
-        const halfSpanCap = 42;
+        const halfSpanCap = 18;
         for (let s = 0; s < burst; s++) {
           const offset = (s - (burst - 1) / 2) * minGap;
           const packedOffset = Math.max(-halfSpanCap, Math.min(halfSpanCap, offset));
-          const y = clamp(packCenter + packedOffset + (Math.random() * 2 - 1) * Math.min(0.8, minGap * 0.12), laneTop + 8, laneBot - 8);
+          const y = clamp(packCenter + packedOffset + (Math.random() * 2 - 1) * Math.min(0.35, minGap * 0.08), laneTop + 8, laneBot - 8);
           zombies.push(makeZombie(-18 - s * 12, y, {
             hp: zHp,
             r: CONFIG.zombie.r,
@@ -634,17 +634,22 @@
         }
       }
 
-      // Jednowymiarowa separacja po osi Y: zombie ida gesto obok siebie, ale bez nachodzenia.
+      // Lokalna separacja 2D tylko przy faktycznej kolizji, bez sztucznego rozsuwania calej fali po Y.
       if (zombies.length > 1) {
-        const ordered = zombies.slice().sort(function (a, b) { return a.y - b.y; });
-        for (let i = 1; i < ordered.length; i++) {
-          const a = ordered[i - 1], b = ordered[i];
-          const minDist = a.r + b.r + 1;
-          const dist = b.y - a.y;
-          if (dist < minDist) {
-            const push = (minDist - dist) * 0.5;
-            a.y = clamp(a.y - push, laneTop + a.r, laneBot - a.r);
-            b.y = clamp(b.y + push, laneTop + b.r, laneBot - b.r);
+        for (let i = 0; i < zombies.length; i++) {
+          for (let j = i + 1; j < zombies.length; j++) {
+            const a = zombies[i], b = zombies[j];
+            const minDist = a.r + b.r + 1;
+            const dx = b.x - a.x;
+            if (Math.abs(dx) >= minDist) continue;
+            const dy = b.y - a.y;
+            const dist2 = dx * dx + dy * dy;
+            if (dist2 >= minDist * minDist) continue;
+            const dist = Math.sqrt(Math.max(0.0001, dist2));
+            const overlap = (minDist - dist) * 0.5;
+            const ny = dy / dist || (Math.random() > 0.5 ? 1 : -1);
+            a.y = clamp(a.y - ny * overlap, laneTop + a.r, laneBot - a.r);
+            b.y = clamp(b.y + ny * overlap, laneTop + b.r, laneBot - b.r);
           }
         }
       }
