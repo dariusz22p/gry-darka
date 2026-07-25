@@ -111,7 +111,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 30, trackPlayerWeight: 0.45, trackSpread: 78 },
+      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 26, trackPlayerWeight: 0.35, trackSpread: 78, reactionWindow: 0.55, reactionLag: 1.2 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
@@ -139,6 +139,11 @@
     let prepTimer = 0;
     let warnedBossCycle = -1;
     let alertTimer = 0;
+    let zombieAimY = 0;
+    let aimSampleTimer = 0;
+    let aimSampleSum = 0;
+    let aimSampleCount = 0;
+    let aimWindowAvgY = 0;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -306,6 +311,11 @@
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
       N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
+      zombieAimY = colY;
+      aimWindowAvgY = colY;
+      aimSampleTimer = 0;
+      aimSampleSum = 0;
+      aimSampleCount = 0;
       fireTimer = 0;
       shotSfxCd = 0;
       zombies = []; bullets = []; fx = [];
@@ -382,6 +392,19 @@
       if (Math.abs(targetY - colY) <= step) colY = targetY;
       else colY += Math.sign(targetY - colY) * step;
 
+      // Zombie nie reaguja natychmiast: biora srednia pozycje ekipy z okna czasowego, potem doganiaja ja z lagiem.
+      aimSampleTimer += dt;
+      aimSampleSum += colY;
+      aimSampleCount++;
+      if (aimSampleTimer >= CONFIG.zombie.reactionWindow) {
+        aimWindowAvgY = aimSampleCount > 0 ? (aimSampleSum / aimSampleCount) : colY;
+        aimSampleTimer = 0;
+        aimSampleSum = 0;
+        aimSampleCount = 0;
+      }
+      const lagAlpha = Math.min(1, dt / Math.max(0.001, CONFIG.zombie.reactionLag));
+      zombieAimY += (aimWindowAvgY - zombieAimY) * lagAlpha;
+
       if (prepTimer > 0) {
         for (let i = fx.length - 1; i >= 0; i--) { fx[i].life -= dt; if (fx[i].life <= 0) fx.splice(i, 1); }
         updateHud();
@@ -451,7 +474,7 @@
         const z = zombies[i];
         z.x += z.speed * dt;
         const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? CONFIG.boss.trackMul : 1);
-        const playerTarget = colY + (z.trackOff || 0);
+        const playerTarget = zombieAimY + (z.trackOff || 0);
         const mixedTarget = (z.laneY || z.y) * (1 - CONFIG.zombie.trackPlayerWeight) + playerTarget * CONFIG.zombie.trackPlayerWeight;
         const dy = mixedTarget - z.y;
         const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
