@@ -13,20 +13,58 @@
     font-family: "Segoe UI", system-ui, sans-serif;
     -webkit-user-select: none; user-select: none;
   }
-  #wrap { max-width: 1000px; margin: 12px auto; padding: 0 10px; }
+  #wrap { max-width: 1320px; margin: 12px auto; padding: 0 10px; }
   h1 { font-size: 20px; text-align: center; letter-spacing: 3px; margin: 4px 0 10px; }
-  #hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 8px; font-size: 13px; }
-  #hud .stat { display: flex; align-items: center; gap: 6px; }
+  #layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 14px;
+    align-items: start;
+  }
+  #sidebar {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+  }
+  #hud {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    font-size: 13px;
+  }
+  #hud .stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid #2f3d4e;
+    border-radius: 8px;
+    background: #18212c;
+  }
+  #hud .stat span,
+  #hud .stat b,
+  #hud .stat select {
+    min-width: 0;
+  }
+  #hud .stat b {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
   #difficulty {
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
     border-radius: 6px; padding: 3px 8px; font-family: inherit; font-size: 12px;
   }
-  .base { flex: 1; min-width: 150px; }
+  .base { grid-column: 1 / -1; }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
   #stage { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  #stageCol { min-width: 0; }
   canvas#game { display: block; width: 100%; height: auto; background: #0f141b; touch-action: none; }
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -48,58 +86,76 @@
   }
   #alert.show { opacity: 1; }
   #help {
-    margin-top: 10px; font-size: 13px; line-height: 1.7; opacity: .9;
-    display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; align-items: center;
+    font-size: 13px; line-height: 1.55; opacity: .9;
+    display: grid; gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #2f3d4e;
+    border-radius: 8px;
+    background: #18212c;
   }
+  #help span, #help a { min-height: 24px; display: flex; align-items: center; }
   .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
   .back:hover { background: #34465b; color: #e8edf2; }
   kbd { background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; font-size: 12px; }
+  @media (max-width: 980px) {
+    #layout { grid-template-columns: 1fr; }
+    #hud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    #hud { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
   <div id="wrap">
     <h1>NAPÓR ZOMBIE</h1>
-    <div id="hud">
-      <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
-      <div class="stat">Fala <b id="wave">1 / 10</b></div>
-      <div class="stat">Do fali <b id="nextWave" class="soft">22.0s</b></div>
-      <div class="stat">Do bossa <b id="nextBoss" class="soft">4 spawny</b></div>
-      <div class="stat">Ekipa <b id="squad">1</b></div>
-      <div class="stat">Ludzie cel <b id="recruitNeed" class="soft">0/0</b></div>
-      <div class="stat">Moc <b id="power">0</b></div>
-      <div class="stat">Moc cel <b id="powerNeed" class="soft">0/0</b></div>
-      <div class="stat">Zabici <b id="kills">0</b></div>
-      <div class="stat">Rozrzut <b id="spread" class="soft">off</b></div>
-        <div class="stat">Bomby <b id="bombs" class="soft">0</b></div>
-      <div class="stat">Efekt <b id="effect" class="soft">brak</b></div>
-      <div class="stat">Best fala <b id="bestWave" class="soft">0</b></div>
-      <div class="stat">Best zabici <b id="bestKills" class="soft">0</b></div>
-      <div class="stat">Tryb
-        <select id="difficulty" aria-label="Poziom trudności">
-          <option value="easy">Easy</option>
-          <option value="normal" selected>Normal</option>
-          <option value="hard">Hard</option>
-        </select>
+    <div id="layout">
+      <div id="stageCol">
+        <div id="stage">
+          <canvas id="game" width="1000" height="600"></canvas>
+          <div id="alert" aria-live="polite"></div>
+          <div id="overlay" class="hidden">
+            <h2 id="overTitle">Przegrana</h2>
+            <p id="overSub"></p>
+            <button id="restart">Zagraj ponownie (R)</button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div id="stage">
-      <canvas id="game" width="1000" height="600"></canvas>
-      <div id="alert" aria-live="polite"></div>
-      <div id="overlay" class="hidden">
-        <h2 id="overTitle">Przegrana</h2>
-        <p id="overSub"></p>
-        <button id="restart">Zagraj ponownie (R)</button>
-      </div>
-    </div>
-    <div id="help">
-      <a class="back" href="../">&larr; Gry</a>
-      <span>PC: <kbd>rolka</kbd> lub <kbd>&uarr;</kbd><kbd>&darr;</kbd> &mdash; ruch g&oacute;ra/d&oacute;&#322;</span>
-      <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
-      <span>Ekipa strzela sama prosto w lewo</span>
-      <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
-        <span><kbd>Spacja</kbd> bomba</span>
-      <span><kbd>M</kbd> wyciszenie</span>
-      <span><kbd>R</kbd> restart</span>
+      <aside id="sidebar">
+        <div id="hud">
+          <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
+          <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
+          <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
+          <div class="stat"><span>Do bossa</span><b id="nextBoss" class="soft">4 spawny</b></div>
+          <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
+          <div class="stat"><span>Ludzie cel</span><b id="recruitNeed" class="soft">0/0</b></div>
+          <div class="stat"><span>Moc</span><b id="power">0</b></div>
+          <div class="stat"><span>Moc cel</span><b id="powerNeed" class="soft">0/0</b></div>
+          <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
+          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
+          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
+          <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
+          <div class="stat"><span>Best fala</span><b id="bestWave" class="soft">0</b></div>
+          <div class="stat"><span>Best zabici</span><b id="bestKills" class="soft">0</b></div>
+          <div class="stat"><span>Tryb</span>
+            <select id="difficulty" aria-label="Poziom trudności">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+        <div id="help">
+          <a class="back" href="../">&larr; Gry</a>
+          <span>PC: <kbd>rolka</kbd> lub <kbd>&uarr;</kbd><kbd>&darr;</kbd> &mdash; ruch g&oacute;ra/d&oacute;&#322;</span>
+          <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
+          <span>Ekipa strzela sama prosto w lewo</span>
+          <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
+          <span><kbd>Spacja</kbd> bomba</span>
+          <span><kbd>M</kbd> wyciszenie</span>
+          <span><kbd>R</kbd> restart</span>
+        </div>
+      </aside>
     </div>
   </div>
 
