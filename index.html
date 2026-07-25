@@ -111,9 +111,11 @@
       <span><kbd>Spacja</kbd> strzał / następna runda</span>
       <span><kbd>R</kbd> nowy mecz</span>
       <span><kbd>F</kbd> pełny ekran</span>
+      <span><kbd>M</kbd> dźwięk</span>
       <span>Best of 3 — wiatr zmienia się co turę</span>
       <span>Hotseat: 2 graczy na jednej klawiaturze</span>
       <button id="fsBtn" type="button">Pełny ekran</button>
+      <button id="muteBtn" type="button">Dźwięk: wł.</button>
     </div>
   </div>
 
@@ -180,6 +182,94 @@
     // Przyrost pozycji na krok = accel * scale * dt^2 (dopasowanie podglądu do Matter)
     const STEP2 = engine.gravity.scale * (1000 / 60) * (1000 / 60);
 
+    // ---- Dźwięk (Web Audio, syntezowany — bez plików, działa offline) ----
+    let audioCtx = null, masterGain = null, muted = false;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = muted ? 0 : 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function noiseBuffer(dur) {
+      const n = Math.floor(audioCtx.sampleRate * dur);
+      const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+
+    function envGain(peak, dur, attack) {
+      const g = audioCtx.createGain();
+      const t = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(peak, t + (attack || 0.005));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      return g;
+    }
+
+    function sfxShoot() {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.25);
+      const g = envGain(0.5, 0.3, 0.005);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(t); osc.stop(t + 0.32);
+      const src = audioCtx.createBufferSource();
+      src.buffer = noiseBuffer(0.2);
+      const hpf = audioCtx.createBiquadFilter();
+      hpf.type = 'highpass'; hpf.frequency.value = 500;
+      const ng = envGain(0.3, 0.18, 0.002);
+      src.connect(hpf); hpf.connect(ng); ng.connect(masterGain);
+      src.start(t); src.stop(t + 0.2);
+    }
+
+    function sfxHit() {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const src = audioCtx.createBufferSource();
+      src.buffer = noiseBuffer(0.25);
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 850; bp.Q.value = 0.7;
+      const ng = envGain(0.45, 0.22, 0.002);
+      src.connect(bp); bp.connect(ng); ng.connect(masterGain);
+      src.start(t); src.stop(t + 0.25);
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(70, t + 0.15);
+      const g = envGain(0.4, 0.18, 0.004);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(t); osc.stop(t + 0.2);
+    }
+
+    function sfxWin() {
+      if (!audioCtx) return;
+      const base = audioCtx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach(function (f, i) {
+        const t = base + i * 0.12;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.32, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+        osc.connect(g); g.connect(masterGain);
+        osc.start(t); osc.stop(t + 0.26);
+      });
+    }
+
     // ---- Budowa świata ----
     function buildCastle(cx, player) {
       const { cols, rows, bw, bh } = CONFIG.castle;
@@ -241,6 +331,7 @@
       state = 'RESOLVING';
       fireTime = performance.now();
       spentTime = 0; restFrames = 0; shotDamage = 0;
+      sfxShoot();
       updateHud();
     }
 
@@ -260,7 +351,7 @@
           shotDamage += dmg;
           hp[other.castleOwner] = Math.max(0, hp[other.castleOwner] - dmg);
           hits.push({ x: projectile.position.x, y: projectile.position.y, txt: '-' + dmg, life: 1 });
-          if (spentTime === 0) spentTime = performance.now();
+          if (spentTime === 0) { spentTime = performance.now(); sfxHit(); }
           updateHud();
         }
       }
@@ -296,6 +387,7 @@
     function handleRoundEnd() {
       const winner = hp[1] <= 0 ? 2 : 1;
       score[winner]++;
+      sfxWin();
       if (score[winner] >= CONFIG.roundsToWin) {
         state = 'GAMEOVER';
         showOverlay('Gracz ' + winner + ' wygrywa mecz!', 'Wynik ' + score[1] + ' : ' + score[2], 'Nowy mecz (R)', resetMatch, winner);
@@ -432,7 +524,8 @@
       winText: document.getElementById('winText'),
       winSub: document.getElementById('winSub'),
       overlayBtn: document.getElementById('overlayBtn'),
-      fsBtn: document.getElementById('fsBtn')
+      fsBtn: document.getElementById('fsBtn'),
+      muteBtn: document.getElementById('muteBtn')
     };
 
     function updateHud() {
@@ -492,7 +585,9 @@
 
     // ---- Sterowanie (hotseat) ----
     window.addEventListener('keydown', function (e) {
+      ensureAudio();
       if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
+      if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
       if (state === 'GAMEOVER') {
         if ((e.key === 'r' || e.key === 'R') && overlayAction) overlayAction();
         return;
@@ -542,6 +637,14 @@
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('webkitfullscreenchange', onFullscreenChange);
     el.fsBtn.addEventListener('click', toggleFullscreen);
+
+    // ---- Wyciszenie dźwięku ----
+    function toggleMute() {
+      muted = !muted;
+      if (masterGain) masterGain.gain.value = muted ? 0 : 0.85;
+      el.muteBtn.textContent = muted ? 'Dźwięk: wył.' : 'Dźwięk: wł.';
+    }
+    el.muteBtn.addEventListener('click', function () { ensureAudio(); toggleMute(); });
 
     // ---- Start ----
     resetMatch();
