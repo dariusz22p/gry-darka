@@ -18,6 +18,7 @@
   #hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 8px; font-size: 13px; }
   #hud .stat { display: flex; align-items: center; gap: 6px; }
   #hud b { color: #fff; }
+  #hud b.soft { color: #c7d3df; font-weight: 600; }
   #difficulty {
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
     border-radius: 6px; padding: 3px 8px; font-family: inherit; font-size: 12px;
@@ -39,6 +40,13 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
+  #alert {
+    position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+    padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
+    background: rgba(7,11,16,.72); color: #ffd180; font-weight: 700; letter-spacing: .8px;
+    opacity: 0; transition: opacity .18s linear; pointer-events: none;
+  }
+  #alert.show { opacity: 1; }
   #help {
     margin-top: 10px; font-size: 13px; line-height: 1.7; opacity: .9;
     display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; align-items: center;
@@ -54,6 +62,8 @@
     <div id="hud">
       <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
       <div class="stat">Fala <b id="wave">1 / 10</b></div>
+      <div class="stat">Do fali <b id="nextWave" class="soft">22.0s</b></div>
+      <div class="stat">Do bossa <b id="nextBoss" class="soft">4 spawny</b></div>
       <div class="stat">Ekipa <b id="squad">1</b></div>
       <div class="stat">Moc <b id="power">0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
@@ -67,6 +77,7 @@
     </div>
     <div id="stage">
       <canvas id="game" width="1000" height="600"></canvas>
+      <div id="alert" aria-live="polite"></div>
       <div id="overlay" class="hidden">
         <h2 id="overTitle">Przegrana</h2>
         <p id="overSub"></p>
@@ -101,7 +112,8 @@
       zombie: { r: 8, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
       boss: { everySpawnCycle: 4, r: 15, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
       panel: { x: 40, bandH: 86, recruitPer: 14, powerPer: 30 }, // pasy: góra=ludzie, dół=moc (mniejsze)
-      waves: { total: 10, duration: 22 },
+      waves: { total: 10, duration: 22, breakDuration: 2.4 },
+      warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
       powerStep: { fireAdd: 0.32, dmgMul: 1.08 },
       difficulty: {
@@ -122,6 +134,9 @@
     let zombies, bullets, fx;
     let recruitHits, powerHits;
     let spawnCycles;
+    let prepTimer = 0;
+    let warnedBossCycle = -1;
+    let alertTimer = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
     let bossEvery = CONFIG.boss.everySpawnCycle;
     let keys = { up: false, down: false };
@@ -212,6 +227,20 @@
       });
     }
 
+    function sfxAlert() {
+      if (!audioCtx || muted) return;
+      const base = audioCtx.currentTime;
+      [690, 740].forEach(function (f, i) {
+        const t = base + i * 0.12;
+        const o = audioCtx.createOscillator();
+        o.type = 'square';
+        o.frequency.setValueAtTime(f, t);
+        const g = env(0.07, 0.1, 0.003);
+        o.connect(g); g.connect(master);
+        o.start(t); o.stop(t + 0.11);
+      });
+    }
+
     function memberOffset(i) {
       // Zwarta formacja "w kupie" zamiast jednej linii.
       const form = [
@@ -252,6 +281,8 @@
       applyDifficulty();
       baseHp = CONFIG.baseHpMax;
       wave = 1; waveTime = 0;
+      prepTimer = 0; warnedBossCycle = -1;
+      alertTimer = 0;
       spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
@@ -261,28 +292,64 @@
       zombies = []; bullets = []; fx = [];
       recruitHits = 0; powerHits = 0; spawnCycles = 0;
       applyPower();
+      hideAlert();
       hideOverlay();
       updateHud();
+    }
+
+    function showAlert(text, seconds) {
+      el.alert.textContent = text;
+      el.alert.classList.add('show');
+      alertTimer = Math.max(0.2, seconds || 1.0);
+    }
+
+    function hideAlert() {
+      el.alert.classList.remove('show');
+      el.alert.textContent = '';
+    }
+
+    function startNextWave() {
+      waveTime = 0;
+      spawnEvery = Math.max(0.30, spawnEvery * CONFIG.ramp.spawnMul);
+      zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
+      zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
+      showAlert('FALA ' + wave, 0.9);
     }
 
     function addRecruit() { if (N < CONFIG.shooter.maxN) { N++; colY = clamp(colY, minY(), maxY()); } }
 
     // ---- Aktualizacja ----
     function update(dt) {
+      if (alertTimer > 0) {
+        alertTimer -= dt;
+        if (alertTimer <= 0) hideAlert();
+      }
+
       // fale
-      waveTime += dt;
-      if (waveTime >= CONFIG.waves.duration) {
-        waveTime = 0; wave++;
-        if (wave > CONFIG.waves.total) {
+      if (prepTimer > 0) {
+        prepTimer = Math.max(0, prepTimer - dt);
+        if (prepTimer === 0) {
+          startNextWave();
+        }
+      } else {
+        waveTime += dt;
+      }
+
+      if (waveTime >= CONFIG.waves.duration && prepTimer === 0) {
+        if (wave >= CONFIG.waves.total) {
           state = 'win';
           sfxEnd(true);
           showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
           updateHud(); return;
         }
-        spawnEvery = Math.max(0.30, spawnEvery * CONFIG.ramp.spawnMul);
-        zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
-        zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
+        wave++;
+        waveTime = 0;
+        prepTimer = CONFIG.waves.breakDuration;
+        zombies = [];
+        bullets = [];
+        showAlert('PRZYGOTUJ SIE - FALA ' + wave, CONFIG.waves.breakDuration - 0.2);
       }
+
       // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
       if (keys.up && !keys.down) targetY = minY();
       else if (keys.down && !keys.up) targetY = maxY();
@@ -290,6 +357,19 @@
       const step = CONFIG.move.speed * dt;
       if (Math.abs(targetY - colY) <= step) colY = targetY;
       else colY += Math.sign(targetY - colY) * step;
+
+      if (prepTimer > 0) {
+        for (let i = fx.length - 1; i >= 0; i--) { fx[i].life -= dt; if (fx[i].life <= 0) fx.splice(i, 1); }
+        updateHud();
+        return;
+      }
+
+      const nextSpawnCycle = spawnCycles + 1;
+      if (nextSpawnCycle % bossEvery === 0 && spawnTimer <= CONFIG.warning.bossLead && warnedBossCycle !== nextSpawnCycle) {
+        warnedBossCycle = nextSpawnCycle;
+        showAlert('BOSS NADCHODZI!', CONFIG.warning.bossFlash);
+        sfxAlert();
+      }
 
       // spawn zombie
       spawnTimer -= dt;
@@ -459,11 +539,22 @@
       kills: document.getElementById('kills'), overlay: document.getElementById('overlay'),
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       restart: document.getElementById('restart'),
-      difficulty: document.getElementById('difficulty')
+      difficulty: document.getElementById('difficulty'),
+      nextWave: document.getElementById('nextWave'),
+      nextBoss: document.getElementById('nextBoss'),
+      alert: document.getElementById('alert')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
       el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
+      if (prepTimer > 0) {
+        el.nextWave.textContent = 'przerwa ' + prepTimer.toFixed(1) + 's';
+      } else {
+        const left = Math.max(0, CONFIG.waves.duration - waveTime);
+        el.nextWave.textContent = left.toFixed(1) + 's';
+      }
+      const toBoss = (bossEvery - (spawnCycles % bossEvery)) || bossEvery;
+      el.nextBoss.textContent = toBoss + (toBoss === 1 ? ' spawn' : ' spawny');
       el.squad.textContent = N;
       el.power.textContent = powerLevel;
       el.kills.textContent = kills;
