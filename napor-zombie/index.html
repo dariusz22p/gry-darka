@@ -346,6 +346,7 @@
       slowFieldTimer = 0;
       spreadLevel = 0;
       spreadDecayTimer = 0;
+      applyPower();
       memberShotTimers = new Array(CONFIG.shooter.maxN).fill(0).map(function () {
         return Math.random() * (1 / Math.max(0.001, fireRate));
       });
@@ -355,7 +356,6 @@
       recruitNeed = CONFIG.panel.recruitPer;
       powerNeed = CONFIG.panel.powerPer;
       spawnCycles = 0;
-      applyPower();
       hideAlert();
       hideOverlay();
       updateHud();
