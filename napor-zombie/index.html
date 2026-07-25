@@ -127,8 +127,8 @@
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
       spread: { levelMax: 4, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
-      panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
-      growth: { recruitMul: 1.30, recruitNeedCap: 220, powerMul: 2.0 },
+      panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      growth: { recruitMul: 1.9, powerMul: 2.0 },
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 2 },
@@ -678,7 +678,7 @@
             if (recruitHits >= recruitNeed) {
               recruitHits -= recruitNeed;
               addRecruit();
-              recruitNeed = Math.min(CONFIG.growth.recruitNeedCap, Math.ceil(recruitNeed * CONFIG.growth.recruitMul));
+              recruitNeed = Math.min(1e9, Math.ceil(recruitNeed * CONFIG.growth.recruitMul));
               sfxUpgrade(false);
             }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
