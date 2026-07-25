@@ -86,22 +86,26 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { gap: 26, maxN: 9, r: 12, baseFireRate: 4.5, baseDmg: 12, bulletSpeed: 720 },
-      zombie: { r: 14, hp: 30, speed: 52, dmg: 10, spawnEvery: 1.15 },
-      panel: { x: 66, bandH: 165, recruitPer: 10, powerPer: 14 }, // pasy: góra=ludzie, dół=moc
+      shooter: { maxN: 10, r: 7, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      zombie: { r: 8, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
+      boss: { everySpawnCycle: 4, r: 15, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
+      panel: { x: 40, bandH: 86, recruitPer: 14, powerPer: 30 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
-      powerStep: { fireAdd: 0.7, dmgMul: 1.13 }
+      powerStep: { fireAdd: 0.32, dmgMul: 1.08 }
     };
     const W = CONFIG.W, H = CONFIG.H;
     const recruitBand = { top: CONFIG.wallTop, bot: CONFIG.wallTop + CONFIG.panel.bandH };
     const powerBand = { top: CONFIG.wallBottom - CONFIG.panel.bandH, bot: CONFIG.wallBottom };
+    const laneTop = recruitBand.bot + 8;   // tylko ten środkowy pas generuje zombie
+    const laneBot = powerBand.top - 8;
 
     // ---- Stan ----
     let state, baseHp, wave, waveTime, spawnEvery, spawnTimer, zHp, zSpeed, kills, powerLevel;
     let N, colY, targetY, fireTimer, fireRate, dmg;
     let zombies, bullets, fx;
     let recruitHits, powerHits;
+    let spawnCycles;
     let keys = { up: false, down: false };
     let steering = false;
     let last = 0;
@@ -190,9 +194,29 @@
       });
     }
 
-    function halfCol() { return (N - 1) * CONFIG.shooter.gap / 2; }
-    function minY() { return CONFIG.wallTop + halfCol() + 6; }
-    function maxY() { return CONFIG.wallBottom - halfCol() - 6; }
+    function memberOffset(i) {
+      // Zwarta formacja "w kupie" zamiast jednej linii.
+      const form = [
+        { x: 0, y: 0 },
+        { x: -10, y: -9 },
+        { x: -10, y: 9 },
+        { x: -20, y: 0 },
+        { x: -20, y: -12 },
+        { x: -20, y: 12 },
+        { x: -30, y: -6 },
+        { x: -30, y: 6 },
+        { x: -38, y: -14 },
+        { x: -38, y: 14 }
+      ];
+      return form[i] || { x: -42, y: 0 };
+    }
+    function squadHalfHeight() {
+      let m = 0;
+      for (let i = 0; i < N; i++) m = Math.max(m, Math.abs(memberOffset(i).y));
+      return m + CONFIG.shooter.r + 6;
+    }
+    function minY() { return CONFIG.wallTop + squadHalfHeight(); }
+    function maxY() { return CONFIG.wallBottom - squadHalfHeight(); }
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
     function applyPower() {
@@ -211,7 +235,7 @@
       fireTimer = 0;
       shotSfxCd = 0;
       zombies = []; bullets = []; fx = [];
-      recruitHits = 0; powerHits = 0;
+      recruitHits = 0; powerHits = 0; spawnCycles = 0;
       applyPower();
       hideOverlay();
       updateHud();
@@ -246,8 +270,25 @@
       spawnTimer -= dt;
       if (spawnTimer <= 0) {
         spawnTimer += spawnEvery;
-        const y = CONFIG.wallTop + 20 + Math.random() * (CONFIG.wallBottom - CONFIG.wallTop - 40);
-        zombies.push({ x: -22, y: y, hp: zHp, maxhp: zHp });
+        spawnCycles++;
+        const burst = Math.min(8, 3 + Math.floor((wave - 1) / 2));
+        for (let s = 0; s < burst; s++) {
+          const y = laneTop + 8 + Math.random() * Math.max(8, (laneBot - laneTop - 16));
+          zombies.push({ x: -18 - s * 12, y: y, hp: zHp, maxhp: zHp, r: CONFIG.zombie.r, speed: zSpeed, dmg: CONFIG.zombie.dmg, boss: false });
+        }
+        if (spawnCycles % CONFIG.boss.everySpawnCycle === 0) {
+          const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
+          zombies.push({
+            x: -34,
+            y: y,
+            hp: zHp * CONFIG.boss.hpMul,
+            maxhp: zHp * CONFIG.boss.hpMul,
+            r: CONFIG.boss.r,
+            speed: zSpeed * CONFIG.boss.speedMul,
+            dmg: CONFIG.zombie.dmg * CONFIG.boss.dmgMul,
+            boss: true
+          });
+        }
       }
 
       // auto-ogień: salwa (1 pocisk na strzelca) prosto w lewo
@@ -255,10 +296,9 @@
       fireTimer -= dt;
       if (fireTimer <= 0) {
         fireTimer += 1 / fireRate;
-        const half = halfCol();
         for (let i = 0; i < N; i++) {
-          const y = colY - half + i * CONFIG.shooter.gap;
-          bullets.push({ x: CONFIG.squadX - 18, y: y, vx: -CONFIG.shooter.bulletSpeed, dmg: dmg });
+          const o = memberOffset(i);
+          bullets.push({ x: CONFIG.squadX + o.x - 14, y: colY + o.y, vx: -CONFIG.shooter.bulletSpeed, dmg: dmg });
         }
         if (shotSfxCd <= 0) { sfxVolley(); shotSfxCd = 0.11; }
       }
@@ -266,9 +306,9 @@
       // ruch zombie + wyłom bazy
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
-        z.x += zSpeed * dt;
+        z.x += z.speed * dt;
         if (z.x >= CONFIG.breachX) {
-          baseHp -= CONFIG.zombie.dmg;
+          baseHp -= z.dmg;
           sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
           zombies.splice(i, 1);
@@ -289,10 +329,14 @@
         if (!dead) {
           for (let j = zombies.length - 1; j >= 0; j--) {
             const z = zombies[j];
-            const dx = z.x - b.x, dy = z.y - b.y, rr = CONFIG.zombie.r + 4;
+            const dx = z.x - b.x, dy = z.y - b.y, rr = z.r + 4;
             if (dx * dx + dy * dy <= rr * rr) {
               z.hp -= b.dmg; dead = true;
-              if (z.hp <= 0) { zombies.splice(j, 1); kills++; fx.push({ x: z.x, y: z.y, life: 0.25, c: '#8bd450', r: 14 }); }
+              if (z.hp <= 0) {
+                zombies.splice(j, 1);
+                kills += z.boss ? CONFIG.boss.killScore : 1;
+                fx.push({ x: z.x, y: z.y, life: 0.25, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 20 : 14 });
+              }
               break;
             }
           }
@@ -344,24 +388,30 @@
       ctx.fillStyle = 'rgba(255,82,82,.10)'; ctx.fillRect(CONFIG.breachX, CONFIG.wallTop, W - CONFIG.breachX, CONFIG.wallBottom - CONFIG.wallTop);
       // zombie
       for (const z of zombies) {
-        ctx.fillStyle = '#6aa84f'; ctx.strokeStyle = '#3d6b2e'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(z.x, z.y, CONFIG.zombie.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = z.boss ? '#ff8a65' : '#6aa84f';
+        ctx.strokeStyle = z.boss ? '#bf4c2b' : '#3d6b2e';
+        ctx.lineWidth = z.boss ? 3 : 2;
+        ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         if (z.hp < z.maxhp) {
-          ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - 14, z.y - 24, 28, 5);
-          ctx.fillStyle = '#8bd450'; ctx.fillRect(z.x - 14, z.y - 24, 28 * (z.hp / z.maxhp), 5);
+          const bw = z.r * 2.1;
+          ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw, 5);
+          ctx.fillStyle = z.boss ? '#ffb199' : '#8bd450';
+          ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw * (z.hp / z.maxhp), 5);
         }
       }
       // zasięg pokrycia kolumny (pomocniczo)
-      const half = halfCol();
+      const half = squadHalfHeight();
       ctx.fillStyle = 'rgba(79,157,255,.12)';
       ctx.fillRect(CONFIG.breachX, colY - half - 8, W - CONFIG.breachX, (half + 8) * 2);
-      // kolumna ekipy
+      // zwarta kupa ekipy
       for (let i = 0; i < N; i++) {
-        const y = colY - half + i * CONFIG.shooter.gap;
+        const o = memberOffset(i);
+        const x = CONFIG.squadX + o.x;
+        const y = colY + o.y;
         ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.moveTo(CONFIG.squadX, y); ctx.lineTo(CONFIG.squadX - 22, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 18, y); ctx.stroke();
         ctx.fillStyle = i === 0 ? '#dbe6f2' : '#4f9dff';
-        ctx.beginPath(); ctx.arc(CONFIG.squadX, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
       }
       // pociski
