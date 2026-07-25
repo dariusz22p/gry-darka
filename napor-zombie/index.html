@@ -175,7 +175,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 34, dmg: 9, spawnEvery: 0.55, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0 },
+      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -185,14 +185,14 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 8, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
+      spread: { levelMax: 10, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
-      waves: { total: 10, killsBase: 50, breakDuration: 2.4 },
+      waves: { total: 10, killsBase: 100, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
-      ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 1 },
+      ramp: { spawnMul: 0.95, hpAdd: 8, speedAdd: 0.65 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
       difficulty: {
         easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 9, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
