@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pojedynek Zamków</title>
+<title>Pojedynek Zamków (Janek i Darek)</title>
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -80,7 +80,7 @@
 </head>
 <body>
   <div id="game">
-    <h1>POJEDYNEK ZAMKÓW</h1>
+    <h1>POJEDYNEK ZAMKÓW (JANEK I DAREK)</h1>
     <div id="hud">
       <div class="player p1">
         <div class="name">Gracz 1</div>
@@ -183,7 +183,7 @@
     const STEP2 = engine.gravity.scale * (1000 / 60) * (1000 / 60);
 
     // ---- Dźwięk (Web Audio, syntezowany — bez plików, działa offline) ----
-    let audioCtx = null, masterGain = null, muted = false;
+    let audioCtx = null, masterGain = null, muted = false, flight = null;
 
     function ensureAudio() {
       if (!audioCtx) {
@@ -270,6 +270,39 @@
       });
     }
 
+    // Subtelny, ciągły dźwięk lotu pocisku (whistle śledzący prędkość)
+    function startFlightSound() {
+      if (!audioCtx) return;
+      stopFlightSound();
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, t);
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.045, t + 0.08);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(t);
+      flight = { osc: osc, gain: g };
+    }
+
+    function updateFlightSound(speed) {
+      if (!flight) return;
+      const f = Math.max(180, Math.min(760, 180 + speed * 22));
+      flight.osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.03);
+    }
+
+    function stopFlightSound() {
+      if (!flight) return;
+      const t = audioCtx.currentTime;
+      const f = flight;
+      flight = null;
+      f.gain.gain.cancelScheduledValues(t);
+      f.gain.gain.setValueAtTime(f.gain.gain.value, t);
+      f.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      f.osc.stop(t + 0.14);
+    }
+
     // ---- Budowa świata ----
     function buildCastle(cx, player) {
       const { cols, rows, bw, bh } = CONFIG.castle;
@@ -332,6 +365,7 @@
       fireTime = performance.now();
       spentTime = 0; restFrames = 0; shotDamage = 0;
       sfxShoot();
+      startFlightSound();
       updateHud();
     }
 
@@ -364,6 +398,7 @@
       const p = projectile;
       // Wiatr: siła pozioma proporcjonalna do masy (analogicznie do grawitacji)
       Body.applyForce(p, p.position, { x: p.mass * wind * engine.gravity.scale, y: 0 });
+      updateFlightSound(p.speed);
       if (p.position.y > H + 150 || p.position.x < -150 || p.position.x > W + 150) { endTurn(); return; }
       if (now - fireTime > 700 && p.speed < 0.6) restFrames++; else restFrames = 0;
       if (restFrames > 25) { endTurn(); return; }
@@ -372,6 +407,7 @@
     });
 
     function endTurn() {
+      stopFlightSound();
       if (projectile) { Composite.remove(engine.world, projectile); projectile = null; }
       if (hp[1] <= 0 || hp[2] <= 0) { handleRoundEnd(); return; }
       current = current === 1 ? 2 : 1;

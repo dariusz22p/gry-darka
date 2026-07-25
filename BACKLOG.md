@@ -48,7 +48,7 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 ## Etap 3 — Grafika, audio, UX
 - [ ] Sprite'y zamków i tła (zamiast prostokątów)
 - [ ] Efekty cząsteczkowe wybuchu i dymu
-- [x] Dźwięki: strzał, trafienie/wybuch, wygrana (Web Audio, syntezowane) + wyciszenie (klawisz M)
+- [x] Dźwięki: strzał, lot (subtelny), trafienie/wybuch, wygrana (Web Audio, syntezowane) + wyciszenie (klawisz M)
 - [ ] Animowany pasek mocy (naciśnij i przytrzymaj Spację)
 - [ ] Wstrząs ekranu przy trafieniu (screen shake)
 - [ ] Ekran startowy + menu (start / instrukcja / ustawienia)
