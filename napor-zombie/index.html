@@ -68,6 +68,7 @@
       <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
       <span>Ekipa strzela sama prosto w lewo</span>
       <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
+      <span><kbd>M</kbd> wyciszenie</span>
       <span><kbd>R</kbd> restart</span>
     </div>
   </div>
@@ -104,6 +105,90 @@
     let keys = { up: false, down: false };
     let steering = false;
     let last = 0;
+    let shotSfxCd = 0;
+
+    // ---- Dźwięk (Web Audio, syntezowany) ----
+    let audioCtx = null, master = null, muted = false;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+        master = audioCtx.createGain();
+        master.gain.value = 0.18;
+        master.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function env(peak, dur, attack) {
+      const g = audioCtx.createGain();
+      const t = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(peak, t + (attack || 0.005));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      return g;
+    }
+
+    function noiseBuf(dur) {
+      const n = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+      const b = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+
+    function sfxVolley() {
+      if (!audioCtx || muted) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, t);
+      osc.frequency.exponentialRampToValueAtTime(120, t + 0.11);
+      const g = env(0.06, 0.13, 0.002);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + 0.14);
+    }
+
+    function sfxBreach() {
+      if (!audioCtx || muted) return;
+      const t = audioCtx.currentTime;
+      const src = audioCtx.createBufferSource();
+      src.buffer = noiseBuf(0.17);
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.8;
+      const g = env(0.12, 0.18, 0.002);
+      src.connect(bp); bp.connect(g); g.connect(master);
+      src.start(t); src.stop(t + 0.18);
+    }
+
+    function sfxUpgrade(power) {
+      if (!audioCtx || muted) return;
+      const t = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(power ? 360 : 290, t);
+      o.frequency.exponentialRampToValueAtTime(power ? 590 : 430, t + 0.16);
+      const g = env(0.09, 0.18, 0.003);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t + 0.19);
+    }
+
+    function sfxEnd(win) {
+      if (!audioCtx || muted) return;
+      const notes = win ? [523.25, 659.25, 783.99] : [300, 230, 180];
+      const base = audioCtx.currentTime;
+      notes.forEach(function (f, i) {
+        const t = base + i * 0.11;
+        const o = audioCtx.createOscillator();
+        o.type = win ? 'square' : 'triangle';
+        o.frequency.value = f;
+        const g = env(win ? 0.08 : 0.1, 0.18, 0.006);
+        o.connect(g); g.connect(master);
+        o.start(t); o.stop(t + 0.2);
+      });
+    }
 
     function halfCol() { return (N - 1) * CONFIG.shooter.gap / 2; }
     function minY() { return CONFIG.wallTop + halfCol() + 6; }
@@ -124,6 +209,7 @@
       kills = 0; powerLevel = 0;
       N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
       fireTimer = 0;
+      shotSfxCd = 0;
       zombies = []; bullets = []; fx = [];
       recruitHits = 0; powerHits = 0;
       applyPower();
@@ -141,6 +227,7 @@
         waveTime = 0; wave++;
         if (wave > CONFIG.waves.total) {
           state = 'win';
+          sfxEnd(true);
           showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
           updateHud(); return;
         }
@@ -164,6 +251,7 @@
       }
 
       // auto-ogień: salwa (1 pocisk na strzelca) prosto w lewo
+      shotSfxCd -= dt;
       fireTimer -= dt;
       if (fireTimer <= 0) {
         fireTimer += 1 / fireRate;
@@ -172,6 +260,7 @@
           const y = colY - half + i * CONFIG.shooter.gap;
           bullets.push({ x: CONFIG.squadX - 18, y: y, vx: -CONFIG.shooter.bulletSpeed, dmg: dmg });
         }
+        if (shotSfxCd <= 0) { sfxVolley(); shotSfxCd = 0.11; }
       }
 
       // ruch zombie + wyłom bazy
@@ -180,10 +269,12 @@
         z.x += zSpeed * dt;
         if (z.x >= CONFIG.breachX) {
           baseHp -= CONFIG.zombie.dmg;
+          sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
           zombies.splice(i, 1);
           if (baseHp <= 0) {
             baseHp = 0; state = 'lose';
+            sfxEnd(false);
             showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
             updateHud(); return;
           }
@@ -211,11 +302,11 @@
           if (b.y >= recruitBand.top && b.y <= recruitBand.bot) {
             recruitHits++;
             fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#8bd450', r: 10 });
-            if (recruitHits >= CONFIG.panel.recruitPer) { recruitHits = 0; addRecruit(); }
+            if (recruitHits >= CONFIG.panel.recruitPer) { recruitHits = 0; addRecruit(); sfxUpgrade(false); }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
             powerHits++;
             fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#ffb74d', r: 10 });
-            if (powerHits >= CONFIG.panel.powerPer) { powerHits = 0; powerLevel++; applyPower(); }
+            if (powerHits >= CONFIG.panel.powerPer) { powerHits = 0; powerLevel++; applyPower(); sfxUpgrade(true); }
           }
         }
         if (dead) bullets.splice(i, 1);
@@ -313,15 +404,22 @@
       const r = canvas.getBoundingClientRect();
       return clamp((e.clientY - r.top) * (H / r.height), minY(), maxY());
     }
-    canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); if (state === 'play') { steering = true; targetY = pointerY(e); } });
+    canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); ensureAudio(); if (state === 'play') { steering = true; targetY = pointerY(e); } });
     canvas.addEventListener('pointermove', function (e) { if (steering && state === 'play') targetY = pointerY(e); });
     window.addEventListener('pointerup', function () { steering = false; });
     canvas.addEventListener('wheel', function (e) {
       e.preventDefault();
+      ensureAudio();
       if (state === 'play') targetY = clamp(targetY + Math.sign(e.deltaY) * 40, minY(), maxY());
     }, { passive: false });
     window.addEventListener('keydown', function (e) {
+      ensureAudio();
       if (e.key === 'r' || e.key === 'R') { reset(); return; }
+      if (e.key === 'm' || e.key === 'M') {
+        muted = !muted;
+        if (master) master.gain.value = muted ? 0 : 0.18;
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { keys.up = true; e.preventDefault(); }
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { keys.down = true; e.preventDefault(); }
     });
@@ -330,7 +428,7 @@
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
       if (!keys.up && !keys.down) targetY = colY;
     });
-    el.restart.addEventListener('click', reset);
+    el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
 
     // ---- Pętla ----
     function frame(t) {
