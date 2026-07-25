@@ -29,19 +29,19 @@
     grid-area: hud;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    font-size: 13px;
+    gap: 5px;
+    font-size: 12px;
   }
   #hud .stat {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px;
     min-width: 0;
-    min-height: 38px;
-    padding: 8px 10px;
+    min-height: 30px;
+    padding: 5px 7px;
     border: 1px solid #2f3d4e;
-    border-radius: 8px;
+    border-radius: 6px;
     background: #18212c;
   }
   #hud .stat span,
@@ -54,6 +54,8 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
+  #hud .stat span { font-size: 11px; }
+  #hud .stat b { font-size: 12px; }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
   #difficulty {
