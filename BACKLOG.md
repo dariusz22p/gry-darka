@@ -52,7 +52,8 @@ Stack: HTML5 Canvas + JavaScript + [Matter.js](https://brm.io/matter-js/) (fizyk
 - [ ] Animowany pasek mocy (naciśnij i przytrzymaj Spację)
 - [ ] Wstrząs ekranu przy trafieniu (screen shake)
 - [ ] Ekran startowy + menu (start / instrukcja / ustawienia)
-- [ ] Responsywność i skalowanie do rozmiaru okna
+- [x] Pełny ekran (Fullscreen API + skalowanie z zachowaniem proporcji, letterbox) — wariant A
+- [ ] W pełni responsywny świat: canvas = rozmiar okna, layout przeliczany z W/H + obsługa resize (wariant B)
 
 ## Etap 4 — Tryby i przeciwnicy
 - [ ] Tryb 1-osobowy: przeciwnik AI (łatwy/średni/trudny — dobór kąta i mocy)

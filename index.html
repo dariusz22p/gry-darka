@@ -57,6 +57,25 @@
     background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px;
     border-radius: 5px; padding: 1px 7px; font-family: inherit; font-size: 12px;
   }
+  #fsBtn {
+    cursor: pointer; border: 1px solid #3a4c60; background: #2c3a4b; color: #e8edf2;
+    border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; font-family: inherit;
+  }
+  #fsBtn:hover { background: #34465b; }
+  /* Wariant A: pełny ekran — skalowanie z zachowaniem proporcji (letterbox) */
+  #game.fs {
+    width: 100vw; height: 100vh; max-width: none; margin: 0; padding: 8px 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; background: #1b2430;
+  }
+  #game.fs h1 { margin: 0; }
+  #game.fs #hud, #game.fs #help { width: min(1100px, 96vw); margin: 0; }
+  #game.fs #stage { width: auto; height: auto; }
+  #game.fs canvas#board {
+    height: min(calc(100vh - 185px), calc(96vw * 0.6));
+    width: min(calc((100vh - 185px) * 1.6667), 96vw);
+    max-width: 96vw;
+  }
 </style>
 </head>
 <body>
@@ -91,8 +110,10 @@
       <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> moc</span>
       <span><kbd>Spacja</kbd> strzał / następna runda</span>
       <span><kbd>R</kbd> nowy mecz</span>
+      <span><kbd>F</kbd> pełny ekran</span>
       <span>Best of 3 — wiatr zmienia się co turę</span>
       <span>Hotseat: 2 graczy na jednej klawiaturze</span>
+      <button id="fsBtn" type="button">Pełny ekran</button>
     </div>
   </div>
 
@@ -410,7 +431,8 @@
       overlay: document.getElementById('overlay'),
       winText: document.getElementById('winText'),
       winSub: document.getElementById('winSub'),
-      overlayBtn: document.getElementById('overlayBtn')
+      overlayBtn: document.getElementById('overlayBtn'),
+      fsBtn: document.getElementById('fsBtn')
     };
 
     function updateHud() {
@@ -470,6 +492,7 @@
 
     // ---- Sterowanie (hotseat) ----
     window.addEventListener('keydown', function (e) {
+      if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
       if (state === 'GAMEOVER') {
         if ((e.key === 'r' || e.key === 'R') && overlayAction) overlayAction();
         return;
@@ -496,6 +519,29 @@
     }, { passive: false });
 
     el.overlayBtn.addEventListener('click', function () { if (overlayAction) overlayAction(); });
+
+    // ---- Pełny ekran (wariant A) ----
+    function toggleFullscreen() {
+      const g = document.getElementById('game');
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fsEl) {
+        const req = g.requestFullscreen || g.webkitRequestFullscreen;
+        if (req) req.call(g);
+      } else {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) exit.call(document);
+      }
+    }
+
+    function onFullscreenChange() {
+      const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      document.getElementById('game').classList.toggle('fs', active);
+      el.fsBtn.textContent = active ? 'Zamknij pełny ekran' : 'Pełny ekran';
+    }
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    el.fsBtn.addEventListener('click', toggleFullscreen);
 
     // ---- Start ----
     resetMatch();
