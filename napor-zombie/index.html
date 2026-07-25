@@ -115,7 +115,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 38, dmg: 9, spawnEvery: 0.55, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 14, reactionWindow: 0.85, reactionLag: 2.0 },
+      zombie: { r: 6, hp: 16, speed: 34, dmg: 9, spawnEvery: 0.55, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -130,7 +130,7 @@
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
-      waves: { total: 10, killsBase: 24, breakDuration: 2.4 },
+      waves: { total: 10, killsBase: 50, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 1 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
@@ -525,10 +525,10 @@
         const burstBase = 5 + Math.floor((wave - 1) / 2);
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         const laneMid = (laneTop + laneBot) / 2;
-        const laneAmp = (laneBot - laneTop) * 0.05;
+        const laneAmp = (laneBot - laneTop) * 0.08;
         const minGap = CONFIG.zombie.r * 2 + 1;
         const packCenter = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 12, laneBot - 12);
-        const halfSpanCap = 18;
+        const halfSpanCap = 24;
         for (let s = 0; s < burst; s++) {
           const offset = (s - (burst - 1) / 2) * minGap;
           const packedOffset = Math.max(-halfSpanCap, Math.min(halfSpanCap, offset));
