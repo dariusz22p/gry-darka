@@ -67,6 +67,7 @@
       <div class="stat">Ekipa <b id="squad">1</b></div>
       <div class="stat">Moc <b id="power">0</b></div>
       <div class="stat">Zabici <b id="kills">0</b></div>
+      <div class="stat">Efekt <b id="effect" class="soft">brak</b></div>
       <div class="stat">Best fala <b id="bestWave" class="soft">0</b></div>
       <div class="stat">Best zabici <b id="bestKills" class="soft">0</b></div>
       <div class="stat">Tryb
@@ -113,6 +114,14 @@
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 26, trackPlayerWeight: 0.35, trackSpread: 78, reactionWindow: 0.55, reactionLag: 1.2 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
+      miniBoss: {
+        telegraphLead: 1.5,
+        types: ['tank', 'charger', 'splitter'],
+        tank: { hpMul: 1.5, speedMul: 0.82, dmgMul: 1.20, trackMul: 0.55, color: '#b0bec5' },
+        charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
+        splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
+      },
+      loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
@@ -144,6 +153,8 @@
     let aimSampleSum = 0;
     let aimSampleCount = 0;
     let aimWindowAvgY = 0;
+    let recruitBoostTimer = 0;
+    let slowFieldTimer = 0;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -316,6 +327,8 @@
       aimSampleTimer = 0;
       aimSampleSum = 0;
       aimSampleCount = 0;
+      recruitBoostTimer = 0;
+      slowFieldTimer = 0;
       fireTimer = 0;
       shotSfxCd = 0;
       zombies = []; bullets = []; fx = [];
@@ -335,6 +348,42 @@
     function hideAlert() {
       el.alert.classList.remove('show');
       el.alert.textContent = '';
+    }
+
+    function getMiniTypeForWave(w) {
+      if (w % 2 !== 0) return null;
+      const idx = Math.floor(w / 2 - 1) % CONFIG.miniBoss.types.length;
+      return CONFIG.miniBoss.types[idx];
+    }
+
+    function miniLabel(type) {
+      return type === 'tank' ? 'TANK' : type === 'charger' ? 'CHARGER' : 'SPLITTER';
+    }
+
+    function makeZombie(x, y, opts) {
+      return {
+        x: x,
+        y: y,
+        hp: opts.hp,
+        maxhp: opts.hp,
+        r: opts.r,
+        speed: opts.speed,
+        dmg: opts.dmg,
+        boss: !!opts.boss,
+        miniType: opts.miniType || null,
+        laneY: y,
+        trackOff: opts.trackOff
+      };
+    }
+
+    function grantMiniLoot(type) {
+      if (type === 'tank' || type === 'splitter') {
+        slowFieldTimer = CONFIG.loot.slowDur;
+        showAlert('LOOT: SPOWOLNIENIE ZOMBIE ' + CONFIG.loot.slowDur + 's', 1.1);
+      } else if (type === 'charger') {
+        recruitBoostTimer = CONFIG.loot.recruitDur;
+        showAlert('LOOT: SZYBSZA REKRUTACJA ' + CONFIG.loot.recruitDur + 's', 1.1);
+      }
     }
 
     function startNextWave() {
@@ -357,6 +406,8 @@
         alertTimer -= dt;
         if (alertTimer <= 0) hideAlert();
       }
+      if (recruitBoostTimer > 0) recruitBoostTimer = Math.max(0, recruitBoostTimer - dt);
+      if (slowFieldTimer > 0) slowFieldTimer = Math.max(0, slowFieldTimer - dt);
 
       // fale
       if (prepTimer > 0) {
@@ -412,9 +463,10 @@
       }
 
       const nextSpawnCycle = spawnCycles + 1;
-      if (nextSpawnCycle % bossEvery === 0 && spawnTimer <= CONFIG.warning.bossLead && warnedBossCycle !== nextSpawnCycle) {
+      if (nextSpawnCycle % bossEvery === 0 && spawnTimer <= CONFIG.miniBoss.telegraphLead && warnedBossCycle !== nextSpawnCycle) {
         warnedBossCycle = nextSpawnCycle;
-        showAlert('BOSS NADCHODZI!', CONFIG.warning.bossFlash);
+        const miniType = getMiniTypeForWave(wave);
+        showAlert((miniType ? ('MINI-BOSS: ' + miniLabel(miniType)) : 'BOSS NADCHODZI!'), CONFIG.warning.bossFlash);
         sfxAlert();
       }
 
@@ -427,33 +479,31 @@
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         for (let s = 0; s < burst; s++) {
           const y = laneTop + 8 + Math.random() * Math.max(8, (laneBot - laneTop - 16));
-          zombies.push({
-            x: -18 - s * 12,
-            y: y,
+          zombies.push(makeZombie(-18 - s * 12, y, {
             hp: zHp,
-            maxhp: zHp,
             r: CONFIG.zombie.r,
             speed: zSpeed,
             dmg: CONFIG.zombie.dmg,
             boss: false,
-            laneY: y,
             trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
-          });
+          }));
         }
         if (spawnCycles % bossEvery === 0) {
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
-          zombies.push({
-            x: -34,
-            y: y,
-            hp: zHp * CONFIG.boss.hpMul * diff.bossHpMul,
-            maxhp: zHp * CONFIG.boss.hpMul * diff.bossHpMul,
+          const miniType = getMiniTypeForWave(wave);
+          const mini = miniType ? CONFIG.miniBoss[miniType] : null;
+          const hpMul = CONFIG.boss.hpMul * diff.bossHpMul * (mini ? mini.hpMul : 1);
+          const speedMul = CONFIG.boss.speedMul * (mini ? mini.speedMul : 1);
+          const dmgMul = CONFIG.boss.dmgMul * diff.bossDmgMul * (mini ? mini.dmgMul : 1);
+          zombies.push(makeZombie(-34, y, {
+            hp: zHp * hpMul,
             r: CONFIG.boss.r,
-            speed: zSpeed * CONFIG.boss.speedMul,
-            dmg: CONFIG.zombie.dmg * CONFIG.boss.dmgMul * diff.bossDmgMul,
+            speed: zSpeed * speedMul,
+            dmg: CONFIG.zombie.dmg * dmgMul,
             boss: true,
-            laneY: y,
+            miniType: miniType,
             trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55)
-          });
+          }));
         }
       }
 
@@ -472,8 +522,11 @@
       // ruch zombie + wyłom bazy
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
-        z.x += z.speed * dt;
-        const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? CONFIG.boss.trackMul : 1);
+        const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
+        const chargeMul = (z.miniType === 'charger' && z.x > CONFIG.miniBoss.charger.chargeX) ? CONFIG.miniBoss.charger.chargeMul : 1;
+        const speedMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
+        z.x += z.speed * chargeMul * speedMul * dt;
+        const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? (mini ? mini.trackMul : CONFIG.boss.trackMul) : 1);
         const playerTarget = zombieAimY + (z.trackOff || 0);
         const mixedTarget = (z.laneY || z.y) * (1 - CONFIG.zombie.trackPlayerWeight) + playerTarget * CONFIG.zombie.trackPlayerWeight;
         const dy = mixedTarget - z.y;
@@ -507,9 +560,24 @@
             if (dx * dx + dy * dy <= rr * rr) {
               z.hp -= b.dmg; dead = true;
               if (z.hp <= 0) {
+                const deadZombie = z;
                 zombies.splice(j, 1);
-                kills += z.boss ? CONFIG.boss.killScore : 1;
-                fx.push({ x: z.x, y: z.y, life: 0.25, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 20 : 14 });
+                kills += deadZombie.boss ? CONFIG.boss.killScore : 1;
+                fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
+                if (deadZombie.miniType === 'splitter') {
+                  for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
+                    const sy = clamp(deadZombie.y + (s === 0 ? -12 : 12), laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
+                    zombies.push(makeZombie(deadZombie.x - 6 - s * 4, sy, {
+                      hp: Math.max(6, deadZombie.maxhp * CONFIG.miniBoss.splitter.splitHpMul),
+                      r: CONFIG.zombie.r,
+                      speed: zSpeed * CONFIG.miniBoss.splitter.splitSpeedMul,
+                      dmg: CONFIG.zombie.dmg,
+                      boss: false,
+                      trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
+                    }));
+                  }
+                }
+                if (deadZombie.miniType) grantMiniLoot(deadZombie.miniType);
               }
               break;
             }
@@ -519,6 +587,7 @@
           dead = true;
           if (b.y >= recruitBand.top && b.y <= recruitBand.bot) {
             recruitHits++;
+            if (recruitBoostTimer > 0) recruitHits++;
             fx.push({ x: CONFIG.panel.x, y: b.y, life: 0.22, c: '#8bd450', r: 10 });
             if (recruitHits >= CONFIG.panel.recruitPer) { recruitHits = 0; addRecruit(); sfxUpgrade(false); }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
@@ -562,7 +631,8 @@
       ctx.fillStyle = 'rgba(255,82,82,.10)'; ctx.fillRect(CONFIG.breachX, CONFIG.wallTop, W - CONFIG.breachX, CONFIG.wallBottom - CONFIG.wallTop);
       // zombie
       for (const z of zombies) {
-        ctx.fillStyle = z.boss ? '#ff8a65' : '#6aa84f';
+        const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
+        ctx.fillStyle = z.boss ? (mini ? mini.color : '#ff8a65') : '#6aa84f';
         ctx.strokeStyle = z.boss ? '#bf4c2b' : '#3d6b2e';
         ctx.lineWidth = z.boss ? 3 : 2;
         ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -611,6 +681,7 @@
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
       alert: document.getElementById('alert'),
+      effect: document.getElementById('effect'),
       bestWave: document.getElementById('bestWave'),
       bestKills: document.getElementById('bestKills')
     };
@@ -628,6 +699,9 @@
       el.squad.textContent = N;
       el.power.textContent = powerLevel;
       el.kills.textContent = kills;
+      if (recruitBoostTimer > 0) el.effect.textContent = 'Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's';
+      else if (slowFieldTimer > 0) el.effect.textContent = 'Spowolnienie ' + slowFieldTimer.toFixed(1) + 's';
+      else el.effect.textContent = 'brak';
       el.bestWave.textContent = bestWave;
       el.bestKills.textContent = bestKills;
     }
