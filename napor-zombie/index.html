@@ -111,8 +111,8 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 78 },
-      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.75 },
+      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55, trackSpeed: 30, trackPlayerWeight: 0.45, trackSpread: 78 },
+      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
@@ -404,7 +404,18 @@
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         for (let s = 0; s < burst; s++) {
           const y = laneTop + 8 + Math.random() * Math.max(8, (laneBot - laneTop - 16));
-          zombies.push({ x: -18 - s * 12, y: y, hp: zHp, maxhp: zHp, r: CONFIG.zombie.r, speed: zSpeed, dmg: CONFIG.zombie.dmg, boss: false });
+          zombies.push({
+            x: -18 - s * 12,
+            y: y,
+            hp: zHp,
+            maxhp: zHp,
+            r: CONFIG.zombie.r,
+            speed: zSpeed,
+            dmg: CONFIG.zombie.dmg,
+            boss: false,
+            laneY: y,
+            trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
+          });
         }
         if (spawnCycles % bossEvery === 0) {
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
@@ -416,7 +427,9 @@
             r: CONFIG.boss.r,
             speed: zSpeed * CONFIG.boss.speedMul,
             dmg: CONFIG.zombie.dmg * CONFIG.boss.dmgMul * diff.bossDmgMul,
-            boss: true
+            boss: true,
+            laneY: y,
+            trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55)
           });
         }
       }
@@ -438,7 +451,9 @@
         const z = zombies[i];
         z.x += z.speed * dt;
         const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? CONFIG.boss.trackMul : 1);
-        const dy = colY - z.y;
+        const playerTarget = colY + (z.trackOff || 0);
+        const mixedTarget = (z.laneY || z.y) * (1 - CONFIG.zombie.trackPlayerWeight) + playerTarget * CONFIG.zombie.trackPlayerWeight;
+        const dy = mixedTarget - z.y;
         const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
         z.y = clamp(z.y + yStep, laneTop + z.r, laneBot - z.r);
         if (z.x >= CONFIG.breachX) {
