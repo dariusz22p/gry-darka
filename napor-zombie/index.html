@@ -29,7 +29,7 @@
   #hud {
     grid-area: hud;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 5px;
     font-size: 12px;
   }
@@ -63,7 +63,7 @@
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
     border-radius: 6px; padding: 3px 8px; font-family: inherit; font-size: 12px;
   }
-  .base { grid-column: 1 / -1; }
+  .base { grid-column: auto; }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
   #stage { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
@@ -112,10 +112,10 @@
       row-gap: 0;
       column-gap: 0;
     }
-    #hud { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #hud { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
   @media (max-width: 640px) {
-    #hud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #hud { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 </style>
 </head>
