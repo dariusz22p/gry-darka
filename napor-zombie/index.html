@@ -137,9 +137,9 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { maxN: 10, r: 7, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 8, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
-      boss: { everySpawnCycle: 4, r: 15, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
+      shooter: { maxN: 16, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
+      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
       panel: { x: 40, bandH: 86, recruitPer: 14, powerPer: 30 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
@@ -276,20 +276,13 @@
     }
 
     function memberOffset(i) {
-      // Zwarta formacja "w kupie" zamiast jednej linii.
-      const form = [
-        { x: 0, y: 0 },
-        { x: -10, y: -9 },
-        { x: -10, y: 9 },
-        { x: -20, y: 0 },
-        { x: -20, y: -12 },
-        { x: -20, y: 12 },
-        { x: -30, y: -6 },
-        { x: -30, y: 6 },
-        { x: -38, y: -14 },
-        { x: -38, y: 14 }
-      ];
-      return form[i] || { x: -42, y: 0 };
+      // Zwarta siatka, żeby przy mniejszych jednostkach zmieścić większą ekipę.
+      const cols = 4;
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const rows = Math.ceil(Math.max(1, N) / cols);
+      const y0 = -((rows - 1) * 7) / 2;
+      return { x: -col * 10, y: y0 + row * 7 };
     }
     function squadHalfHeight() {
       let m = 0;
