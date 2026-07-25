@@ -125,8 +125,10 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 6, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
+      spread: { levelMax: 8, pelletsPerLevel: 1, anglePerLevelDeg: 4.5, baseAngleDeg: 1.2 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 7, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      growth: { recruitMul: 1.30, recruitNeedCap: 220, powerMul: 2.0 },
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 2 },
@@ -159,7 +161,7 @@
     let aimWindowAvgY = 0;
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
-    let spreadBoostTimer = 0;
+    let spreadLevel = 0;
     let bestWave = 0;
     let bestKills = 0;
     let difficultyKey = 'normal', diff = CONFIG.difficulty.normal;
@@ -340,7 +342,7 @@
       aimSampleCount = 0;
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
-      spreadBoostTimer = 0;
+      spreadLevel = 0;
       fireTimer = 0;
       shotSfxCd = 0;
       zombies = []; bullets = []; fx = []; pickups = [];
@@ -423,7 +425,6 @@
       }
       if (recruitBoostTimer > 0) recruitBoostTimer = Math.max(0, recruitBoostTimer - dt);
       if (slowFieldTimer > 0) slowFieldTimer = Math.max(0, slowFieldTimer - dt);
-      if (spreadBoostTimer > 0) spreadBoostTimer = Math.max(0, spreadBoostTimer - dt);
 
       // fale
       if (prepTimer > 0) {
@@ -535,15 +536,22 @@
       fireTimer -= dt;
       if (fireTimer <= 0) {
         fireTimer += 1 / fireRate;
-        const spreadVy = spreadBoostTimer > 0 ? 85 : 0;
+        const extraPellets = Math.min(CONFIG.spread.levelMax, spreadLevel) * CONFIG.spread.pelletsPerLevel;
+        const spreadRad = ((CONFIG.spread.baseAngleDeg + spreadLevel * CONFIG.spread.anglePerLevelDeg) * Math.PI) / 180;
         for (let i = 0; i < N; i++) {
           const o = memberOffset(i);
           const sx = CONFIG.squadX + o.x - 14;
           const sy = colY + o.y;
           bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: 0, dmg: dmg });
-          if (spreadVy > 0) {
-            bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: spreadVy, dmg: dmg * 0.72 });
-            bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: -spreadVy, dmg: dmg * 0.72 });
+          for (let p = 0; p < extraPellets; p++) {
+            const a = Math.PI + (Math.random() * 2 - 1) * spreadRad;
+            bullets.push({
+              x: sx,
+              y: sy,
+              vx: Math.cos(a) * CONFIG.shooter.bulletSpeed,
+              vy: Math.sin(a) * CONFIG.shooter.bulletSpeed,
+              dmg: dmg * 0.42
+            });
           }
         }
         if (shotSfxCd <= 0) { sfxVolley(); shotSfxCd = 0.11; }
@@ -627,8 +635,8 @@
             const dxp = it.x - b.x, dyp = it.y - b.y, rrp = it.r + 5;
             if (dxp * dxp + dyp * dyp <= rrp * rrp) {
               pickups.splice(p, 1);
-              spreadBoostTimer = Math.min(26, spreadBoostTimer + CONFIG.pickup.spreadDur);
-              showAlert('LOOT: ROZRZUT + ' + CONFIG.pickup.spreadDur + 's', 1.1);
+              spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + 1);
+              showAlert('LOOT: ROZRZUT LVL ' + spreadLevel, 1.1);
               dead = true;
               break;
             }
@@ -643,7 +651,7 @@
             if (recruitHits >= recruitNeed) {
               recruitHits -= recruitNeed;
               addRecruit();
-              recruitNeed = Math.min(1e9, recruitNeed * 2);
+              recruitNeed = Math.min(CONFIG.growth.recruitNeedCap, Math.ceil(recruitNeed * CONFIG.growth.recruitMul));
               sfxUpgrade(false);
             }
           } else if (b.y >= powerBand.top && b.y <= powerBand.bot) {
@@ -652,7 +660,7 @@
             if (powerHits >= powerNeed) {
               powerHits -= powerNeed;
               powerLevel++;
-              powerNeed = Math.min(1e9, powerNeed * 2);
+              powerNeed = Math.min(1e9, Math.ceil(powerNeed * CONFIG.growth.powerMul));
               applyPower();
               sfxUpgrade(true);
             }
@@ -779,11 +787,11 @@
       el.power.textContent = powerLevel;
       el.powerNeed.textContent = powerHits + ' / ' + powerNeed;
       el.kills.textContent = kills;
-      el.spread.textContent = spreadBoostTimer > 0 ? ('ON ' + spreadBoostTimer.toFixed(1) + 's') : 'off';
+      el.spread.textContent = spreadLevel > 0 ? ('LVL ' + spreadLevel) : 'off';
       const fx = [];
       if (recruitBoostTimer > 0) fx.push('Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's');
       if (slowFieldTimer > 0) fx.push('Spowolnienie ' + slowFieldTimer.toFixed(1) + 's');
-      if (spreadBoostTimer > 0) fx.push('Rozrzut ' + spreadBoostTimer.toFixed(1) + 's');
+      if (spreadLevel > 0) fx.push('Rozrzut lvl ' + spreadLevel);
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestWave.textContent = bestWave;
       el.bestKills.textContent = bestKills;
