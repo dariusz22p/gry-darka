@@ -137,14 +137,14 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { maxN: 16, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      shooter: { maxN: 24, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 62, dmg: 9, spawnEvery: 0.55 },
       boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4 },
-      panel: { x: 40, bandH: 86, recruitPer: 14, powerPer: 30 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      panel: { x: 40, bandH: 86, recruitPer: 12, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       waves: { total: 10, duration: 22, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.9, hpAdd: 8, speedAdd: 5 },
-      powerStep: { fireAdd: 0.32, dmgMul: 1.08 },
+      powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
       difficulty: {
         easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 6, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
         normal: { spawnEveryMul: 1.00, burstAdd: 0,  burstCap: 8, bossEveryAdd: 0, zombieHpMul: 1.00, zombieSpeedMul: 1.00, bossHpMul: 1.00, bossDmgMul: 1.00, rampHpMul: 1.00, rampSpeedMul: 1.00 },
