@@ -83,7 +83,7 @@
     padding: 3px 6px;
     border: 0;
     border-radius: 4px;
-    background: rgba(24,33,44,.38);
+    background: rgba(15,20,27,.22);
   }
   #ingameHud .stat span,
   #ingameHud .stat b {
@@ -96,9 +96,9 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-  #ingameHud span { color: rgba(232,237,242,.72); }
-  #ingameHud b { color: rgba(255,255,255,.86); }
-  #ingameHud b.soft { color: rgba(199,211,223,.74); font-weight: 600; }
+  #ingameHud span { color: rgba(232,237,242,.58); }
+  #ingameHud b { color: rgba(255,255,255,.72); }
+  #ingameHud b.soft { color: rgba(199,211,223,.62); font-weight: 600; }
   #difficulty {
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
     border-radius: 6px; padding: 2px 6px; font-family: inherit; font-size: 11px;
@@ -306,6 +306,7 @@
     let bossEvery = CONFIG.boss.everySpawnCycle;
     let keys = { up: false, down: false };
     let steering = false;
+    let lastTouchTapAt = 0;
     let last = 0;
     let shotSfxCd = 0;
 
@@ -1126,12 +1127,36 @@
       }
     }
 
+    function togglePause() {
+      if (state === 'play') state = 'pause';
+      else if (state === 'pause') state = 'play';
+    }
+
     // ---- Wejście (jedna oś, stała prędkość) ----
     function pointerY(e) {
       const r = canvas.getBoundingClientRect();
       return clamp((e.clientY - r.top) * (H / r.height), minY(), maxY());
     }
-    canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); ensureAudio(); if (state === 'play') { steering = true; targetY = pointerY(e); } });
+    canvas.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      ensureAudio();
+      if (state === 'play') {
+        steering = true;
+        targetY = pointerY(e);
+      }
+    });
+    canvas.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      ensureAudio();
+      const now = performance.now();
+      if (now - lastTouchTapAt <= 320) {
+        togglePause();
+        lastTouchTapAt = 0;
+        steering = false;
+      } else {
+        lastTouchTapAt = now;
+      }
+    }, { passive: false });
     canvas.addEventListener('pointermove', function (e) { if (steering && state === 'play') targetY = pointerY(e); });
     window.addEventListener('pointerup', function () { steering = false; });
     canvas.addEventListener('wheel', function (e) {
@@ -1149,8 +1174,7 @@
       }
       if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
         e.preventDefault();
-        if (state === 'play') state = 'pause';
-        else if (state === 'pause') state = 'play';
+        togglePause();
         return;
       }
       if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
