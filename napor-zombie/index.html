@@ -233,17 +233,35 @@
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #stageCol {
-      max-height: 95vh;
+      max-height: 75vh;
     }
     #stage {
-      max-height: 95vh;
+      max-height: 75vh;
     }
     canvas#game {
-      max-height: 95vh;
+      max-height: 75vh;
       width: auto;
       max-width: 100%;
       margin: 0 auto;
       display: block;
+    }
+    #ingameHudTop {
+      top: 3px;
+      width: 60px;
+      right: 4px;
+    }
+    #ingameHudBottom {
+      bottom: auto;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 60px;
+      right: 4px;
+    }
+    #ingameHudTop .stat,
+    #ingameHudBottom .stat {
+      min-height: 10px;
+      padding: 1px 2px;
+      gap: 2px;
     }
   }
 </style>
