@@ -183,7 +183,7 @@
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7 },
-      boss: { everySpawnCycle: 12, r: 12, hpMul: 100, speedMul: 0.72, dmgMul: 4.2, killScore: 500, trackMul: 0.65, mass: 10 },
+      boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 500, scoreWaveMul: 2, trackMul: 0.65, mass: 10 },
       miniBoss: {
         telegraphLead: 1.5,
         types: ['tank', 'charger', 'splitter'],
@@ -395,6 +395,23 @@
       bossEvery = Math.max(2, CONFIG.boss.everySpawnCycle + diff.bossEveryAdd);
     }
 
+    function bossTierForWave(w) {
+      return Math.max(0, Math.floor(w) - 1);
+    }
+
+    function bossShotsForWave(w) {
+      return Math.max(1, Math.round(CONFIG.boss.baseShots * Math.pow(CONFIG.boss.shotsWaveMul, bossTierForWave(w))));
+    }
+
+    function bossScoreForWave(w) {
+      return Math.max(1, Math.round(CONFIG.boss.baseScore * Math.pow(CONFIG.boss.scoreWaveMul, bossTierForWave(w))));
+    }
+
+    function bossRadiusForScore(score) {
+      const t = Math.max(0, Math.log2(score / Math.max(1, CONFIG.boss.baseScore) + 1));
+      return clamp(Math.round(CONFIG.boss.baseR + t * 3.2), CONFIG.boss.baseR, CONFIG.boss.maxR);
+    }
+
     function reset() {
       state = 'play';
       applyDifficulty();
@@ -463,6 +480,7 @@
         dmg: opts.dmg,
         boss: !!opts.boss,
         miniType: opts.miniType || null,
+        score: Math.max(1, opts.score || 1),
         laneY: y,
         trackOff: opts.trackOff,
         hitSlow: 0,
@@ -486,7 +504,7 @@
       let bombScore = 0;
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
-        bombScore += z.boss ? CONFIG.boss.killScore : 1;
+        bombScore += z.score || 1;
         waveKills++;
         fx.push({ x: z.x, y: z.y, life: 0.32, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 22 : 16 });
         if (z.miniType) grantMiniLoot(z.miniType);
@@ -639,16 +657,20 @@
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
           const miniType = getMiniTypeForWave(wave);
           const mini = miniType ? CONFIG.miniBoss[miniType] : null;
-          const hpMul = CONFIG.boss.hpMul * diff.bossHpMul * (mini ? mini.hpMul : 1);
+          const bossShots = bossShotsForWave(wave);
+          const bossScore = bossScoreForWave(wave);
+          const bossRadius = bossRadiusForScore(bossScore);
+          const hpMul = (mini ? mini.hpMul : 1);
           const speedMul = CONFIG.boss.speedMul * (mini ? mini.speedMul : 1);
           const dmgMul = CONFIG.boss.dmgMul * diff.bossDmgMul * (mini ? mini.dmgMul : 1);
           zombies.push(makeZombie(-34, y, {
-            hp: zHp * hpMul,
-            r: CONFIG.boss.r,
+            hp: bossShots * hpMul,
+            r: bossRadius,
             speed: zSpeed * speedMul,
             dmg: CONFIG.zombie.dmg * dmgMul,
             boss: true,
             miniType: miniType,
+            score: bossScore,
             trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55),
             mass: CONFIG.boss.mass
           }));
@@ -767,14 +789,14 @@
             const z = zombies[j];
             const dx = z.x - b.x, dy = z.y - b.y, rr = z.r + 4;
             if (dx * dx + dy * dy <= rr * rr) {
-              z.hp -= b.dmg; dead = true;
+              z.hp -= z.boss ? 1 : b.dmg; dead = true;
               z.hitSlow = Math.max(z.hitSlow || 0, CONFIG.zombie.hitSlowDur);
               const recoil = CONFIG.zombie.hitRecoil / Math.max(1, z.mass || 1);
               z.x = Math.max(-60, z.x - recoil);
               if (z.hp <= 0) {
                 const deadZombie = z;
                 zombies.splice(j, 1);
-                kills += deadZombie.boss ? CONFIG.boss.killScore : 1;
+                kills += deadZombie.score || 1;
                 waveKills++;
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
