@@ -184,7 +184,7 @@
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0 },
-      boss: { everySpawnCycle: 4, r: 12, hpMul: 6.2, speedMul: 0.72, dmgMul: 1.55, killScore: 4, trackMul: 0.65 },
+      boss: { everySpawnCycle: 12, r: 12, hpMul: 100, speedMul: 0.72, dmgMul: 4.2, killScore: 100, trackMul: 0.65 },
       miniBoss: {
         telegraphLead: 1.5,
         types: ['tank', 'charger', 'splitter'],
@@ -203,9 +203,9 @@
       ramp: { spawnMul: 0.95, hpAdd: 8, speedAdd: 0.65 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
       difficulty: {
-        easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 9, bossEveryAdd: 2, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
+        easy:   { spawnEveryMul: 1.20, burstAdd: -1, burstCap: 9, bossEveryAdd: 3, zombieHpMul: 0.92, zombieSpeedMul: 0.94, bossHpMul: 0.85, bossDmgMul: 0.90, rampHpMul: 0.85, rampSpeedMul: 0.90 },
         normal: { spawnEveryMul: 1.00, burstAdd: 0,  burstCap: 12, bossEveryAdd: 0, zombieHpMul: 1.00, zombieSpeedMul: 1.00, bossHpMul: 1.00, bossDmgMul: 1.00, rampHpMul: 1.00, rampSpeedMul: 1.00 },
-        hard:   { spawnEveryMul: 0.82, burstAdd: 1,  burstCap: 15, bossEveryAdd: -1, zombieHpMul: 1.20, zombieSpeedMul: 1.10, bossHpMul: 1.25, bossDmgMul: 1.15, rampHpMul: 1.20, rampSpeedMul: 1.15 }
+        hard:   { spawnEveryMul: 0.82, burstAdd: 1,  burstCap: 15, bossEveryAdd: -2, zombieHpMul: 1.20, zombieSpeedMul: 1.10, bossHpMul: 1.25, bossDmgMul: 1.15, rampHpMul: 1.20, rampSpeedMul: 1.15 }
       }
     };
     const W = CONFIG.W, H = CONFIG.H;
