@@ -1034,12 +1034,34 @@
     }
     function hideOverlay() { el.overlay.classList.add('hidden'); }
 
+    function getFullscreenElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+    }
+
+    function requestFullscreenCompat(node) {
+      if (node.requestFullscreen) return node.requestFullscreen();
+      if (node.webkitRequestFullscreen) return Promise.resolve(node.webkitRequestFullscreen());
+      if (node.msRequestFullscreen) return Promise.resolve(node.msRequestFullscreen());
+      return Promise.reject(new Error('Fullscreen API unavailable'));
+    }
+
+    function exitFullscreenCompat() {
+      if (document.exitFullscreen) return document.exitFullscreen();
+      if (document.webkitExitFullscreen) return Promise.resolve(document.webkitExitFullscreen());
+      if (document.msExitFullscreen) return Promise.resolve(document.msExitFullscreen());
+      return Promise.reject(new Error('Exit fullscreen unavailable'));
+    }
+
     function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        const root = document.documentElement;
-        if (root.requestFullscreen) root.requestFullscreen().catch(function () {});
-      } else if (document.exitFullscreen) {
-        document.exitFullscreen().catch(function () {});
+      const target = document.getElementById('stage') || document.documentElement;
+      if (!getFullscreenElement()) {
+        requestFullscreenCompat(target).catch(function () {
+          showAlert('PELNY EKRAN ZABLOKOWANY', 1.2);
+        });
+      } else {
+        exitFullscreenCompat().catch(function () {
+          showAlert('NIE MOZNA WYJSC Z PELNEGO EKRANU', 1.2);
+        });
       }
     }
 
@@ -1064,7 +1086,7 @@
         if (master) master.gain.value = muted ? 0 : 0.18;
         return;
       }
-      if (e.key === 'f' || e.key === 'F') {
+      if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         toggleFullscreen();
         return;
