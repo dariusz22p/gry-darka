@@ -161,6 +161,7 @@
           <span>Ekipa strzela sama prosto w lewo</span>
           <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
           <span><kbd>Spacja</kbd> bomba</span>
+          <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
@@ -1033,6 +1034,15 @@
     }
     function hideOverlay() { el.overlay.classList.add('hidden'); }
 
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) root.requestFullscreen().catch(function () {});
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen().catch(function () {});
+      }
+    }
+
     // ---- Wejście (jedna oś, stała prędkość) ----
     function pointerY(e) {
       const r = canvas.getBoundingClientRect();
@@ -1052,6 +1062,11 @@
       if (e.key === 'm' || e.key === 'M') {
         muted = !muted;
         if (master) master.gain.value = muted ? 0 : 0.18;
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
         return;
       }
       if (e.code === 'Space') {
