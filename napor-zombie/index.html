@@ -121,6 +121,22 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
+  #combatBox .cell {
+    min-height: 30px;
+    padding: 5px 8px;
+    border: 1px solid #2f3d4e;
+    border-radius: 6px;
+    background: #131b25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #combatBox .cell.value {
+    justify-content: flex-end;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: #c7d3df;
+  }
   #help span, #help a { min-height: 24px; display: flex; align-items: center; }
   .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
   .back:hover { background: #34465b; color: #e8edf2; }
@@ -177,7 +193,8 @@
           </div>
         </div>
         <div id="combatBox" aria-label="Panel walki">
-          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
+          <div class="cell">Rozrzut</div>
+          <div class="cell value" id="spread">off</div>
           <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
         </div>
         <div id="help">
@@ -218,7 +235,7 @@
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 100, splitHpMul: 0.9, splitSpeedMul: 1.18, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
-      spread: { levelMax: 15, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
+      spread: { levelMax: 30, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
