@@ -17,20 +17,22 @@
   #layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 220px;
-    grid-template-areas:
-      "hud hud"
-      "stage help";
+    grid-template-areas: "stage help";
     row-gap: 0;
     column-gap: 14px;
     align-items: start;
   }
-  #sidebar { display: contents; }
-  #hud {
-    grid-area: hud;
+  #sidebar {
+    grid-area: help;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
-    font-size: 13px;
+    align-content: start;
+  }
+  #hud {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: 11px;
     padding: 0;
   }
   #hud .stat {
@@ -39,8 +41,8 @@
     justify-content: space-between;
     gap: 8px;
     min-width: 0;
-    min-height: 32px;
-    padding: 6px 10px;
+    min-height: 24px;
+    padding: 4px 8px;
     border: 1px solid #2f3d4e;
     border-radius: 6px;
     background: #18212c;
@@ -55,13 +57,51 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-  #hud .stat span { font-size: 12px; }
-  #hud .stat b { font-size: 13px; }
+  #hud .stat span { font-size: 10px; }
+  #hud .stat b { font-size: 11px; }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
+  #ingameHud {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  #ingameHud .stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    min-height: 24px;
+    padding: 4px 8px;
+    border: 1px solid rgba(47,61,78,.95);
+    border-radius: 6px;
+    background: rgba(24,33,44,.86);
+    backdrop-filter: blur(1px);
+  }
+  #ingameHud .stat span,
+  #ingameHud .stat b {
+    min-width: 0;
+  }
+  #ingameHud .stat span { font-size: 10px; }
+  #ingameHud .stat b {
+    font-size: 11px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  #ingameHud b { color: #fff; }
+  #ingameHud b.soft { color: #c7d3df; font-weight: 600; }
   #difficulty {
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
-    border-radius: 6px; padding: 3px 8px; font-family: inherit; font-size: 12px;
+    border-radius: 6px; padding: 2px 6px; font-family: inherit; font-size: 11px;
   }
   .base { min-width: 0; }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
@@ -72,6 +112,7 @@
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 14px; background: rgba(8,12,17,.78);
+    z-index: 4;
   }
   #overlay.hidden { display: none; }
   #overlay h2 { margin: 0; font-size: 30px; }
@@ -90,32 +131,56 @@
   }
   #alert.show { opacity: 1; }
   #help {
-    grid-area: help;
-    font-size: 12px; line-height: 1.45; opacity: .9;
-    display: grid; gap: 6px;
-    padding: 10px 12px;
+    font-size: 9px; line-height: 1.22; opacity: .9;
+    display: grid; gap: 3px;
+    padding: 6px 8px;
     border: 1px solid #2f3d4e;
     border-radius: 8px;
     background: #18212c;
   }
-  #help span, #help a { min-height: 24px; display: flex; align-items: center; }
-  .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
+  #help span, #help a { min-height: 14px; display: flex; align-items: center; }
+  .back { background: #2c3a4b; color: #9fb2c6; padding: 2px 7px; font-size: 9px; }
   .back:hover { background: #34465b; color: #e8edf2; }
-  kbd { background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; font-size: 12px; }
+  kbd { background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; font-size: 9px; }
   @media (max-width: 980px) {
     #layout {
       grid-template-columns: 1fr;
       grid-template-areas:
-        "hud"
         "stage"
         "help";
       row-gap: 0;
       column-gap: 0;
     }
-    #hud { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #ingameHud {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      top: 6px;
+      left: 6px;
+      right: 6px;
+    }
+    #help { font-size: 8px; }
+    .back, kbd { font-size: 8px; }
   }
   @media (max-width: 640px) {
-    #hud { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #ingameHud {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+    #ingameHud .stat {
+      min-height: 20px;
+      padding: 3px 6px;
+    }
+    #ingameHud .stat span { font-size: 8px; }
+    #ingameHud .stat b { font-size: 9px; }
+    #help {
+      font-size: 6px;
+      line-height: 1.15;
+      gap: 2px;
+      padding: 4px 6px;
+    }
+    #help span, #help a { min-height: 11px; }
+    .back, kbd { font-size: 6px; }
+    #difficulty { font-size: 10px; }
   }
 </style>
 </head>
@@ -125,6 +190,20 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
+          <div id="ingameHud" aria-label="HUD gry">
+            <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
+            <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
+            <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
+            <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
+            <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
+            <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
+            <div class="stat"><span>Moc</span><b id="power">0</b></div>
+            <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
+            <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
+            <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
+            <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
+            <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
+          </div>
           <div id="alert" aria-live="polite"></div>
           <div id="overlay" class="hidden">
             <h2 id="overTitle">Przegrana</h2>
@@ -135,18 +214,6 @@
       </div>
       <aside id="sidebar">
         <div id="hud">
-          <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
-          <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
-          <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
-          <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
-          <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
-          <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
-          <div class="stat"><span>Moc</span><b id="power">0</b></div>
-          <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
-          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
-          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
-          <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
-          <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
           <div class="stat"><span>Tryb</span>
             <select id="difficulty" aria-label="Poziom trudności">
               <option value="easy">Easy</option>
