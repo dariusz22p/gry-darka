@@ -183,14 +183,14 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0 },
+      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7 },
       boss: { everySpawnCycle: 12, r: 12, hpMul: 100, speedMul: 0.72, dmgMul: 4.2, killScore: 100, trackMul: 0.65 },
       miniBoss: {
         telegraphLead: 1.5,
         types: ['tank', 'charger', 'splitter'],
         tank: { hpMul: 1.5, speedMul: 0.82, dmgMul: 1.20, trackMul: 0.55, color: '#b0bec5' },
         charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
-        splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 2, splitHpMul: 0.34, splitSpeedMul: 1.32, color: '#ce93d8' }
+        splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 100, splitHpMul: 0.9, splitSpeedMul: 1.18, color: '#ce93d8' }
       },
       pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
       spread: { levelMax: 15, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
@@ -465,7 +465,8 @@
         boss: !!opts.boss,
         miniType: opts.miniType || null,
         laneY: y,
-        trackOff: opts.trackOff
+        trackOff: opts.trackOff,
+        hitSlow: 0
       };
     }
 
@@ -699,8 +700,10 @@
         const z = zombies[i];
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
         const chargeMul = (z.miniType === 'charger' && z.x > CONFIG.miniBoss.charger.chargeX) ? CONFIG.miniBoss.charger.chargeMul : 1;
-        const speedMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
-        z.x += z.speed * chargeMul * speedMul * dt;
+        if (z.hitSlow > 0) z.hitSlow = Math.max(0, z.hitSlow - dt);
+        const fieldSlowMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
+        const hitSlowMul = z.hitSlow > 0 ? CONFIG.zombie.hitSlowMul : 1;
+        z.x += z.speed * chargeMul * fieldSlowMul * hitSlowMul * dt;
         const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? (mini ? mini.trackMul : CONFIG.boss.trackMul) : 1);
         const playerTarget = zombieAimY + (z.trackOff || 0);
         const mixedTarget = (z.laneY || z.y) * (1 - CONFIG.zombie.trackPlayerWeight) + playerTarget * CONFIG.zombie.trackPlayerWeight;
@@ -764,6 +767,8 @@
             const dx = z.x - b.x, dy = z.y - b.y, rr = z.r + 4;
             if (dx * dx + dy * dy <= rr * rr) {
               z.hp -= b.dmg; dead = true;
+              z.hitSlow = Math.max(z.hitSlow || 0, CONFIG.zombie.hitSlowDur);
+              z.x = Math.max(-60, z.x - CONFIG.zombie.hitRecoil);
               if (z.hp <= 0) {
                 const deadZombie = z;
                 zombies.splice(j, 1);
@@ -772,9 +777,14 @@
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
-                    const sy = clamp(deadZombie.y + (s === 0 ? -12 : 12), laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
-                    zombies.push(makeZombie(deadZombie.x - 6 - s * 4, sy, {
-                      hp: Math.max(6, deadZombie.maxhp * CONFIG.miniBoss.splitter.splitHpMul),
+                    const ring = Math.floor(s / 20) + 1;
+                    const inRing = s % 20;
+                    const angle = (inRing / 20) * Math.PI * 2;
+                    const radius = 8 + ring * 4;
+                    const sy = clamp(deadZombie.y + Math.sin(angle) * radius, laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
+                    const sx = deadZombie.x - 8 - ring * 6 + Math.cos(angle) * 5;
+                    zombies.push(makeZombie(sx, sy, {
+                      hp: Math.max(6, zHp * CONFIG.miniBoss.splitter.splitHpMul),
                       r: CONFIG.zombie.r,
                       speed: zSpeed * CONFIG.miniBoss.splitter.splitSpeedMul,
                       dmg: CONFIG.zombie.dmg,
