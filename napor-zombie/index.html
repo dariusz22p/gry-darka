@@ -101,10 +101,10 @@
     hyphens: auto;
   }
   #ingameHudTop .stat span,
-  #ingameHudBottom .stat span { font-size: 4.5px; line-height: 1.2; }
+  #ingameHudBottom .stat span { font-size: 0.5vw; line-height: 1.2; }
   #ingameHudTop .stat b,
   #ingameHudBottom .stat b {
-    font-size: 5px;
+    font-size: 0.55vw;
     text-align: right;
     white-space: normal;
     font-variant-numeric: tabular-nums;
@@ -147,6 +147,29 @@
     z-index: 3;
   }
   #alert.show { opacity: 1; }
+  #mobileBombBtn {
+    display: none;
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(239,83,80,.42);
+    color: rgba(255,255,255,.82);
+    font-size: 24px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 2;
+    touch-action: manipulation;
+    pointer-events: auto;
+  }
+  #mobileBombBtn:active {
+    background: rgba(239,83,80,.62);
+    transform: translateY(-50%) scale(0.92);
+  }
   #help {
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
@@ -173,6 +196,10 @@
       right: 2px;
       width: 78px;
     }
+    #ingameHudTop .stat span,
+    #ingameHudBottom .stat span { font-size: 0.72vw; }
+    #ingameHudTop .stat b,
+    #ingameHudBottom .stat b { font-size: 0.8vw; }
     #help { font-size: 8px; }
     .back, kbd { font-size: 8px; }
   }
@@ -188,9 +215,10 @@
       padding: 1px 2px;
     }
     #ingameHudTop .stat span,
-    #ingameHudBottom .stat span { font-size: 3.5px; }
+    #ingameHudBottom .stat span { font-size: 1.2vw; }
     #ingameHudTop .stat b,
-    #ingameHudBottom .stat b { font-size: 4px; }
+    #ingameHudBottom .stat b { font-size: 1.35vw; }
+    #mobileBombBtn { display: block; }
     #help {
       font-size: 6px;
       line-height: 1.15;
@@ -209,6 +237,7 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
+          <button id="mobileBombBtn" aria-label="Bomba">💣</button>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
@@ -1081,7 +1110,8 @@
       spread: document.getElementById('spread'),
       bombs: document.getElementById('bombs'),
       effect: document.getElementById('effect'),
-      bestKills: document.getElementById('bestKills')
+      bestKills: document.getElementById('bestKills'),
+      mobileBombBtn: document.getElementById('mobileBombBtn')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -1219,6 +1249,12 @@
       reset();
     });
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
+    if (el.mobileBombBtn) {
+      el.mobileBombBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        useBomb();
+      });
+    }
 
     // ---- Pętla ----
     function frame(t) {
