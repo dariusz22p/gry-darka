@@ -182,8 +182,8 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7 },
-      boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 200, scoreWaveMul: 2, trackMul: 0.65, mass: 10 },
+      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
+      boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 200, scoreWaveMul: 2, trackMul: 0.65, mass: 10, massWaveMul: 2 },
       miniBoss: {
         telegraphLead: 1.5,
         types: ['tank', 'charger', 'splitter'],
@@ -399,12 +399,32 @@
       return Math.max(0, Math.floor(w) - 1);
     }
 
+    function zombieTierForWave(w) {
+      return Math.max(0, Math.floor(w) - 1);
+    }
+
+    function zombieHpForWave(w) {
+      return zHp * Math.pow(CONFIG.zombie.hpWaveMul, zombieTierForWave(w));
+    }
+
+    function zombieScoreForWave(w) {
+      return Math.max(1, Math.round(CONFIG.zombie.scoreBase * Math.pow(CONFIG.zombie.scoreWaveMul, zombieTierForWave(w))));
+    }
+
+    function zombieMassForWave(w) {
+      return CONFIG.zombie.massBase * Math.pow(CONFIG.zombie.massWaveMul, zombieTierForWave(w));
+    }
+
     function bossShotsForWave(w) {
       return Math.max(1, Math.round(CONFIG.boss.baseShots * Math.pow(CONFIG.boss.shotsWaveMul, bossTierForWave(w))));
     }
 
     function bossScoreForWave(w) {
       return Math.max(1, Math.round(CONFIG.boss.baseScore * Math.pow(CONFIG.boss.scoreWaveMul, bossTierForWave(w))));
+    }
+
+    function bossMassForWave(w) {
+      return CONFIG.boss.mass * Math.pow(CONFIG.boss.massWaveMul, bossTierForWave(w));
     }
 
     function bossRadiusForScore(score) {
@@ -629,6 +649,9 @@
       if (spawnTimer <= 0) {
         spawnTimer += spawnEvery;
         spawnCycles++;
+        const normalHp = zombieHpForWave(wave);
+        const normalScore = zombieScoreForWave(wave);
+        const normalMass = zombieMassForWave(wave);
         const burstBase = 5 + Math.floor((wave - 1) / 2);
         const burst = Math.max(1, Math.min(diff.burstCap, burstBase + diff.burstAdd));
         const laneMid = (laneTop + laneBot) / 2;
@@ -641,11 +664,13 @@
           const packedOffset = Math.max(-halfSpanCap, Math.min(halfSpanCap, offset));
           const y = clamp(packCenter + packedOffset + (Math.random() * 2 - 1) * Math.min(0.35, minGap * 0.08), laneTop + 8, laneBot - 8);
           zombies.push(makeZombie(-18 - s * 12, y, {
-            hp: zHp,
+            hp: normalHp,
             r: CONFIG.zombie.r,
             speed: zSpeed,
             dmg: CONFIG.zombie.dmg,
             boss: false,
+            score: normalScore,
+            mass: normalMass,
             trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
           }));
         }
@@ -672,7 +697,7 @@
             miniType: miniType,
             score: bossScore,
             trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55),
-            mass: CONFIG.boss.mass
+            mass: bossMassForWave(wave)
           }));
         }
       }
@@ -800,6 +825,9 @@
                 waveKills += deadZombie.score || 1;
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
+                  const splitHp = Math.max(6, zombieHpForWave(wave) * CONFIG.miniBoss.splitter.splitHpMul);
+                  const splitScore = zombieScoreForWave(wave);
+                  const splitMass = zombieMassForWave(wave);
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
                     const ring = Math.floor(s / 20) + 1;
                     const inRing = s % 20;
@@ -808,11 +836,13 @@
                     const sy = clamp(deadZombie.y + Math.sin(angle) * radius, laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
                     const sx = deadZombie.x - 8 - ring * 6 + Math.cos(angle) * 5;
                     zombies.push(makeZombie(sx, sy, {
-                      hp: Math.max(6, zHp * CONFIG.miniBoss.splitter.splitHpMul),
+                      hp: splitHp,
                       r: CONFIG.zombie.r,
                       speed: zSpeed * CONFIG.miniBoss.splitter.splitSpeedMul,
                       dmg: CONFIG.zombie.dmg,
                       boss: false,
+                      score: splitScore,
+                      mass: splitMass,
                       trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
                     }));
                   }
