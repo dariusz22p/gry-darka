@@ -505,7 +505,7 @@
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
         bombScore += z.score || 1;
-        waveKills++;
+        waveKills += z.score || 1;
         fx.push({ x: z.x, y: z.y, life: 0.32, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 22 : 16 });
         if (z.miniType) grantMiniLoot(z.miniType);
       }
@@ -797,7 +797,7 @@
                 const deadZombie = z;
                 zombies.splice(j, 1);
                 kills += deadZombie.score || 1;
-                waveKills++;
+                waveKills += deadZombie.score || 1;
                 fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
                 if (deadZombie.miniType === 'splitter') {
                   for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
