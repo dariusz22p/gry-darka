@@ -231,6 +231,21 @@
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
     #mobileBombBtn { display: block; }
   }
+  @media (orientation: landscape) and (max-height: 600px) {
+    #stageCol {
+      max-height: 95vh;
+    }
+    #stage {
+      max-height: 95vh;
+    }
+    canvas#game {
+      max-height: 95vh;
+      width: auto;
+      max-width: 100%;
+      margin: 0 auto;
+      display: block;
+    }
+  }
 </style>
 </head>
 <body>
