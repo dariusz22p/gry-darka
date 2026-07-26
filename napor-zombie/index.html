@@ -61,9 +61,8 @@
   #hud .stat b { font-size: 11px; }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
-  #ingameHud {
+  #ingameHudTop, #ingameHudBottom {
     position: absolute;
-    top: 6px;
     right: 2px;
     width: 92px;
     z-index: 2;
@@ -73,7 +72,14 @@
     font-size: 6px;
     pointer-events: none;
   }
-  #ingameHud .stat {
+  #ingameHudTop {
+    top: 6px;
+  }
+  #ingameHudBottom {
+    bottom: 6px;
+  }
+  #ingameHudTop .stat,
+  #ingameHudBottom .stat {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -85,24 +91,31 @@
     border-radius: 3px;
     background: rgba(15,20,27,.22);
   }
-  #ingameHud .stat span,
-  #ingameHud .stat b {
+  #ingameHudTop .stat span,
+  #ingameHudTop .stat b,
+  #ingameHudBottom .stat span,
+  #ingameHudBottom .stat b {
     min-width: 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
   }
-  #ingameHud .stat span { font-size: 6px; line-height: 1.2; }
-  #ingameHud .stat b {
-    font-size: 7px;
+  #ingameHudTop .stat span,
+  #ingameHudBottom .stat span { font-size: 4.5px; line-height: 1.2; }
+  #ingameHudTop .stat b,
+  #ingameHudBottom .stat b {
+    font-size: 5px;
     text-align: right;
     white-space: normal;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
-  #ingameHud span { color: rgba(232,237,242,.58); }
-  #ingameHud b { color: rgba(255,255,255,.72); }
-  #ingameHud b.soft { color: rgba(199,211,223,.62); font-weight: 600; }
+  #ingameHudTop span,
+  #ingameHudBottom span { color: rgba(232,237,242,.58); }
+  #ingameHudTop b,
+  #ingameHudBottom b { color: rgba(255,255,255,.72); }
+  #ingameHudTop b.soft,
+  #ingameHudBottom b.soft { color: rgba(199,211,223,.62); font-weight: 600; }
   #difficulty {
     background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
     border-radius: 6px; padding: 2px 6px; font-family: inherit; font-size: 11px;
@@ -155,9 +168,8 @@
       row-gap: 0;
       column-gap: 0;
     }
-    #ingameHud {
+    #ingameHudTop, #ingameHudBottom {
       gap: 2px;
-      top: 4px;
       right: 2px;
       width: 78px;
     }
@@ -165,17 +177,20 @@
     .back, kbd { font-size: 8px; }
   }
   @media (max-width: 640px) {
-    #ingameHud {
+    #ingameHudTop, #ingameHudBottom {
       gap: 1px;
       right: 2px;
       width: 68px;
     }
-    #ingameHud .stat {
+    #ingameHudTop .stat,
+    #ingameHudBottom .stat {
       min-height: 12px;
       padding: 1px 2px;
     }
-    #ingameHud .stat span { font-size: 5px; }
-    #ingameHud .stat b { font-size: 6px; }
+    #ingameHudTop .stat span,
+    #ingameHudBottom .stat span { font-size: 3.5px; }
+    #ingameHudTop .stat b,
+    #ingameHudBottom .stat b { font-size: 4px; }
     #help {
       font-size: 6px;
       line-height: 1.15;
@@ -194,12 +209,14 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
-          <div id="ingameHud" aria-label="HUD gry">
-            <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
+          <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
             <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
             <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
+          </div>
+          <div id="ingameHudBottom" aria-label="HUD gry - stan gracza">
+            <div class="stat base"><span>Baza</span><div class="bar"><i id="hpfill"></i></div></div>
             <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
             <div class="stat"><span>Moc</span><b id="power">0</b></div>
             <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
