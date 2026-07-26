@@ -145,7 +145,6 @@
           <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
           <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
           <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
-          <div class="stat"><span>Best fala</span><b id="bestWave" class="soft">0</b></div>
           <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
           <div class="stat"><span>Tryb</span>
             <select id="difficulty" aria-label="Poziom trudności">
@@ -949,7 +948,6 @@
       spread: document.getElementById('spread'),
       bombs: document.getElementById('bombs'),
       effect: document.getElementById('effect'),
-      bestWave: document.getElementById('bestWave'),
       bestKills: document.getElementById('bestKills')
     };
     function updateHud() {
@@ -973,7 +971,6 @@
       if (spreadLevel > 0) fx.push('Rozrzut lvl ' + spreadLevel);
       if (bombs > 0) fx.push('Bomby ' + bombs);
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
-      el.bestWave.textContent = bestWave;
       el.bestKills.textContent = bestKills;
     }
     function showOverlay(title, sub) {
