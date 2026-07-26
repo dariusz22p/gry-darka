@@ -233,16 +233,19 @@
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #stageCol {
-      max-height: 75vh;
+      max-height: 100vh;
     }
     #stage {
-      max-height: 75vh;
+      max-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     canvas#game {
-      max-height: 75vh;
-      width: auto;
-      max-width: 100%;
-      margin: 0 auto;
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
       display: block;
     }
     #ingameHudTop {
