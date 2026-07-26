@@ -231,6 +231,7 @@
           <span>Ekipa strzela sama prosto w lewo</span>
           <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
           <span><kbd>Spacja</kbd> bomba</span>
+          <span><kbd>P</kbd> pauza</span>
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
@@ -253,7 +254,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
+      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackSpread: 18, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
       boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 200, scoreWaveMul: 2, trackMul: 0.65, mass: 10, massWaveMul: 2 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -294,11 +295,6 @@
     let prepTimer = 0;
     let warnedBossCycle = -1;
     let alertTimer = 0;
-    let zombieAimY = 0;
-    let aimSampleTimer = 0;
-    let aimSampleSum = 0;
-    let aimSampleCount = 0;
-    let aimWindowAvgY = 0;
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
     let spreadLevel = 0;
@@ -514,11 +510,6 @@
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
       N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
-      zombieAimY = colY;
-      aimWindowAvgY = colY;
-      aimSampleTimer = 0;
-      aimSampleSum = 0;
-      aimSampleCount = 0;
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
@@ -688,19 +679,6 @@
       if (Math.abs(targetY - colY) <= step) colY = targetY;
       else colY += Math.sign(targetY - colY) * step;
 
-      // Zombie nie reaguja natychmiast: biora srednia pozycje ekipy z okna czasowego, potem doganiaja ja z lagiem.
-      aimSampleTimer += dt;
-      aimSampleSum += colY;
-      aimSampleCount++;
-      if (aimSampleTimer >= CONFIG.zombie.reactionWindow) {
-        aimWindowAvgY = aimSampleCount > 0 ? (aimSampleSum / aimSampleCount) : colY;
-        aimSampleTimer = 0;
-        aimSampleSum = 0;
-        aimSampleCount = 0;
-      }
-      const lagAlpha = Math.min(1, dt / Math.max(0.001, CONFIG.zombie.reactionLag));
-      zombieAimY += (aimWindowAvgY - zombieAimY) * lagAlpha;
-
       if (prepTimer > 0) {
         for (let i = fx.length - 1; i >= 0; i--) { fx[i].life -= dt; if (fx[i].life <= 0) fx.splice(i, 1); }
         updateHud();
@@ -824,9 +802,8 @@
         const hitSlowMul = z.hitSlow > 0 ? CONFIG.zombie.hitSlowMul : 1;
         z.x += z.speed * chargeMul * fieldSlowMul * hitSlowMul * dt;
         const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? (mini ? mini.trackMul : CONFIG.boss.trackMul) : 1);
-        const playerTarget = zombieAimY + (z.trackOff || 0);
-        const mixedTarget = (z.laneY || z.y) * (1 - CONFIG.zombie.trackPlayerWeight) + playerTarget * CONFIG.zombie.trackPlayerWeight;
-        const dy = mixedTarget - z.y;
+        const laneTarget = (z.laneY || z.y) + (z.trackOff || 0);
+        const dy = laneTarget - z.y;
         const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
         z.y = clamp(z.y + yStep, laneTop + z.r, laneBot - z.r);
         if (z.x >= CONFIG.breachX) {
@@ -1054,6 +1031,18 @@
         ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (2 - f.life * 4), 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
       }
+      if (state === 'pause') {
+        ctx.fillStyle = 'rgba(6,10,14,.45)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.font = 'bold 42px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PAUZA', W / 2, H / 2 - 10);
+        ctx.font = '16px "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,.75)';
+        ctx.fillText('Wcisnij P aby wznowic', W / 2, H / 2 + 24);
+      }
     }
 
     // ---- HUD ----
@@ -1156,6 +1145,12 @@
       if (e.key === 'm' || e.key === 'M') {
         muted = !muted;
         if (master) master.gain.value = muted ? 0 : 0.18;
+        return;
+      }
+      if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        if (state === 'play') state = 'pause';
+        else if (state === 'pause') state = 'play';
         return;
       }
       if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
