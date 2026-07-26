@@ -139,6 +139,7 @@
           <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
           <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
           <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
+          <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
           <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
           <div class="stat"><span>Moc</span><b id="power">0</b></div>
           <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
@@ -183,7 +184,7 @@
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
-      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.4, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
+      zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
       boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 200, scoreWaveMul: 2, trackMul: 0.65, mass: 10, massWaveMul: 2 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -196,7 +197,7 @@
       spread: { levelMax: 30, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
-      panel: { x: 40, bandH: 86, recruitPer: 34, powerPer: 44 }, // pasy: góra=ludzie, dół=moc (mniejsze)
+      panel: { x: 40, bandH: 86, recruitPer: 50, powerPer: 65 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
       waves: { total: 10, killsBase: 1000, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
@@ -997,6 +998,7 @@
       difficulty: document.getElementById('difficulty'),
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
+      bossNow: document.getElementById('bossNow'),
       alert: document.getElementById('alert'),
       spread: document.getElementById('spread'),
       bombs: document.getElementById('bombs'),
@@ -1013,6 +1015,7 @@
       }
       const toBoss = (bossEvery - (spawnCycles % bossEvery)) || bossEvery;
       el.nextBoss.textContent = toBoss + (toBoss === 1 ? ' spawn' : ' spawny');
+      el.bossNow.textContent = bossShotsForWave(wave) + ' hit | ' + bossScoreForWave(wave) + ' pkt';
       el.squad.textContent = N;
       el.power.textContent = powerLevel;
       el.kills.textContent = kills;
