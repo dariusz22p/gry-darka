@@ -98,29 +98,6 @@
     border-radius: 8px;
     background: #18212c;
   }
-  #combatBox {
-    display: grid;
-    gap: 6px;
-    padding: 8px 10px;
-    border: 1px solid #2f3d4e;
-    border-radius: 8px;
-    background: #18212c;
-  }
-  #combatBox .stat {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 30px;
-    padding: 5px 8px;
-    border: 1px solid #2f3d4e;
-    border-radius: 6px;
-    background: #131b25;
-  }
-  #combatBox .stat b {
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
   #help span, #help a { min-height: 24px; display: flex; align-items: center; }
   .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
   .back:hover { background: #34465b; color: #e8edf2; }
@@ -165,6 +142,9 @@
           <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
           <div class="stat"><span>Moc</span><b id="power">0</b></div>
           <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
+          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
+          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
+          <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
           <div class="stat"><span>Best fala</span><b id="bestWave" class="soft">0</b></div>
           <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
           <div class="stat"><span>Tryb</span>
@@ -174,11 +154,6 @@
               <option value="hard">Hard</option>
             </select>
           </div>
-        </div>
-        <div id="combatBox" aria-label="Panel walki">
-          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
-          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
-          <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
         </div>
         <div id="help">
           <a class="back" href="../">&larr; Gry</a>
