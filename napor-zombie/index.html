@@ -98,6 +98,29 @@
     border-radius: 8px;
     background: #18212c;
   }
+  #combatBox {
+    display: grid;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid #2f3d4e;
+    border-radius: 8px;
+    background: #18212c;
+  }
+  #combatBox .stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 30px;
+    padding: 5px 8px;
+    border: 1px solid #2f3d4e;
+    border-radius: 6px;
+    background: #131b25;
+  }
+  #combatBox .stat b {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
   #help span, #help a { min-height: 24px; display: flex; align-items: center; }
   .back { background: #2c3a4b; color: #9fb2c6; padding: 3px 10px; font-size: 12px; }
   .back:hover { background: #34465b; color: #e8edf2; }
@@ -142,8 +165,6 @@
           <div class="stat"><span>Ekipa</span><b id="squad">1</b></div>
           <div class="stat"><span>Moc</span><b id="power">0</b></div>
           <div class="stat"><span>Zabici</span><b id="kills">0</b></div>
-          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
-          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
           <div class="stat"><span>Efekt</span><b id="effect" class="soft">brak</b></div>
           <div class="stat"><span>Best fala</span><b id="bestWave" class="soft">0</b></div>
           <div class="stat"><span>Best kill</span><b id="bestKills" class="soft">0</b></div>
@@ -154,6 +175,10 @@
               <option value="hard">Hard</option>
             </select>
           </div>
+        </div>
+        <div id="combatBox" aria-label="Panel walki">
+          <div class="stat"><span>Rozrzut</span><b id="spread" class="soft">off</b></div>
+          <div class="stat"><span>Bomby</span><b id="bombs" class="soft">0</b></div>
         </div>
         <div id="help">
           <a class="back" href="../">&larr; Gry</a>
@@ -184,7 +209,7 @@
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackPlayerWeight: 0.22, trackSpread: 18, reactionWindow: 0.85, reactionLag: 2.0, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7 },
-      boss: { everySpawnCycle: 12, r: 12, hpMul: 100, speedMul: 0.72, dmgMul: 4.2, killScore: 100, trackMul: 0.65 },
+      boss: { everySpawnCycle: 12, r: 12, hpMul: 100, speedMul: 0.72, dmgMul: 4.2, killScore: 100, trackMul: 0.65, mass: 10 },
       miniBoss: {
         telegraphLead: 1.5,
         types: ['tank', 'charger', 'splitter'],
@@ -466,7 +491,8 @@
         miniType: opts.miniType || null,
         laneY: y,
         trackOff: opts.trackOff,
-        hitSlow: 0
+        hitSlow: 0,
+        mass: opts.mass || 1
       };
     }
 
@@ -649,7 +675,8 @@
             dmg: CONFIG.zombie.dmg * dmgMul,
             boss: true,
             miniType: miniType,
-            trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55)
+            trackOff: (Math.random() * 2 - 1) * (CONFIG.zombie.trackSpread * 0.55),
+            mass: CONFIG.boss.mass
           }));
         }
       }
@@ -768,7 +795,8 @@
             if (dx * dx + dy * dy <= rr * rr) {
               z.hp -= b.dmg; dead = true;
               z.hitSlow = Math.max(z.hitSlow || 0, CONFIG.zombie.hitSlowDur);
-              z.x = Math.max(-60, z.x - CONFIG.zombie.hitRecoil);
+              const recoil = CONFIG.zombie.hitRecoil / Math.max(1, z.mass || 1);
+              z.x = Math.max(-60, z.x - recoil);
               if (z.hp <= 0) {
                 const deadZombie = z;
                 zombies.splice(j, 1);
