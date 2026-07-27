@@ -174,6 +174,28 @@
     background: rgba(239,83,80,.62);
     transform: translateY(-50%) scale(0.92);
   }
+  #mobileNukeBtn {
+    display: none;
+    position: absolute;
+    left: 6px;
+    top: calc(50% + 40px);
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,193,7,.42);
+    color: rgba(255,255,255,.9);
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 2;
+    touch-action: manipulation;
+    pointer-events: auto;
+  }
+  #mobileNukeBtn:active {
+    background: rgba(255,193,7,.62);
+    transform: scale(0.92);
+  }
   #help {
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
@@ -233,7 +255,7 @@
     #difficulty { font-size: 10px; }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
-    #mobileBombBtn { display: block; }
+    #mobileBombBtn, #mobileNukeBtn { display: block; }
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #wrap {
@@ -286,9 +308,10 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
-          <button id="mobileBombBtn" aria-label="Bomba">💣</button>
+          <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
+          <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
-            <div class="stat"><span>Fala</span><b id="wave">1 / 10</b></div>
+            <div class="stat"><span>Fala</span><b id="wave">1 / 20</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
             <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
             <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
@@ -327,7 +350,8 @@
           <span>Telefon: przeci&#261;gnij palcem (g&oacute;ra/d&oacute;&#322;)</span>
           <span>Ekipa strzela sama prosto w lewo</span>
           <span>Wjed&#378; w pas <b style="color:#8bd450">LUDZIE</b> (g&oacute;ra) lub <b style="color:#ffb74d">MOC</b> (d&oacute;&#322;), gdy tor czysty</span>
-          <span><kbd>Spacja</kbd> bomba</span>
+          <span><kbd>Spacja</kbd> bomba (niszczy po&#322;ow&#281; zombie)</span>
+          <span><kbd>N</kbd> bomba atomowa (wszystkie zombie, zu&#380;ywa 2 bomby)</span>
           <span><kbd>P</kbd> pauza</span>
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> wyciszenie</span>
@@ -352,6 +376,13 @@
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackSpread: 18, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
+      // Kolor zwyklych zombie zmienia sie co 5 fal (tier = floor((fala-1)/5)).
+      zombieColors: [
+        { fill: '#6aa84f', stroke: '#3d6b2e' }, // fale 1-5   zielony
+        { fill: '#4fa0a8', stroke: '#2e666b' }, // fale 6-10  morski
+        { fill: '#8e6ac0', stroke: '#553d8a' }, // fale 11-15 fiolet
+        { fill: '#c05a4f', stroke: '#8a3733' }  // fale 16-20 czerwony
+      ],
       boss: { everySpawnCycle: 12, baseR: 12, maxR: 44, speedMul: 0.72, dmgMul: 4.2, baseShots: 200, shotsWaveMul: 2, baseScore: 200, scoreWaveMul: 2, trackMul: 0.65, mass: 10, massWaveMul: 2 },
       miniBoss: {
         telegraphLead: 1.5,
@@ -366,7 +397,7 @@
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 50, powerPer: 50 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
-      waves: { total: 10, killsBase: 1000, breakDuration: 2.4 },
+      waves: { total: 20, killsBase: 1000, breakDuration: 2.4 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
       ramp: { spawnMul: 0.95, hpAdd: 8, speedAdd: 0.65 },
       powerStep: { fireAdd: 0.15, dmgMul: 1.045 },
@@ -568,6 +599,13 @@
       return Math.max(0, Math.floor(w) - 1);
     }
 
+    // Kolor zwyklych zombie wg fali: zmiana co 5 fal.
+    function zombieColorForWave(w) {
+      const arr = CONFIG.zombieColors;
+      const idx = Math.floor((Math.max(1, w) - 1) / 5) % arr.length;
+      return arr[idx];
+    }
+
     function zombieHpForWave(w) {
       return zHp * Math.pow(CONFIG.zombie.hpWaveMul, zombieTierForWave(w));
     }
@@ -678,20 +716,47 @@
       }
     }
 
-    function useBomb() {
-      if (state !== 'play' || bombs <= 0 || zombies.length === 0) return false;
-      bombs--;
+    // Detonacja: niszczy ulamek zombie (najblizsze bazie = najgrozniejsze). Zwraca liczbe zabitych.
+    function detonate(fraction) {
+      if (zombies.length === 0) return 0;
+      let killList;
+      if (fraction >= 1) {
+        killList = zombies;
+        zombies = [];
+      } else {
+        // sortuj malejaco po X: najblizej bazy pierwsze
+        zombies.sort(function (a, b) { return b.x - a.x; });
+        const count = Math.ceil(zombies.length * fraction);
+        killList = zombies.slice(0, count);
+        zombies = zombies.slice(count);
+      }
       let bombScore = 0;
-      for (let i = zombies.length - 1; i >= 0; i--) {
-        const z = zombies[i];
+      for (const z of killList) {
         bombScore += z.score || 1;
         waveKills += z.score || 1;
         fx.push({ x: z.x, y: z.y, life: 0.32, c: z.boss ? '#ff9e80' : '#8bd450', r: z.boss ? 22 : 16 });
         if (z.miniType) grantMiniLoot(z.miniType);
       }
-      zombies = [];
       kills += bombScore;
-      showAlert('BOMBA: WSZYSTKIE ZOMBIE GINA', 1.0);
+      return killList.length;
+    }
+
+    // Zwykla bomba (Spacja): niszczy polowe zombie, zuzywa 1 bombe.
+    function useBomb() {
+      if (state !== 'play' || bombs <= 0 || zombies.length === 0) return false;
+      bombs--;
+      const killed = detonate(0.5);
+      showAlert('BOMBA: ' + killed + ' ZOMBIE (POLOWA)', 1.0);
+      return true;
+    }
+
+    // Bomba atomowa (N): niszczy wszystkie zombie, zuzywa 2 bomby (wymaga >1 bomby).
+    function useNuke() {
+      if (state !== 'play' || zombies.length === 0) return false;
+      if (bombs < 2) { showAlert('ATOMOWA: POTRZEBUJESZ 2 BOMB', 0.8); return false; }
+      bombs -= 2;
+      const killed = detonate(1);
+      showAlert('BOMBA ATOMOWA: ' + killed + ' ZOMBIE (-2 BOMBY)', 1.1);
       return true;
     }
 
@@ -1077,10 +1142,11 @@
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(255,82,82,.10)'; ctx.fillRect(CONFIG.breachX, CONFIG.wallTop, W - CONFIG.breachX, CONFIG.wallBottom - CONFIG.wallTop);
       // zombie
+      const zc = zombieColorForWave(wave);
       for (const z of zombies) {
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
-        ctx.fillStyle = z.boss ? (mini ? mini.color : '#ff8a65') : '#6aa84f';
-        ctx.strokeStyle = z.boss ? '#bf4c2b' : '#3d6b2e';
+        ctx.fillStyle = z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill;
+        ctx.strokeStyle = z.boss ? '#bf4c2b' : zc.stroke;
         ctx.lineWidth = z.boss ? 3 : 2;
         ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         if (z.hp < z.maxhp) {
@@ -1160,7 +1226,8 @@
       bombs: document.getElementById('bombs'),
       effect: document.getElementById('effect'),
       bestKills: document.getElementById('bestKills'),
-      mobileBombBtn: document.getElementById('mobileBombBtn')
+      mobileBombBtn: document.getElementById('mobileBombBtn'),
+      mobileNukeBtn: document.getElementById('mobileNukeBtn')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -1285,6 +1352,11 @@
         useBomb();
         return;
       }
+      if (e.code === 'KeyN' || e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        useNuke();
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { keys.up = true; e.preventDefault(); }
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { keys.down = true; e.preventDefault(); }
     });
@@ -1302,6 +1374,12 @@
       el.mobileBombBtn.addEventListener('click', function (e) {
         e.preventDefault();
         useBomb();
+      });
+    }
+    if (el.mobileNukeBtn) {
+      el.mobileNukeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        useNuke();
       });
     }
 
