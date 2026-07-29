@@ -208,28 +208,17 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
-  #shopTabs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .shopTab {
-    flex: 1;
-    border: 1px solid #3a4c60;
-    border-radius: 8px;
-    background: #202b3a;
-    color: #c7d3df;
-    font-size: 12px;
+  .shopSectionTitle {
+    font-size: 10px;
     font-weight: 800;
-    padding: 8px 10px;
-    cursor: pointer;
+    color: #9fb2c6;
+    letter-spacing: .6px;
+    margin-top: 4px;
   }
-  .shopTab.active {
-    background: #4f9dff;
-    border-color: #4f9dff;
-    color: #fff;
+  #shopGuns, #shopSkins {
+    display: grid;
+    gap: 4px;
   }
-  .shopPane.hidden { display: none; }
   #skinCoins {
     font-size: 12px;
     color: #c7d3df;
@@ -565,21 +554,18 @@
               <option value="hard">Hard</option>
             </select>
           </div>
-          <div class="stat"><button id="openSkinShopBtn" type="button">SKLEP SKINÓW</button></div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
-            <div id="shopTabs">
-              <button id="shopTabGuns" class="shopTab active" type="button">GUNS</button>
-              <button id="shopTabSkins" class="shopTab" type="button">SKINS</button>
-            </div>
-            <div id="shopGuns" class="shopPane">
+            <div class="shopSectionTitle">GUNS</div>
+            <div id="shopGuns">
               <button id="shopPower" class="shopBtn" type="button">+10 MOC (120)</button>
               <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
               <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
               <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
             </div>
-            <div id="shopSkins" class="shopPane hidden">
+            <div class="shopSectionTitle">SKINS</div>
+            <div id="shopSkins">
               <div id="skinCoins">Zabici: 0</div>
               <div id="skinList"></div>
             </div>
@@ -693,7 +679,6 @@
     let shopHealBuys = 0;
     let shopBombBuys = 0;
     let infiniteMoney = false;
-    let activeShopCategory = 'guns';
     let skinKey = 'classic';
     const SKINS = {
       classic: { fill: '#ef5350', stroke: '#b71c1c', cost: 0, label: 'Classic' },
@@ -1002,7 +987,6 @@
       shopHealBuys = 0;
       shopBombBuys = 0;
       if (el && el.winConfetti) el.winConfetti.innerHTML = '';
-      setShopCategory('guns');
       hideAlert();
       hideOverlay();
       updateHud();
@@ -1040,20 +1024,11 @@
 
     function openSkinShop() {
       hideOverlay();
-      setShopCategory('skins');
       updateSkinShopUi();
     }
 
     function closeSkinShop() {
-      setShopCategory('guns');
-    }
-
-    function setShopCategory(nextCategory) {
-      activeShopCategory = nextCategory === 'skins' ? 'skins' : 'guns';
-      if (el.shopTabGuns) el.shopTabGuns.classList.toggle('active', activeShopCategory === 'guns');
-      if (el.shopTabSkins) el.shopTabSkins.classList.toggle('active', activeShopCategory === 'skins');
-      if (el.shopGuns) el.shopGuns.classList.toggle('hidden', activeShopCategory !== 'guns');
-      if (el.shopSkins) el.shopSkins.classList.toggle('hidden', activeShopCategory !== 'skins');
+      updateSkinShopUi();
     }
 
     function shopCost(base, step, bought) {
@@ -1827,9 +1802,6 @@
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       overlayShop: document.getElementById('overlayShop'),
       restart: document.getElementById('restart'),
-      openSkinShopBtn: document.getElementById('openSkinShopBtn'),
-      shopTabGuns: document.getElementById('shopTabGuns'),
-      shopTabSkins: document.getElementById('shopTabSkins'),
       shopGuns: document.getElementById('shopGuns'),
       shopSkins: document.getElementById('shopSkins'),
       skinCoins: document.getElementById('skinCoins'),
@@ -2084,12 +2056,6 @@
       difficultyKey = el.difficulty.value;
       reset();
     });
-    if (el.openSkinShopBtn) {
-      el.openSkinShopBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        openSkinShop();
-      });
-    }
     if (el.power900Btn) {
       el.power900Btn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -2108,15 +2074,6 @@
         openSkinShop();
       });
     }
-    if (el.shopTabGuns) el.shopTabGuns.addEventListener('click', function (e) {
-      e.preventDefault();
-      setShopCategory('guns');
-    });
-    if (el.shopTabSkins) el.shopTabSkins.addEventListener('click', function (e) {
-      e.preventDefault();
-      setShopCategory('skins');
-      updateSkinShopUi();
-    });
     if (el.skinList) {
       el.skinList.addEventListener('click', function (e) {
         const target = e.target instanceof Element ? e.target : e.target && e.target.parentElement;
