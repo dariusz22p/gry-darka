@@ -655,6 +655,7 @@
           <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>1</kbd> skok na fal&#281; 100</span>
           <span><kbd>8</kbd> skok na fal&#281; 1000</span>
+          <span><kbd>5</kbd> losowy power-up</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
@@ -692,7 +693,7 @@
         charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 100, splitHpMul: 0.9, splitSpeedMul: 1.18, color: '#ce93d8' }
       },
-      pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, spreadDur: 12 },
+      pickup: { everySpawnCycle: 5, r: 7, speedMul: 0.9, spreadDur: 12 },
       powerups: {
         dmgDur: 12,
         fireDur: 10,
@@ -1840,6 +1841,12 @@
         const p = pickups[i];
         const speedMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
         p.x += p.speed * speedMul * dt;
+        if (p.x >= CONFIG.breachX - 28 && Math.abs(p.y - colY) <= Math.max(24, squadHalfHeight() * 0.35)) {
+          const autoType = p.type || 'spread';
+          pickups.splice(i, 1);
+          applyPowerup(autoType);
+          continue;
+        }
         if (p.x >= CONFIG.breachX) pickups.splice(i, 1);
       }
 
@@ -2343,6 +2350,13 @@
         if (state === 'pause') state = 'play';
         hideOverlay();
         jumpToWave(1000);
+        return;
+      }
+      if (e.code === 'Digit5' || e.code === 'Numpad5' || e.key === '5' || e.keyCode === 53 || e.keyCode === 101 || e.which === 53 || e.which === 101) {
+        e.preventDefault();
+        const testType = randomPowerupType();
+        applyPowerup(testType);
+        updateHud();
         return;
       }
       if (e.code === 'KeyU' || e.key === 'u' || e.key === 'U') {
