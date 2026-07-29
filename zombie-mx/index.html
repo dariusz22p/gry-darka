@@ -434,6 +434,7 @@
           <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
           <span><kbd>0</kbd> ustaw ekip&#281; na 100 os&oacute;b</span>
           <span><kbd>2</kbd> ustaw ekip&#281; na 2000 os&oacute;b</span>
+          <span><kbd>9</kbd> ustaw moc na 900</span>
           <span><kbd>B</kbd> ustaw moc na 100</span>
           <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>1</kbd> skok na fal&#281; 100</span>
@@ -1574,6 +1575,17 @@
         hideOverlay();
         setSquadCount(2000);
         showAlert('EKIPA: ' + N, 1.0);
+        updateHud();
+        return;
+      }
+      if (e.code === 'Digit9' || e.code === 'Numpad9' || e.key === '9' || e.keyCode === 57 || e.keyCode === 105 || e.which === 57 || e.which === 105) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        powerLevel = 900;
+        applyPower();
+        showAlert('MOC: 900', 1.0);
         updateHud();
         return;
       }
