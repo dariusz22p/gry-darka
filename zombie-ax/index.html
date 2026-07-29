@@ -138,15 +138,6 @@
         </div>
       </div>
       <aside id="sidebar">
-        <div id="hud">
-          <div class="stat"><span>Mode</span>
-            <select id="difficulty">
-              <option value="easy">Easy</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
-        </div>
         <div id="help">
           <a class="back" href="../">← Back</a>
           <span><strong>Controls:</strong></span>
@@ -200,19 +191,19 @@
     let state = 'play', gameTime = 0, steering = false, targetY = CONFIG.H / 2;
     let keys = { up: false, down: false };
     let baseHp = CONFIG.baseHpMax, coins = 0, squadSize = 1, fireRate = 1, damage = 1;
-    let kills = 0, hasLaser = false, laserActive = false;
+    let kills = 0, hasLaser = false, laserActive = false, fireTimer = 0;
     const zombies = [], bullets = [], gates = [];
     let nextGateTime = 0;
 
     const ZOMBIE_STATS = {
-      verySlow: { speed: 0.5, hp: 6, size: 9, color: '#5aa02a', stroke: '#3c6d1c' },
-      slow: { speed: 1, hp: 5, size: 8, color: '#6fb03a', stroke: '#4a7724' },
-      normal: { speed: 1.5, hp: 4, size: 8, color: '#8bd450', stroke: '#5c8f34' },
-      fast: { speed: 2.25, hp: 3, size: 7, color: '#b6e77a', stroke: '#7ba548' },
-      armored: { speed: 0.75, hp: 10, size: 11, color: '#8a8f98', stroke: '#565b63' },
-      yellow: { speed: 1.5, hp: 12, size: 8, color: '#ffe000', stroke: '#b39b00' },
-      red: { speed: 1.5, hp: 12, size: 9, color: '#ff3b3b', stroke: '#a11f1f' },
-      boss: { speed: 1, hp: 1000, size: 24, color: '#f4f4f4', stroke: '#b0b0b0' },
+      verySlow: { speed: 0.25, hp: 6, size: 9, color: '#5aa02a', stroke: '#3c6d1c' },
+      slow: { speed: 0.5, hp: 5, size: 8, color: '#6fb03a', stroke: '#4a7724' },
+      normal: { speed: 0.75, hp: 4, size: 8, color: '#8bd450', stroke: '#5c8f34' },
+      fast: { speed: 1.125, hp: 3, size: 7, color: '#b6e77a', stroke: '#7ba548' },
+      armored: { speed: 0.375, hp: 10, size: 11, color: '#8a8f98', stroke: '#565b63' },
+      yellow: { speed: 0.75, hp: 200, size: 12, color: '#ffe000', stroke: '#b39b00' },
+      red: { speed: 0.75, hp: 160, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
+      boss: { speed: 0.5, hp: 2000, size: 30, color: '#f4f4f4', stroke: '#b0b0b0' },
     };
 
     function spawnZombie(type = null) {
@@ -221,10 +212,12 @@
         type = types[Math.floor(Math.random() * types.length)];
       }
       const stats = ZOMBIE_STATS[type];
+      const special = (type === 'yellow' || type === 'red' || type === 'boss');
+      const hp = special ? stats.hp : Math.round(stats.hp * hpScale());
       const y = Math.random() * (CONFIG.H - 60) + 30;
       zombies.push({
         x: -30, y: y, type: type,
-        hp: stats.hp, maxHp: stats.hp,
+        hp: hp, maxHp: hp,
         speed: stats.speed, size: stats.size, color: stats.color, stroke: stats.stroke,
       });
     }
@@ -233,14 +226,17 @@
       const rewards = ['fireRate', 'damage', 'health'];
       const reward = rewards[Math.floor(Math.random() * rewards.length)];
       // per-pellet increment scales with current damage: dmg gate +=damage, heal +=10*damage
-      const inc = reward === 'damage' ? damage
-                : reward === 'health' ? 10 * damage
+      const inc = reward === 'damage' ? Math.max(0.5, damage)
+                : reward === 'health' ? 10 * Math.max(0.5, damage)
                 : FIRERATE_INC;
+      // ~35% of gates start NEGATIVE: avoid them, or shoot them back into the positives
+      const negative = Math.random() < 0.35;
+      const startVal = negative ? -inc * (3 + Math.floor(Math.random() * 4)) : inc;
       gates.push({
         x: -70, y: Math.random() * (CONFIG.H - 200) + 30,
-        width: 70, height: 170, reward: reward, inc: inc, value: inc, collected: false,
+        width: 70, height: 170, reward: reward, inc: inc, value: startVal, collected: false,
       });
-      nextGateTime = gameTime + 14;
+      nextGateTime = gameTime + 12;
     }
 
     function showAlert(text, dur = 1) {
@@ -252,6 +248,8 @@
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
     const minY = () => 30, maxY = () => CONFIG.H - 30;
+    // Difficulty ramp: regular enemy HP scales up over time (massive after ~1 min)
+    function hpScale() { return 1 + Math.pow(gameTime / 60, 2) * 2; }
 
     function update(dt) {
       gameTime += dt;
@@ -267,7 +265,9 @@
       if (gameTime > 180 && gameTime % 2.5 < 0.1) spawnZombie('red');
       if (gameTime > 300 && gameTime < 301) spawnZombie('boss');
 
-      if (Math.random() < CONFIG.spawnEvery * dt && gameTime < 300) spawnZombie();
+      // spawn rate ramps up over time for rising difficulty
+      const spawnRate = CONFIG.spawnEvery * (1 + gameTime / 45);
+      if (Math.random() < spawnRate * dt) spawnZombie();
 
       if (gameTime > nextGateTime) spawnGate();
       gates.forEach((g, i) => {
@@ -275,20 +275,29 @@
         if (g.x > CONFIG.W + 40) gates.splice(i, 1);
       });
 
-      // Gun: fire straight bullets LEFT at a rate scaled by fireRate & squad
-      if (!hasLaser) {
-        const shotsPerSec = 5 * fireRate * squadSize;
-        if (state === 'play' && Math.random() < shotsPerSec * dt) {
-          bullets.push({ x: SHOOTER_X - 12, y: targetY, vx: -9, vy: 0, damage: damage });
-          playSound(400, 0.05);
+      // Effective fire rate & damage. Overheat: fireRate>=4 => rate/4 but damage x4 (RED heavy mode)
+      const overheated = fireRate >= 4;
+      const effFireRate = overheated ? fireRate / 4 : fireRate;
+      const effDamage = overheated ? damage * 4 : damage;
+
+      // Gun: deterministic fire. Base = 1 bullet / 0.5s, faster as fireRate & squad grow
+      if (!hasLaser && state === 'play') {
+        const shotInterval = 0.5 / (effFireRate * squadSize);
+        fireTimer += dt;
+        let fired = 0;
+        while (fireTimer >= shotInterval && fired < 20) {
+          fireTimer -= shotInterval;
+          bullets.push({ x: SHOOTER_X - 12, y: targetY, vx: -9, vy: 0, damage: effDamage });
+          fired++;
         }
+        if (fired > 0) playSound(overheated ? 300 : 400, 0.05);
       }
 
       // Laser: continuous beam firing LEFT, 1/5 gun strength, hits every zombie in the lane
       laserActive = false;
       if (hasLaser && state === 'play') {
         laserActive = true;
-        const dps = 5 * fireRate * squadSize * damage * 0.2; // 1/5 of gun DPS
+        const dps = 2 * effFireRate * squadSize * effDamage * 0.2; // 1/5 of gun DPS
         zombies.forEach(z => {
           if (Math.abs(z.y - targetY) < 55 && z.x < SHOOTER_X - 5) z.hp -= dps * dt;
         });
@@ -348,14 +357,18 @@
         if (!g.collected && g.x <= SHOOTER_X && g.x + g.width >= SHOOTER_X) {
           if (targetY >= g.y && targetY <= g.y + g.height) {
             g.collected = true;
-            if (g.reward === 'fireRate') fireRate += g.value;
-            else if (g.reward === 'damage') damage += g.value;
-            else if (g.reward === 'health') { CONFIG.baseHpMax += g.value; baseHp += g.value; }
+            if (g.reward === 'fireRate') fireRate = Math.max(0.2, fireRate + g.value);
+            else if (g.reward === 'damage') damage = Math.max(0.1, damage + g.value);
+            else if (g.reward === 'health') {
+              if (g.value >= 0) { CONFIG.baseHpMax += g.value; baseHp += g.value; }
+              else baseHp = Math.max(1, baseHp + g.value);
+            }
+            const sgn = g.value >= 0 ? '+' : '';
             const shown = g.reward === 'health' ? Math.round(g.value)
                         : g.reward === 'fireRate' ? g.value.toFixed(2)
                         : (Number.isInteger(g.value) ? g.value : g.value.toFixed(1));
-            showAlert(`📊 ${g.reward} +${shown}`);
-            playSound(1200, 0.15);
+            showAlert(`📊 ${g.reward} ${sgn}${shown}`);
+            playSound(g.value >= 0 ? 1200 : 260, 0.15);
           }
         }
       });
@@ -383,19 +396,23 @@
       ctx.lineTo(BASE_X, CONFIG.H - 10);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(255,82,82,.08)';
+      const baseGrad = ctx.createLinearGradient(BASE_X, 0, CONFIG.W, 0);
+      baseGrad.addColorStop(0, 'rgba(255,82,82,.04)');
+      baseGrad.addColorStop(1, 'rgba(255,82,82,.22)');
+      ctx.fillStyle = baseGrad;
       ctx.fillRect(BASE_X, 0, CONFIG.W - BASE_X, CONFIG.H);
 
       // Team (shooter with gun barrel, on the RIGHT, barrel pointing left)
+      const oh = fireRate >= 4; // overheated HEAVY mode
       ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.moveTo(SHOOTER_X, targetY); ctx.lineTo(SHOOTER_X - 26, targetY); ctx.stroke();
-      ctx.fillStyle = '#dbe6f2';
+      ctx.beginPath(); ctx.moveTo(SHOOTER_X, targetY); ctx.lineTo(SHOOTER_X - (oh ? 32 : 26), targetY); ctx.stroke();
+      ctx.fillStyle = oh ? '#ff6b3d' : '#dbe6f2';
       ctx.save();
-      ctx.shadowColor = 'rgba(79,157,255,.9)'; ctx.shadowBlur = 16;
-      ctx.beginPath(); ctx.arc(SHOOTER_X, targetY, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = oh ? 'rgba(255,80,40,.95)' : 'rgba(79,157,255,.9)'; ctx.shadowBlur = oh ? 22 : 16;
+      ctx.beginPath(); ctx.arc(SHOOTER_X, targetY, oh ? 15 : 13, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
-      ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#12181f';
+      ctx.strokeStyle = oh ? '#a11f1f' : '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = oh ? '#fff' : '#12181f';
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(squadSize, SHOOTER_X, targetY);
@@ -434,16 +451,21 @@
       }
 
       gates.forEach(g => {
-        const gc = { fireRate: '#4f9dff', damage: '#ef5350', health: '#8bd450' }[g.reward];
+        const pos = g.value >= 0;
+        const gc = !pos ? '#ff1744' : { fireRate: '#4f9dff', damage: '#ef5350', health: '#8bd450' }[g.reward];
         const labels = { fireRate: 'FIRE RATE', damage: 'DAMAGE', health: 'HEAL' };
-        const valStr = g.reward === 'health' ? '+' + Math.round(g.value)
-                     : g.reward === 'fireRate' ? '+' + g.value.toFixed(2)
-                     : '+' + (Number.isInteger(g.value) ? g.value : g.value.toFixed(1));
+        const sgn = pos ? '+' : '';
+        const valStr = g.reward === 'health' ? sgn + Math.round(g.value)
+                     : g.reward === 'fireRate' ? sgn + g.value.toFixed(2)
+                     : sgn + (Number.isInteger(g.value) ? g.value : g.value.toFixed(1));
         ctx.fillStyle = g.collected ? 'rgba(120,120,120,.12)' : (gc + '22');
         ctx.fillRect(g.x, g.y, g.width, g.height);
+        ctx.save();
+        if (!pos && !g.collected) { ctx.shadowColor = gc; ctx.shadowBlur = 14; }
         ctx.strokeStyle = g.collected ? '#666' : gc;
         ctx.lineWidth = 4;
         ctx.strokeRect(g.x, g.y, g.width, g.height);
+        ctx.restore();
         ctx.fillStyle = g.collected ? '#666' : gc;
         ctx.fillRect(g.x - 4, g.y - 8, g.width + 8, 10);
         ctx.fillRect(g.x - 4, g.y + g.height - 2, g.width + 8, 10);
@@ -451,8 +473,8 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = g.collected ? '#888' : '#fff';
-        ctx.font = 'bold 12px "Segoe UI", sans-serif';
-        ctx.fillText(labels[g.reward], g.x + g.width / 2, g.y + g.height / 2 - 12);
+        ctx.font = 'bold 11px "Segoe UI", sans-serif';
+        ctx.fillText((pos ? '' : '⚠ ') + labels[g.reward], g.x + g.width / 2, g.y + g.height / 2 - 12);
         ctx.fillStyle = g.collected ? '#888' : gc;
         ctx.font = 'bold 20px "Segoe UI", sans-serif';
         ctx.fillText(valStr, g.x + g.width / 2, g.y + g.height / 2 + 14);
@@ -466,7 +488,7 @@
       document.getElementById('squad').textContent = squadSize;
       document.getElementById('power').textContent = Math.round(damage * 100);
       document.getElementById('kills').textContent = kills;
-      document.getElementById('weapon').textContent = hasLaser ? 'LASER' : 'gun';
+      document.getElementById('weapon').textContent = hasLaser ? 'LASER' : (fireRate >= 4 ? 'HEAVY' : 'gun');
       document.getElementById('coins').textContent = coins;
       document.getElementById('iconCoins').textContent = coins;
       document.getElementById('hpfill').style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -482,29 +504,30 @@
       const shopItems = document.getElementById('shopItems');
       shopItems.innerHTML = '';
       const items = [
-        { id: 'laser', name: '🔫 Laser', cost: 5000, bought: hasLaser },
+        { id: 'dmg',   name: '💥 +0.5 DMG', cost: 50 },
+        { id: 'fire',  name: '⚡ +0.2 Fire', cost: 100 },
+        { id: 'hp',    name: '❤️ +50 HP',    cost: 150 },
+        { id: 'laser', name: '🔫 Laser',     cost: 5000, bought: hasLaser },
       ];
       items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'shop-item' + (item.bought ? ' bought' : '');
-        div.textContent = `${item.name} (${item.cost})`;
-        if (!item.bought) {
-          div.onclick = () => {
-            if (coins >= item.cost) {
-              coins -= item.cost;
-              hasLaser = true;
-              document.getElementById('weapon').textContent = 'LASER';
-              updateShop();
-              showAlert('✨ LASER!');
-              playSound(1500, 0.3);
-            } else {
-              showAlert('💰 Need ' + (item.cost - coins));
-            }
-          };
-        }
+        div.textContent = `${item.name} — ${item.cost}`;
+        if (!item.bought) div.onclick = () => buyItem(item);
         shopItems.appendChild(div);
       });
       document.getElementById('shopCoins').textContent = `💰 ${coins}`;
+    }
+
+    function buyItem(item) {
+      if (coins < item.cost) { showAlert('💰 Need ' + (item.cost - coins)); return; }
+      coins -= item.cost;
+      if (item.id === 'dmg') { damage += 0.5; showAlert('💥 +0.5 DMG'); }
+      else if (item.id === 'fire') { fireRate += 0.2; showAlert('⚡ +0.2 Fire'); }
+      else if (item.id === 'hp') { CONFIG.baseHpMax += 50; baseHp += 50; showAlert('❤️ +50 HP'); }
+      else if (item.id === 'laser') { hasLaser = true; document.getElementById('weapon').textContent = 'LASER'; showAlert('✨ LASER!'); }
+      playSound(1500, 0.2);
+      updateShop();
     }
 
     function toggleShop(force) {
@@ -580,7 +603,6 @@
     });
 
     document.getElementById('restart').addEventListener('click', () => location.reload());
-    document.getElementById('difficulty').addEventListener('change', e => { CONFIG.difficulty = e.target.value; });
 
     gameLoop();
   </script>
