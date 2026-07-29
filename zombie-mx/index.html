@@ -135,6 +135,28 @@
     align-items: center; justify-content: center; gap: 14px; background: rgba(8,12,17,.78);
     z-index: 4;
   }
+  #winConfetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 5;
+  }
+  #winConfetti i {
+    position: absolute;
+    top: -14%;
+    width: 8px;
+    height: 14px;
+    opacity: 0;
+    animation-name: confettiFall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-6%) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(130%) rotate(900deg); opacity: 0; }
+  }
   #overlay.hidden { display: none; }
   #overlay h2 { margin: 0; font-size: 30px; }
   #overlay p { margin: 0; opacity: .85; }
@@ -365,6 +387,7 @@
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 100 os&oacute;b">100👥</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
+          <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 100</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
@@ -734,6 +757,7 @@
       powerNeed = CONFIG.panel.powerPer;
       spawnCycles = 0;
       confetti = [];
+      if (el && el.winConfetti) el.winConfetti.innerHTML = '';
       hideAlert();
       hideOverlay();
       updateHud();
@@ -755,6 +779,26 @@
           vr: (Math.random() * 2 - 1) * 8,
           c: colors[(Math.random() * colors.length) | 0]
         });
+      }
+      if (el && el.winConfetti) {
+        el.winConfetti.innerHTML = '';
+        for (let i = 0; i < 160; i++) {
+          const piece = document.createElement('i');
+          const left = Math.random() * 100;
+          const delay = Math.random() * 1.1;
+          const duration = 2.2 + Math.random() * 2.4;
+          const w = 6 + Math.random() * 5;
+          const h = 10 + Math.random() * 10;
+          const rot = Math.random() * 360;
+          piece.style.left = left + '%';
+          piece.style.width = w + 'px';
+          piece.style.height = h + 'px';
+          piece.style.background = colors[(Math.random() * colors.length) | 0];
+          piece.style.animationDuration = duration + 's';
+          piece.style.animationDelay = delay + 's';
+          piece.style.transform = 'rotate(' + rot + 'deg)';
+          el.winConfetti.appendChild(piece);
+        }
       }
     }
 
@@ -1387,6 +1431,7 @@
       bombs: document.getElementById('bombs'),
       effect: document.getElementById('effect'),
       bestKills: document.getElementById('bestKills'),
+      winConfetti: document.getElementById('winConfetti'),
       mobileBombBtn: document.getElementById('mobileBombBtn'),
       mobileNukeBtn: document.getElementById('mobileNukeBtn'),
       mobileSquadBtn: document.getElementById('mobileSquadBtn'),
