@@ -386,6 +386,7 @@
           <span><kbd>P</kbd> pauza</span>
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
+          <span><kbd>0</kbd> ustaw ekip&#281; na 100 os&oacute;b</span>
           <span><kbd>B</kbd> ustaw moc na 100</span>
           <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>1</kbd> skok na fal&#281; 100</span>
@@ -409,7 +410,7 @@
       breachX: 900,                      // zombie za tą linią rani bazę
       baseHpMax: 100,
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
-      shooter: { maxN: 64, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
+      shooter: { maxN: 100, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackSpread: 18, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
       // Kolor zwyklych zombie zmienia sie co 5 fal (tier = floor((fala-1)/5)).
       zombieColors: [
@@ -1422,6 +1423,15 @@
         colY = clamp(colY, minY(), maxY());
         targetY = clamp(targetY, minY(), maxY());
         showAlert('EKIPA: ' + N, 0.8);
+        return;
+      }
+      if (e.code === 'Digit0' || e.code === 'Numpad0' || e.key === '0' || e.keyCode === 48 || e.keyCode === 96 || e.which === 48 || e.which === 96) {
+        e.preventDefault();
+        N = Math.min(CONFIG.shooter.maxN, 100);
+        colY = clamp(colY, minY(), maxY());
+        targetY = clamp(targetY, minY(), maxY());
+        showAlert('EKIPA: ' + N, 0.9);
+        updateHud();
         return;
       }
       if (e.key === 'b' || e.key === 'B') {
