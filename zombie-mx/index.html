@@ -662,7 +662,7 @@
       spawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul; spawnTimer = 0;
       zHp = CONFIG.zombie.hp * diff.zombieHpMul; zSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
       kills = 0; powerLevel = 0;
-      N = 1; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
+      N = 10; colY = (CONFIG.wallTop + CONFIG.wallBottom) / 2; targetY = colY;
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
@@ -1201,9 +1201,9 @@
         const y = colY + o.y;
         ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 18, y); ctx.stroke();
-        ctx.fillStyle = i === 0 ? '#dbe6f2' : '#4f9dff';
+        ctx.fillStyle = '#ef5350';
         ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 2; ctx.stroke();
       }
       // pociski
       ctx.fillStyle = '#ffe082';
