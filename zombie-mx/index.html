@@ -363,6 +363,7 @@
           <span><kbd>P</kbd> pauza</span>
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
+          <span><kbd>B</kbd> ustaw moc na 100</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
@@ -1368,6 +1369,14 @@
         colY = clamp(colY, minY(), maxY());
         targetY = clamp(targetY, minY(), maxY());
         showAlert('EKIPA: ' + N, 0.8);
+        return;
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        powerLevel = 100;
+        applyPower();
+        showAlert('MOC: 100', 0.9);
+        updateHud();
         return;
       }
       if (e.code === 'KeyU' || e.key === 'u' || e.key === 'U') {
