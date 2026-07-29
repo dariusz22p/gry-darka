@@ -228,6 +228,8 @@
     padding: 12px;
     display: grid;
     gap: 8px;
+    max-height: min(86vh, 760px);
+    overflow: hidden;
   }
   #skinShopTop {
     display: flex;
@@ -249,7 +251,12 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    overflow-y: auto;
+    padding-right: 4px;
   }
+  #skinList::-webkit-scrollbar { width: 8px; }
+  #skinList::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
+  #skinList::-webkit-scrollbar-thumb { background: #3a4c60; border-radius: 999px; }
   .skinItem {
     border: 1px solid #33465c;
     border-radius: 8px;
@@ -481,6 +488,13 @@
     #help span, #help a { min-height: 11px; }
     .back, kbd { font-size: 6px; }
     #difficulty { font-size: 10px; }
+    #skinShopCard {
+      width: min(680px, 98%);
+      max-height: min(92vh, 880px);
+    }
+    #skinList {
+      grid-template-columns: 1fr;
+    }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
     #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn, #mobilePowerBtn { display: block; }
