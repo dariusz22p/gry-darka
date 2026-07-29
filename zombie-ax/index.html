@@ -40,7 +40,7 @@
   #ingameHudBottom { bottom: 36px; }
   #ingameHudTop .stat, #ingameHudBottom .stat {
     display: flex; align-items: center; justify-content: space-between; gap: 3px;
-    padding: 2px 3px; border: 0; border-radius: 3px; background: rgba(15,20,27,.22);
+    padding: 3px 5px; border: 1px solid rgba(120,170,220,.14); border-radius: 5px; background: rgba(11,16,23,.78);
   }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
@@ -94,21 +94,12 @@
   }
   .shop-item:hover { background: rgba(0, 217, 255, 0.3); }
   .shop-item.bought { opacity: 0.5; cursor: not-allowed; }
-  #mobileBombBtn, #mobileNukeBtn {
-    display: none; position: absolute; width: 56px; height: 56px; border: 0;
-    border-radius: 50%; font-size: 24px; font-weight: 700; cursor: pointer; z-index: 2; transition: all .15s ease;
-  }
-  #mobileBombBtn { left: 6px; top: 50%; transform: translateY(-50%); background: rgba(239,83,80,.42); color: rgba(255,255,255,.82); }
-  #mobileBombBtn:hover { background: rgba(239,83,80,.72); }
-  #mobileNukeBtn { left: 6px; bottom: 6px; background: rgba(255,193,7,.42); color: rgba(0,0,0,.82); }
-  #mobileNukeBtn:hover { background: rgba(255,193,7,.72); }
   footer { text-align: center; margin-top: 6px; font-size: 10px; opacity: .4; }
   .back { display: inline-block; margin-right: 6px; text-decoration: none; color: #4f9dff; }
   #help { font-size: 11px; line-height: 1.4; }
   #help span { display: block; margin: 4px 0; opacity: .7; }
   @media (max-width: 768px) {
     #layout { grid-template-columns: 1fr; grid-template-areas: "stage" "help"; }
-    #mobileBombBtn, #mobileNukeBtn { display: block !important; }
   }
 </style>
 </head>
@@ -124,8 +115,6 @@
             <div id="shopItems"></div>
             <div id="shopCoins" style="margin-top: 8px; text-align: center; font-size: 12px; color: #ffd180;">💰 0</div>
           </div>
-          <button id="mobileBombBtn">💣</button>
-          <button id="mobileNukeBtn">🔫</button>
           <div id="ingameHudTop">
             <div class="stat"><span>Timer</span><b id="timer">0:00</b></div>
             <div class="stat"><span>Zombies</span><b id="zombieCount">0</b></div>
