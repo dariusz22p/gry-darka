@@ -271,6 +271,28 @@
     background: rgba(79,157,255,.62);
     transform: scale(0.92);
   }
+  #mobilePowerBtn {
+    display: none;
+    position: absolute;
+    left: 6px;
+    top: calc(50% + 160px);
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,183,77,.46);
+    color: rgba(255,255,255,.94);
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    z-index: 2;
+    touch-action: manipulation;
+    pointer-events: auto;
+  }
+  #mobilePowerBtn:active {
+    background: rgba(255,183,77,.68);
+    transform: scale(0.92);
+  }
   #help {
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
@@ -330,7 +352,7 @@
     #difficulty { font-size: 10px; }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
-    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn { display: block; }
+    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn, #mobilePowerBtn { display: block; }
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #wrap {
@@ -386,6 +408,7 @@
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2000👥</button>
+          <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">900⚡</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
@@ -1437,6 +1460,7 @@
       mobileBombBtn: document.getElementById('mobileBombBtn'),
       mobileNukeBtn: document.getElementById('mobileNukeBtn'),
       mobileSquadBtn: document.getElementById('mobileSquadBtn'),
+      mobilePowerBtn: document.getElementById('mobilePowerBtn'),
       mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
     function updateHud() {
@@ -1670,6 +1694,18 @@
         hideOverlay();
         setSquadCount(2000);
         showAlert('EKIPA: ' + N, 1.0);
+        updateHud();
+      });
+    }
+    if (el.mobilePowerBtn) {
+      el.mobilePowerBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        powerLevel = 900;
+        applyPower();
+        showAlert('MOC: 900', 1.0);
         updateHud();
       });
     }
