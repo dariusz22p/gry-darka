@@ -40,7 +40,7 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 - Upgrade moc wcześnie
 - Rekrutuj strategicznie
 - Zaoszczędzaj bomby na trudne momenty
-- Try all difficulty levels
+- Sprawdź różne tryby trudności
 
 ## 🏠 Powrót
 

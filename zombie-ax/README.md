@@ -1,56 +1,70 @@
-# 🧟 Napór Zombie — AX (Wariant Aleksa)
+# Napor Zombie — AX (Wariant Aleksa)
 
-Wariant rozwijany przez **Aleksandra Panasiuka**. Oparty na prototypie Vanilla, ewoluuje niezależnie.
+Wariant rozwijany przez **Aleksandra Panasiuka**. Przepisany od zera jako endless survival w stylu Evony.
 
-## 🎮 Graj teraz
+## Graj teraz
 
-**[👉 ZAGRAJ](https://dariusz22p.github.io/gry-darka/zombie-ax/)**
+**[ZAGRAJ](https://dariusz22p.github.io/gry-darka/zombie-ax/)**
 
-## 📖 Jak grać
+## Jak grac
 
-Jesteś dowódcą zespołu. Twoim zadaniem jest:
-- **Obrona** — Broń bazę przed falami zombie
-- **Kierowanie** — Poruszaj ekipą w górę i w dół
-- **Atak** — Zespół strzela automatycznie (zawsze w lewo)
-- **Rekrutacja** — Dobieraj nowych ludzi (LUDZIE panel)
-- **Ulepszenia** — Zwiększaj moc i szybkostrzelność (MOC panel)
-- **Bomby** — Używaj specjalnych broni
+Bronisz bazy po prawej stronie ekranu. Zombie nadchodzą z lewej i idą w prawo. Twoja ekipa strzela automatycznie w lewo.
 
-## 🎯 Fale & Zombies
+- Poruszaj ekipą w górę i w dół
+- Zbieraj bramy (przelatują przez planszę) — pozytywne dają bonusy do obrażeń, HP i szybkostrzelności
+- Omijaj lub ostrzeliwuj bramy negatywne (czerwone, ze znakiem ostrzeżenia)
+- Kupuj ulepszenia w sklepie
 
-- **20 fal** w grze
-- **Trudność rośnie** — każda fala jest trudniejsza
-- **Mini-bossy** — specjalni zombie z bonusami
-- **Loot** — zbieraj bomby i bonusy z pokonanych bossów
+## Zombie i eventi
 
-## ⌨️ Sterowanie
+- **Endless** — gra nie ma końca, trudność rośnie z czasem
+- **5 tierów zombie:** bardzo wolny / wolny / normalny / szybki / opancerzony
+- **60 s** — pojawia się żółty zombie (200 HP)
+- **180 s** — pojawia się czerwony zombie (160 HP)
+- **300 s** — boss (2000 HP)
+- HP zwykłych zombie skaluje z czasem i siłą twojej ekipy
 
-- **↑ / W** — ruch ekipy w górę
-- **↓ / S** — ruch ekipy w dół
-- **SPACEBAR** — bomba zwykła
-- **N** — bomba atomowa
-- **P** — pauza
-- **F** — pełny ekran
+## Bramy
+
+Bramy przelatują przez planszę od lewej do prawej. Przejście przez bramę (twoja ekipa jest w jej pionie) **odbiera** bonus.
+
+- **Pozytywne** — dają +DMG, +HP lub +szybkostrzelność
+- **Negatywne (~35%)** — jaskrawoczerwone ze znakiem ostrzeżenia — odbierają statystyki; omijaj je lub ostrzeliwuj do wartości dodatniej
+- Ostrzelana brama zmienia wartość o FLAT_INC na trafienie; cap na bramie ogranicza maksymalny bonus
+
+## Overheat (HEAVY mode)
+
+Gdy szybkostrzelność osiagnie poziom 4+, ekipa przechodzi w tryb **HEAVY**:
+- Szybkostrzelność spada o połowę
+- Obrażenia x4
+- Netto: ok. 2x DPS — wciąż opłacalny tryb
+
+## Sklep
+
+Kliknij ikonę sklepu (lewy górny róg) aby otworzyć sklep.
+
+| Ulepszenie | Koszt | Typ |
+|---|---|---|
+| +0.5 DMG | 50 | powtarzalny |
+| +0.2 Fire Rate | 100 | powtarzalny |
+| +50 HP | 150 | powtarzalny |
+| Laser | 5000 | jednorazowy |
+
+Laser to ciągły promień w lewo, multi-hit w pasie +-55 px, 1/5 siły zwykłego strzału.
+
+## Sterowanie
+
+- **W** — ruch ekipy w górę
+- **S** — ruch ekipy w dół
+- **Klik ikony sklepu** — otwiera sklep
 - **R** — restart
-- **M** — wyciszenie
 - **ESC / H** — powrót do menu
 
-## 💡 Porady
+## Developer
 
-- Upgrade moc wcześnie
-- Rekrutuj strategicznie
-- Zaoszczędzaj bomby na trudne momenty
-- Try all difficulty levels
+- **Aleksander Panasiuk** — prowadzący wariant
 
-## 🏠 Powrót
-
-- Wciśnij **ESC** lub **H** — powrót do menu głównego
-
-## 👨‍💻 Developer
-
-- **Aleksander Panasiuk** — Prowadzący wariant
-
-## 🔀 Inne warianty
+## Inne warianty
 
 - [Vanilla (1.0)](https://dariusz22p.github.io/gry-darka/zombie-vanilla/) — prototyp bazowy
 - [MX](https://dariusz22p.github.io/gry-darka/zombie-mx/) — wariant Maksa
@@ -59,4 +73,4 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 
 ---
 
-[« Wróć do głównego menu](https://dariusz22p.github.io/gry-darka/)
+[Wróc do głównego menu](https://dariusz22p.github.io/gry-darka/)
