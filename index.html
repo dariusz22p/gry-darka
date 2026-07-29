@@ -5,54 +5,106 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gry Darka, Janka i Ekipy</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; min-height: 100%;
-    background: radial-gradient(1200px 600px at 50% -10%, #223047, #161d27 60%);
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 50%, #16213e 100%);
     color: #e8edf2;
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
   }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 16px 60px; }
-  header { text-align: center; margin-bottom: 32px; }
-  h1 { font-size: 34px; letter-spacing: 3px; margin: 0 0 8px; }
-  .sub { opacity: .75; font-size: 15px; margin: 0; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 16px 60px; }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { 
+    font-size: 42px; letter-spacing: 4px; margin: 0 0 12px;
+    background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(255, 0, 110, 0.3);
+  }
+  .sub { 
+    opacity: .88; font-size: 14px; margin: 0; color: #06ffa5;
+    font-family: "Segoe UI", sans-serif;
+    letter-spacing: 1px;
+  }
   .grid {
-    display: grid; gap: 18px;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    display: grid; gap: 22px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
   .card {
     display: flex; flex-direction: column;
-    background: #202b3a; border: 1px solid #33465c; border-radius: 14px;
-    padding: 18px; text-decoration: none; color: inherit;
-    box-shadow: 0 8px 24px rgba(0,0,0,.35);
-    transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+    background: rgba(16, 16, 42, 0.8); border: 2px solid; border-radius: 14px;
+    padding: 20px; text-decoration: none; color: inherit;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    transition: transform .15s cubic-bezier(.34,.1,.64,1), border-color .15s ease, box-shadow .15s ease;
+    position: relative;
+    overflow: hidden;
   }
-  .card:hover { transform: translateY(-3px); border-color: #4f9dff; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+    transform: translateX(-100%);
+    transition: transform .6s;
+  }
+  .card:hover::before { transform: translateX(100%); }
+  .card:hover { 
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(0,0,0,.7);
+  }
   .card.soon { opacity: .6; }
-  .card.soon:hover { transform: none; border-color: #33465c; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .card.soon:hover { transform: none; border-color: inherit; box-shadow: inherit; }
   .thumb {
-    height: 120px; border-radius: 10px; margin-bottom: 14px;
+    height: 140px; border-radius: 10px; margin-bottom: 16px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 44px; font-weight: 800; letter-spacing: 2px;
+    font-size: 48px; font-weight: 900; letter-spacing: 3px;
+    box-shadow: 0 0 20px rgba(0,0,0,.6), inset 0 0 20px rgba(255,255,255,.1);
   }
-  .thumb.castle { background: linear-gradient(135deg, #ef8354 0%, #2b6cc0 100%); color: #fff; }
-  .thumb.zombie { background: linear-gradient(135deg, #6aa84f 0%, #12181f 100%); color: #eaf5e0; }
-  .thumb.blank { background: repeating-linear-gradient(45deg, #2a3646, #2a3646 12px, #26313f 12px, #26313f 24px); color: #6c7d90; }
-  .card h2 { margin: 0 0 6px; font-size: 19px; }
-  .card p { margin: 0 0 14px; font-size: 13px; line-height: 1.5; opacity: .82; flex: 1; }
+  .thumb.castle { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #fdb833 100%); color: #000; text-shadow: 1px 1px 3px rgba(255,255,255,.4); }
+  .thumb.zombie-v { background: linear-gradient(135deg, #7209b7 0%, #3a0ca3 50%, #240046 100%); color: #e0aaff; }
+  .thumb.zombie-mx { background: linear-gradient(135deg, #00d9ff 0%, #00b4d8 50%, #0077b6 100%); color: #fff; }
+  .thumb.zombie-ax { background: linear-gradient(135deg, #ff006e 0%, #d62828 50%, #8b0000 100%); color: #fff; }
+  .thumb.zombie-daz { background: linear-gradient(135deg, #06ffa5 0%, #00d9a3 50%, #00a896 100%); color: #000; text-shadow: 1px 1px 3px rgba(0,0,0,.3); }
+  .thumb.zombie-jan { background: linear-gradient(135deg, #ffbe0b 0%, #fb5607 50%, #ff006e 100%); color: #000; text-shadow: 1px 1px 3px rgba(0,0,0,.3); }
+  .card h2 { margin: 0 0 8px; font-size: 16px; letter-spacing: 1px; font-family: 'Courier New', monospace; }
+  .card p { margin: 0 0 16px; font-size: 12px; line-height: 1.6; opacity: .85; flex: 1; font-family: "Segoe UI", sans-serif; }
   .btn {
-    align-self: flex-start; border-radius: 8px; padding: 8px 16px;
-    font-size: 14px; font-weight: 600; background: #4f9dff; color: #fff;
+    align-self: flex-start; border-radius: 6px; padding: 10px 20px;
+    font-size: 12px; font-weight: 700; border: 2px solid;
+    text-transform: uppercase; letter-spacing: 1px;
+    transition: all .15s ease;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
   }
-  .btn.ghost { background: #2c3a4b; color: #9fb2c6; }
-  footer { text-align: center; margin-top: 36px; font-size: 12px; opacity: .55; }
+  .card:nth-child(1) { border-color: #ff6b35; }
+  .card:nth-child(1) .btn { background: #ff6b35; color: #000; border-color: #ff6b35; }
+  .card:nth-child(1) .btn:hover { box-shadow: 0 0 15px #ff6b35, inset 0 0 10px #ff6b35; }
+  .card:nth-child(2) { border-color: #7209b7; }
+  .card:nth-child(2) .btn { background: #7209b7; color: #fff; border-color: #7209b7; }
+  .card:nth-child(2) .btn:hover { box-shadow: 0 0 15px #7209b7, inset 0 0 10px #7209b7; }
+  .card:nth-child(3) { border-color: #00d9ff; }
+  .card:nth-child(3) .btn { background: #00d9ff; color: #000; border-color: #00d9ff; }
+  .card:nth-child(3) .btn:hover { box-shadow: 0 0 15px #00d9ff, inset 0 0 10px #00d9ff; }
+  .card:nth-child(4) { border-color: #ff006e; }
+  .card:nth-child(4) .btn { background: #ff006e; color: #fff; border-color: #ff006e; }
+  .card:nth-child(4) .btn:hover { box-shadow: 0 0 15px #ff006e, inset 0 0 10px #ff006e; }
+  .card:nth-child(5) { border-color: #06ffa5; }
+  .card:nth-child(5) .btn { background: #06ffa5; color: #000; border-color: #06ffa5; }
+  .card:nth-child(5) .btn:hover { box-shadow: 0 0 15px #06ffa5, inset 0 0 10px #06ffa5; }
+  .card:nth-child(6) { border-color: #ffbe0b; }
+  .card:nth-child(6) .btn { background: #ffbe0b; color: #000; border-color: #ffbe0b; }
+  .card:nth-child(6) .btn:hover { box-shadow: 0 0 15px #ffbe0b, inset 0 0 10px #ffbe0b; }
+  footer { text-align: center; margin-top: 48px; font-size: 11px; opacity: .5; font-family: "Segoe UI", sans-serif; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>GRY DARKA, JANKA I EKIPY</h1>
-      <p class="sub">Zbiór małych gier w przeglądarce — graj od razu, bez instalacji.</p>
+      <h1>🎮 GRY DARKA, JANKA I EKIPY 🎮</h1>
+      <p class="sub">► INDIE GAMES COLLECTION ◄ Graj od razu, bez instalacji!</p>
     </header>
 
     <main class="grid">
@@ -64,35 +116,35 @@
       </a>
 
       <a class="card" href="zombie-vanilla/">
-        <div class="thumb zombie">V</div>
+        <div class="thumb zombie-v">V</div>
         <h2>Napór Zombie (Vanilla)</h2>
         <p>Prototyp 1.0 - oryginalna gra. Broń bazy przed falami zombie. Przesuwaj ekipę w pionie, strzelaj prosto, dobieraj ludzi i moc.</p>
         <span class="btn">Graj</span>
       </a>
 
       <a class="card" href="zombie-mx/">
-        <div class="thumb zombie">MX</div>
+        <div class="thumb zombie-mx">MX</div>
         <h2>Zombie MX</h2>
         <p>Wariant prowadzony przez Maksa. Broń bazy przed falami zombie z nowymi mechanikami.</p>
         <span class="btn">Graj</span>
       </a>
 
       <a class="card" href="zombie-ax/">
-        <div class="thumb zombie">AX</div>
+        <div class="thumb zombie-ax">AX</div>
         <h2>Zombie AX</h2>
         <p>Wariant prowadzony przez Aleksa. Broń bazy przed falami zombie z innymi strategiami.</p>
         <span class="btn">Graj</span>
       </a>
 
       <a class="card" href="zombie-daz/">
-        <div class="thumb zombie">DAZ</div>
+        <div class="thumb zombie-daz">DAZ</div>
         <h2>Zombie Daz</h2>
         <p>Wariant Daz oryginalnej gry. Broń bazy przed falami zombie z własnymi ulepszeniami.</p>
         <span class="btn">Graj</span>
       </a>
 
       <a class="card" href="zombie-jan/">
-        <div class="thumb zombie">JAN</div>
+        <div class="thumb zombie-jan">JAN</div>
         <h2>Zombie Jan</h2>
         <p>Wariant prowadzony przez Janka. Broń bazy przed falami zombie z własnymi pomysłami.</p>
         <span class="btn">Graj</span>
