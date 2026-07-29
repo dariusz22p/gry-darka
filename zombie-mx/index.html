@@ -692,7 +692,17 @@
         charger: { hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, trackMul: 0.70, chargeMul: 2.1, chargeX: 380, color: '#ffca28' },
         splitter: { hpMul: 1.1, speedMul: 0.95, dmgMul: 1.05, trackMul: 0.62, splitCount: 100, splitHpMul: 0.9, splitSpeedMul: 1.18, color: '#ce93d8' }
       },
-      pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, color: '#29b6f6', spreadDur: 12 },
+      pickup: { everySpawnCycle: 10, r: 7, speedMul: 0.9, spreadDur: 12 },
+      powerups: {
+        dmgDur: 12,
+        fireDur: 10,
+        shieldDur: 9,
+        dmgMul: 1.55,
+        fireMul: 1.35,
+        shieldDmgMul: 0.55,
+        healAmt: 18,
+        bombAmt: 1
+      },
       spread: { levelMax: 30, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
@@ -729,6 +739,9 @@
     let recruitBoostTimer = 0;
     let slowFieldTimer = 0;
     let spreadLevel = 0;
+    let dmgBoostTimer = 0;
+    let fireBoostTimer = 0;
+    let shieldTimer = 0;
     let bombs = 0;
     let spreadDecayTimer = 0;
     let bestWave = 0;
@@ -1091,6 +1104,9 @@
       recruitBoostTimer = 0;
       slowFieldTimer = 0;
       spreadLevel = 0;
+      dmgBoostTimer = 0;
+      fireBoostTimer = 0;
+      shieldTimer = 0;
       bombs = 1;
       spreadDecayTimer = 0;
       applyPower();
@@ -1318,15 +1334,15 @@
       });
     }
 
-    function spawnPrimaryGunShot(sx, sy, gun, bulletSpeed) {
+    function spawnPrimaryGunShot(sx, sy, gun, bulletSpeed, shotDmg) {
       if (gun.mode === 'triple') {
         const spread = 0.18;
-        spawnGunBullet(sx, sy, Math.cos(Math.PI - spread) * bulletSpeed, Math.sin(Math.PI - spread) * bulletSpeed, dmg * 0.74, gun, 0.9);
-        spawnGunBullet(sx, sy, -bulletSpeed, 0, dmg * 0.82, gun, 1);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI + spread) * bulletSpeed, Math.sin(Math.PI + spread) * bulletSpeed, dmg * 0.74, gun, 0.9);
+        spawnGunBullet(sx, sy, Math.cos(Math.PI - spread) * bulletSpeed, Math.sin(Math.PI - spread) * bulletSpeed, shotDmg * 0.74, gun, 0.9);
+        spawnGunBullet(sx, sy, -bulletSpeed, 0, shotDmg * 0.82, gun, 1);
+        spawnGunBullet(sx, sy, Math.cos(Math.PI + spread) * bulletSpeed, Math.sin(Math.PI + spread) * bulletSpeed, shotDmg * 0.74, gun, 0.9);
         return;
       }
-      spawnGunBullet(sx, sy, -bulletSpeed, 0, dmg, gun, 1);
+      spawnGunBullet(sx, sy, -bulletSpeed, 0, shotDmg, gun, 1);
     }
 
     function updateSkinShopUi() {
@@ -1496,6 +1512,56 @@
       }
     }
 
+    function randomPowerupType() {
+      const r = Math.random();
+      if (r < 0.26) return 'spread';
+      if (r < 0.44) return 'dmg';
+      if (r < 0.60) return 'fire';
+      if (r < 0.74) return 'shield';
+      if (r < 0.88) return 'heal';
+      return 'bomb';
+    }
+
+    function powerupVisual(type) {
+      if (type === 'spread') return { color: '#29b6f6', text: 'LOOT: ROZRZUT' };
+      if (type === 'dmg') return { color: '#ff8a65', text: 'LOOT: DMG BOOST' };
+      if (type === 'fire') return { color: '#ffd54f', text: 'LOOT: FIRE BOOST' };
+      if (type === 'shield') return { color: '#80cbc4', text: 'LOOT: TARCZA BAZY' };
+      if (type === 'heal') return { color: '#8bd450', text: 'LOOT: NAPRAWA BAZY' };
+      return { color: '#ce93d8', text: 'LOOT: BOMBA +' };
+    }
+
+    function applyPowerup(type) {
+      if (type === 'spread') {
+        spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + 1);
+        spreadDecayTimer = 0;
+        showAlert('LOOT: ROZRZUT LVL ' + spreadLevel, 1.1);
+        return;
+      }
+      if (type === 'dmg') {
+        dmgBoostTimer = Math.max(dmgBoostTimer, CONFIG.powerups.dmgDur);
+        showAlert('LOOT: DMG BOOST ' + CONFIG.powerups.dmgDur + 's', 1.1);
+        return;
+      }
+      if (type === 'fire') {
+        fireBoostTimer = Math.max(fireBoostTimer, CONFIG.powerups.fireDur);
+        showAlert('LOOT: FIRE BOOST ' + CONFIG.powerups.fireDur + 's', 1.1);
+        return;
+      }
+      if (type === 'shield') {
+        shieldTimer = Math.max(shieldTimer, CONFIG.powerups.shieldDur);
+        showAlert('LOOT: TARCZA ' + CONFIG.powerups.shieldDur + 's', 1.1);
+        return;
+      }
+      if (type === 'heal') {
+        baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.healAmt);
+        showAlert('LOOT: BAZA +' + CONFIG.powerups.healAmt + ' HP', 1.1);
+        return;
+      }
+      bombs += CONFIG.powerups.bombAmt;
+      showAlert('LOOT: BOMBA +' + CONFIG.powerups.bombAmt, 1.1);
+    }
+
     // Detonacja: niszczy ulamek zombie (najblizsze bazie = najgrozniejsze). Zwraca liczbe zabitych.
     function detonate(fraction) {
       if (zombies.length === 0) return 0;
@@ -1616,6 +1682,9 @@
       }
       if (recruitBoostTimer > 0) recruitBoostTimer = Math.max(0, recruitBoostTimer - dt);
       if (slowFieldTimer > 0) slowFieldTimer = Math.max(0, slowFieldTimer - dt);
+      if (dmgBoostTimer > 0) dmgBoostTimer = Math.max(0, dmgBoostTimer - dt);
+      if (fireBoostTimer > 0) fireBoostTimer = Math.max(0, fireBoostTimer - dt);
+      if (shieldTimer > 0) shieldTimer = Math.max(0, shieldTimer - dt);
       if (spreadLevel > 0) {
         spreadDecayTimer += dt;
         if (spreadDecayTimer >= CONFIG.spread.decayEvery) {
@@ -1707,7 +1776,9 @@
         }
         if (spawnCycles % CONFIG.pickup.everySpawnCycle === 0 && pickups.length < 2) {
           const py = clamp(laneMid + (Math.random() * 2 - 1) * laneAmp, laneTop + 10, laneBot - 10);
-          pickups.push({ x: -22, y: py, r: CONFIG.pickup.r, speed: zSpeed * CONFIG.pickup.speedMul, color: CONFIG.pickup.color });
+          const pType = randomPowerupType();
+          const pVis = powerupVisual(pType);
+          pickups.push({ x: -22, y: py, r: CONFIG.pickup.r, speed: zSpeed * CONFIG.pickup.speedMul, color: pVis.color, type: pType });
         }
         if (wave >= CONFIG.boss.firstWave && spawnCycles % bossEvery === 0) {
           const y = laneTop + 16 + Math.random() * Math.max(8, (laneBot - laneTop - 32));
@@ -1739,7 +1810,9 @@
       const extraPellets = cappedLevel * CONFIG.spread.pelletsPerLevel;
       const spreadDeg = Math.min(CONFIG.spread.angleMaxDeg, CONFIG.spread.baseAngleDeg + Math.sqrt(cappedLevel) * CONFIG.spread.anglePerLevelDeg);
       const spreadRad = (spreadDeg * Math.PI) / 180;
-      const baseInterval = 1 / Math.max(0.001, fireRate);
+      const effectiveFireRate = fireRate * (fireBoostTimer > 0 ? CONFIG.powerups.fireMul : 1);
+      const effectiveDmg = dmg * (dmgBoostTimer > 0 ? CONFIG.powerups.dmgMul : 1);
+      const baseInterval = 1 / Math.max(0.001, effectiveFireRate);
       const gun = currentGun();
       const bulletSpeed = CONFIG.shooter.bulletSpeed * gun.speedMul;
       let firedNow = false;
@@ -1749,10 +1822,10 @@
         const o = memberOffset(i);
         const sx = CONFIG.squadX + o.x - 14;
         const sy = colY + o.y;
-        spawnPrimaryGunShot(sx, sy, gun, bulletSpeed);
+        spawnPrimaryGunShot(sx, sy, gun, bulletSpeed, effectiveDmg);
         for (let p = 0; p < extraPellets; p++) {
           const a = Math.PI + (Math.random() * 2 - 1) * spreadRad;
-          spawnGunBullet(sx, sy, Math.cos(a) * bulletSpeed, Math.sin(a) * bulletSpeed, dmg * 0.42, gun, 0.75);
+          spawnGunBullet(sx, sy, Math.cos(a) * bulletSpeed, Math.sin(a) * bulletSpeed, effectiveDmg * 0.42, gun, 0.75);
         }
         const jitter = 0.65 + Math.random() * 0.7;
         memberShotTimers[i] += baseInterval * jitter;
@@ -1785,7 +1858,8 @@
         const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
         z.y = clamp(z.y + yStep, laneTop + z.r, laneBot - z.r);
         if (z.x >= CONFIG.breachX) {
-          baseHp -= z.dmg;
+          const breachDmg = z.dmg * (shieldTimer > 0 ? CONFIG.powerups.shieldDmgMul : 1);
+          baseHp -= breachDmg;
           loseRecruit(z.boss ? 2 : 1);
           sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
@@ -1884,10 +1958,9 @@
             const it = pickups[p];
             const dxp = it.x - b.x, dyp = it.y - b.y, rrp = it.r + 5;
             if (dxp * dxp + dyp * dyp <= rrp * rrp) {
+              const pType = it.type || 'spread';
               pickups.splice(p, 1);
-              spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + 1);
-              spreadDecayTimer = 0;
-              showAlert('LOOT: ROZRZUT LVL ' + spreadLevel, 1.1);
+              applyPowerup(pType);
               dead = true;
               break;
             }
@@ -2092,6 +2165,9 @@
       const fx = [];
       if (recruitBoostTimer > 0) fx.push('Rekrutacja +' + recruitBoostTimer.toFixed(1) + 's');
       if (slowFieldTimer > 0) fx.push('Spowolnienie ' + slowFieldTimer.toFixed(1) + 's');
+      if (dmgBoostTimer > 0) fx.push('DMG BOOST ' + dmgBoostTimer.toFixed(1) + 's');
+      if (fireBoostTimer > 0) fx.push('FIRE BOOST ' + fireBoostTimer.toFixed(1) + 's');
+      if (shieldTimer > 0) fx.push('Tarcza ' + shieldTimer.toFixed(1) + 's');
       if (spreadLevel > 0) fx.push('Rozrzut lvl ' + spreadLevel);
       if (bombs > 0) fx.push('Bomby ' + bombs);
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
