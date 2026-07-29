@@ -498,6 +498,7 @@
     let lastTouchTapAt = 0;
     let last = 0;
     let shotSfxCd = 0;
+    let confetti = [];
 
     // ---- Dźwięk (Web Audio, syntezowany) ----
     let audioCtx = null, master = null, muted = false;
@@ -732,9 +733,57 @@
       recruitNeed = CONFIG.panel.recruitPer;
       powerNeed = CONFIG.panel.powerPer;
       spawnCycles = 0;
+      confetti = [];
       hideAlert();
       hideOverlay();
       updateHud();
+    }
+
+    function startConfetti() {
+      const colors = ['#ffd54f', '#ef5350', '#4fc3f7', '#8bd450', '#ce93d8', '#ffb74d'];
+      confetti = [];
+      for (let i = 0; i < 240; i++) {
+        confetti.push({
+          x: Math.random() * W,
+          y: -20 - Math.random() * H * 0.6,
+          vx: (Math.random() * 2 - 1) * 120,
+          vy: 120 + Math.random() * 230,
+          g: 240 + Math.random() * 180,
+          life: 3.2 + Math.random() * 2.2,
+          size: 3 + Math.random() * 5,
+          rot: Math.random() * Math.PI * 2,
+          vr: (Math.random() * 2 - 1) * 8,
+          c: colors[(Math.random() * colors.length) | 0]
+        });
+      }
+    }
+
+    function updateConfetti(dt) {
+      if (!confetti.length) return;
+      for (let i = confetti.length - 1; i >= 0; i--) {
+        const p = confetti[i];
+        p.life -= dt;
+        p.vy += p.g * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+        if (p.life <= 0 || p.y > H + 32) confetti.splice(i, 1);
+      }
+    }
+
+    function drawConfetti() {
+      if (!confetti.length) return;
+      for (const p of confetti) {
+        const alpha = Math.max(0, Math.min(1, p.life / 2.2));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.c;
+        ctx.fillRect(-p.size * 0.5, -p.size * 0.3, p.size, p.size * 0.6);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
     }
 
     function showAlert(text, seconds) {
@@ -926,6 +975,7 @@
       if (waveKills >= waveKillNeed && prepTimer === 0) {
         if (wave >= CONFIG.waves.total) {
           state = 'win';
+          startConfetti();
           maybeUpdateRecords();
           sfxEnd(true);
           showOverlay('Wygrana!', 'Przetrwałeś ' + CONFIG.waves.total + ' fal. Zabici: ' + kills);
@@ -1305,6 +1355,7 @@
         ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (2 - f.life * 4), 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
       }
+      drawConfetti();
       if (state === 'pause') {
         ctx.fillStyle = 'rgba(6,10,14,.45)';
         ctx.fillRect(0, 0, W, H);
@@ -1568,6 +1619,7 @@
     function frame(t) {
       const dt = Math.min(0.05, last ? (t - last) / 1000 : 0); last = t;
       if (state === 'play') update(dt);
+      updateConfetti(dt);
       render();
       requestAnimationFrame(frame);
     }
