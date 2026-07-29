@@ -265,6 +265,11 @@
     border-radius: 50%;
     background: var(--gun-bullet, #ffe082);
   }
+  .shopMiniNote {
+    font-size: 10px;
+    color: #9fb2c6;
+    line-height: 1.2;
+  }
   #skinCoins {
     font-size: 12px;
     color: #c7d3df;
@@ -774,11 +779,11 @@
     };
     let ownedSkins = defaultOwnedSkins();
     const GUNS = {
-      blaster: { label: 'Blaster', cost: 0, body: '#607d8b', barrel: '#cfd8dc', bullet: '#ffe082', fireMul: 1, dmgMul: 1, speedMul: 1, width: 6, length: 18 },
-      smg: { label: 'SMG', cost: 4200, body: '#455a64', barrel: '#90caf9', bullet: '#fff59d', fireMul: 1.28, dmgMul: 0.78, speedMul: 1.08, width: 4, length: 22 },
-      cannon: { label: 'Cannon', cost: 9600, body: '#6d4c41', barrel: '#ffcc80', bullet: '#ffab91', fireMul: 0.72, dmgMul: 1.9, speedMul: 0.9, width: 9, length: 20 },
-      laser: { label: 'Laser', cost: 16800, body: '#4a148c', barrel: '#ea80fc', bullet: '#00e5ff', fireMul: 1.1, dmgMul: 1.24, speedMul: 1.35, width: 3, length: 26 },
-      frost: { label: 'Frost Gun', cost: 28200, body: '#006064', barrel: '#80deea', bullet: '#e1f5fe', fireMul: 0.95, dmgMul: 1.45, speedMul: 1.12, width: 7, length: 24 }
+      blaster: { label: 'Blaster', desc: 'balanced', cost: 0, body: '#607d8b', barrel: '#cfd8dc', bullet: '#ffe082', fireMul: 1, dmgMul: 1, speedMul: 1, width: 6, length: 18, mode: 'single' },
+      smg: { label: 'SMG', desc: 'super fast spray', cost: 4200, body: '#455a64', barrel: '#90caf9', bullet: '#fff59d', fireMul: 1.42, dmgMul: 0.72, speedMul: 1.1, width: 4, length: 22, mode: 'single' },
+      cannon: { label: 'Cannon', desc: 'slow heavy shots', cost: 9600, body: '#6d4c41', barrel: '#ffcc80', bullet: '#ffab91', fireMul: 0.68, dmgMul: 2.2, speedMul: 0.9, width: 10, length: 20, mode: 'single' },
+      laser: { label: 'Laser', desc: 'thin fast beam', cost: 16800, body: '#4a148c', barrel: '#ea80fc', bullet: '#00e5ff', fireMul: 1.12, dmgMul: 1.3, speedMul: 1.42, width: 3, length: 28, mode: 'single' },
+      frost: { label: 'Frost Gun', desc: 'triple ice spread', cost: 28200, body: '#006064', barrel: '#80deea', bullet: '#e1f5fe', fireMul: 0.92, dmgMul: 1.18, speedMul: 1.08, width: 7, length: 24, mode: 'triple' }
     };
     let ownedGuns = defaultOwnedGuns();
 
@@ -1219,15 +1224,23 @@
           const meta = document.createElement('div');
           meta.className = 'skinMeta';
 
+          const textWrap = document.createElement('div');
+
           const label = document.createElement('span');
           label.textContent = gun.label;
+
+          const note = document.createElement('div');
+          note.className = 'shopMiniNote';
+          note.textContent = gun.desc;
 
           const btn = document.createElement('button');
           btn.className = 'skinBtn';
           btn.type = 'button';
           btn.setAttribute('data-gun-key', key);
 
-          meta.appendChild(label);
+          textWrap.appendChild(label);
+          textWrap.appendChild(note);
+          meta.appendChild(textWrap);
           meta.appendChild(btn);
           card.appendChild(preview);
           card.appendChild(meta);
@@ -1253,6 +1266,30 @@
         btn.textContent = 'Kup ' + gun.cost;
         btn.disabled = false;
       }
+    }
+
+    function spawnGunBullet(sx, sy, vx, vy, shotDmg, gun, widthScale) {
+      bullets.push({
+        x: sx,
+        y: sy,
+        vx: vx,
+        vy: vy,
+        dmg: shotDmg,
+        color: gun.bullet,
+        width: Math.max(8, Math.round((gun.length - 6) * widthScale)),
+        height: Math.max(2, Math.round(gun.width * Math.max(0.45, widthScale * 0.7)))
+      });
+    }
+
+    function spawnPrimaryGunShot(sx, sy, gun, bulletSpeed) {
+      if (gun.mode === 'triple') {
+        const spread = 0.18;
+        spawnGunBullet(sx, sy, Math.cos(Math.PI - spread) * bulletSpeed, Math.sin(Math.PI - spread) * bulletSpeed, dmg * 0.74, gun, 0.9);
+        spawnGunBullet(sx, sy, -bulletSpeed, 0, dmg * 0.82, gun, 1);
+        spawnGunBullet(sx, sy, Math.cos(Math.PI + spread) * bulletSpeed, Math.sin(Math.PI + spread) * bulletSpeed, dmg * 0.74, gun, 0.9);
+        return;
+      }
+      spawnGunBullet(sx, sy, -bulletSpeed, 0, dmg, gun, 1);
     }
 
     function updateSkinShopUi() {
@@ -1675,19 +1712,10 @@
         const o = memberOffset(i);
         const sx = CONFIG.squadX + o.x - 14;
         const sy = colY + o.y;
-        bullets.push({ x: sx, y: sy, vx: -bulletSpeed, vy: 0, dmg: dmg, color: gun.bullet, width: Math.max(10, gun.length - 6), height: Math.max(3, Math.round(gun.width * 0.7)) });
+        spawnPrimaryGunShot(sx, sy, gun, bulletSpeed);
         for (let p = 0; p < extraPellets; p++) {
           const a = Math.PI + (Math.random() * 2 - 1) * spreadRad;
-          bullets.push({
-            x: sx,
-            y: sy,
-            vx: Math.cos(a) * bulletSpeed,
-            vy: Math.sin(a) * bulletSpeed,
-            dmg: dmg * 0.42,
-            color: gun.bullet,
-            width: Math.max(8, gun.length - 10),
-            height: Math.max(2, Math.round(gun.width * 0.55))
-          });
+          spawnGunBullet(sx, sy, Math.cos(a) * bulletSpeed, Math.sin(a) * bulletSpeed, dmg * 0.42, gun, 0.75);
         }
         const jitter = 0.65 + Math.random() * 0.7;
         memberShotTimers[i] += baseInterval * jitter;
