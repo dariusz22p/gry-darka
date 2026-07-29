@@ -364,6 +364,7 @@
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
           <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
           <span><kbd>B</kbd> ustaw moc na 100</span>
+          <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
@@ -1376,6 +1377,13 @@
         powerLevel = 100;
         applyPower();
         showAlert('MOC: 100', 0.9);
+        updateHud();
+        return;
+      }
+      if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault();
+        bombs = 200;
+        showAlert('BOMBY: 200', 0.9);
         updateHud();
         return;
       }
