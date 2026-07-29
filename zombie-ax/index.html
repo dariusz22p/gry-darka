@@ -33,10 +33,10 @@
   }
   #hud b { color: #fff; text-align: right; white-space: nowrap; }
   #ingameHudTop, #ingameHudBottom {
-    position: absolute; right: 2px; width: 92px; z-index: 2;
+    position: absolute; left: 2px; width: 92px; z-index: 2;
     display: flex; flex-direction: column; gap: 2px; font-size: 6px; pointer-events: none;
   }
-  #ingameHudTop { top: 6px; }
+  #ingameHudTop { top: 44px; }
   #ingameHudBottom { bottom: 36px; }
   #ingameHudTop .stat, #ingameHudBottom .stat {
     display: flex; align-items: center; justify-content: space-between; gap: 3px;
@@ -45,7 +45,7 @@
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
   #stage { position: relative; overflow: hidden; }
-  #stageCol { grid-area: stage; max-width: 920px; width: 100%; margin: 0 auto; }
+  #stageCol { grid-area: stage; max-width: 1080px; width: 100%; margin: 0 auto; }
   canvas#game { display: block; width: 100%; height: auto; background: #0f141b; touch-action: none; }
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -70,16 +70,16 @@
   #stage:hover .variant-badge { opacity: 1; }
   #shopIcon {
     position: absolute; top: 6px; left: 6px; z-index: 3;
-    width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
     background: rgba(0, 217, 255, 0.15); border: 2px solid #00d9ff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; transition: all .15s ease; user-select: none;
+    font-size: 16px; transition: all .15s ease; user-select: none;
   }
   #shopIcon:hover { background: rgba(0, 217, 255, 0.4); transform: scale(1.08); box-shadow: 0 0 14px rgba(0,217,255,.6); }
   #shopIcon .coinTag {
-    position: absolute; bottom: -8px; right: -8px;
-    background: #ffd180; color: #12181f; font-size: 10px; font-weight: 800;
-    padding: 1px 5px; border-radius: 8px; min-width: 18px; text-align: center;
+    position: absolute; bottom: -7px; right: -7px;
+    background: #ffd180; color: #12181f; font-size: 9px; font-weight: 800;
+    padding: 0 4px; border-radius: 7px; min-width: 14px; text-align: center;
   }
   #shopPanel {
     position: absolute; bottom: 6px; left: 6px; z-index: 3;
@@ -117,7 +117,7 @@
     <div id="layout">
       <div id="stageCol">
         <div id="stage">
-          <canvas id="game" width="1000" height="520"></canvas>
+          <canvas id="game" width="1200" height="640"></canvas>
           <div id="shopIcon" title="Sklep">🛍️<span class="coinTag" id="iconCoins">0</span></div>
           <div id="shopPanel">
             <h3>🛍️ SHOP</h3>
@@ -177,7 +177,12 @@
   <script>
     'use strict';
 
-    const CONFIG = { W: 1000, H: 520, baseHpMax: 100, spawnEvery: 0.72 };
+    const CONFIG = { W: 1200, H: 640, baseHpMax: 100, spawnEvery: 0.72 };
+    const SHOOTER_X = CONFIG.W - 60;   // team on the RIGHT
+    const BASE_X = CONFIG.W - 44;      // base breach line on the RIGHT
+    const GATE_SPEED = 1.2;            // gates 2x faster (was 0.6)
+    const GATE_BASE = { fireRate: 0.2, damage: 0.1, health: 10 };
+    const GATE_INC  = { fireRate: 0.05, damage: 0.1, health: 10 }; // per bullet that hits the gate
 
     let audioContext, master, muted = false;
     function ensureAudio() {
@@ -212,14 +217,14 @@
     let nextGateTime = 0;
 
     const ZOMBIE_STATS = {
-      verySlow: { speed: 1, hp: 12, size: 13, color: '#5aa02a', stroke: '#3c6d1c' },
-      slow: { speed: 2, hp: 10, size: 12, color: '#6fb03a', stroke: '#4a7724' },
-      normal: { speed: 3, hp: 8, size: 11, color: '#8bd450', stroke: '#5c8f34' },
-      fast: { speed: 4.5, hp: 5, size: 10, color: '#b6e77a', stroke: '#7ba548' },
-      armored: { speed: 1.5, hp: 20, size: 15, color: '#8a8f98', stroke: '#565b63' },
-      yellow: { speed: 3, hp: 24, size: 12, color: '#ffe000', stroke: '#b39b00' },
-      red: { speed: 3, hp: 24, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
-      boss: { speed: 2, hp: 2000, size: 34, color: '#f4f4f4', stroke: '#b0b0b0' },
+      verySlow: { speed: 1, hp: 6, size: 13, color: '#5aa02a', stroke: '#3c6d1c' },
+      slow: { speed: 2, hp: 5, size: 12, color: '#6fb03a', stroke: '#4a7724' },
+      normal: { speed: 3, hp: 4, size: 11, color: '#8bd450', stroke: '#5c8f34' },
+      fast: { speed: 4.5, hp: 3, size: 10, color: '#b6e77a', stroke: '#7ba548' },
+      armored: { speed: 1.5, hp: 10, size: 15, color: '#8a8f98', stroke: '#565b63' },
+      yellow: { speed: 3, hp: 12, size: 12, color: '#ffe000', stroke: '#b39b00' },
+      red: { speed: 3, hp: 12, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
+      boss: { speed: 2, hp: 1000, size: 34, color: '#f4f4f4', stroke: '#b0b0b0' },
     };
 
     function spawnZombie(type = null) {
@@ -230,7 +235,7 @@
       const stats = ZOMBIE_STATS[type];
       const y = Math.random() * (CONFIG.H - 60) + 30;
       zombies.push({
-        x: CONFIG.W + 30, y: y, type: type,
+        x: -30, y: y, type: type,
         hp: stats.hp, maxHp: stats.hp,
         speed: stats.speed, size: stats.size, color: stats.color, stroke: stats.stroke,
       });
@@ -240,8 +245,8 @@
       const rewards = ['fireRate', 'damage', 'health'];
       const reward = rewards[Math.floor(Math.random() * rewards.length)];
       gates.push({
-        x: CONFIG.W, y: Math.random() * (CONFIG.H - 180) + 30,
-        width: 70, height: 150, reward: reward, collected: false,
+        x: -70, y: Math.random() * (CONFIG.H - 200) + 30,
+        width: 70, height: 170, reward: reward, value: GATE_BASE[reward], collected: false,
       });
       nextGateTime = gameTime + 14;
     }
@@ -274,37 +279,37 @@
 
       if (gameTime > nextGateTime) spawnGate();
       gates.forEach((g, i) => {
-        g.x -= 0.6;
-        if (!g.collected && g.x < -120) gates.splice(i, 1);
+        g.x += GATE_SPEED;
+        if (g.x > CONFIG.W + 40) gates.splice(i, 1);
       });
 
-      // Gun: fire straight bullets at a rate scaled by fireRate & squad
+      // Gun: fire straight bullets LEFT at a rate scaled by fireRate & squad
       if (!hasLaser) {
         const shotsPerSec = 5 * fireRate * squadSize;
         if (state === 'play' && Math.random() < shotsPerSec * dt) {
-          bullets.push({ x: 60, y: targetY, vx: 9, vy: 0, damage: damage });
+          bullets.push({ x: SHOOTER_X - 12, y: targetY, vx: -9, vy: 0, damage: damage });
           playSound(400, 0.05);
         }
       }
 
-      // Laser: continuous beam, 1/5 gun strength, hits every zombie in the lane
+      // Laser: continuous beam firing LEFT, 1/5 gun strength, hits every zombie in the lane
       laserActive = false;
       if (hasLaser && state === 'play') {
         laserActive = true;
         const dps = 5 * fireRate * squadSize * damage * 0.2; // 1/5 of gun DPS
         zombies.forEach(z => {
-          if (Math.abs(z.y - targetY) < 55 && z.x > 55) z.hp -= dps * dt;
+          if (Math.abs(z.y - targetY) < 55 && z.x < SHOOTER_X - 5) z.hp -= dps * dt;
         });
       }
 
       bullets.forEach((b, i) => {
         b.x += b.vx;
-        if (b.x > CONFIG.W) bullets.splice(i, 1);
+        if (b.x < 0) bullets.splice(i, 1);
       });
 
       zombies.forEach((z, zi) => {
-        z.x -= z.speed;
-        if (z.x < 40) {
+        z.x += z.speed;
+        if (z.x > BASE_X) {
           baseHp -= 10;
           zombies.splice(zi, 1);
           if (baseHp <= 0) {
@@ -327,6 +332,16 @@
         });
       });
 
+      // Shoot a gate to charge its reward (heal +10, damage +0.1 per hit, fireRate +0.05)
+      bullets.forEach((b, bi) => {
+        gates.forEach(g => {
+          if (!g.collected && b.x >= g.x && b.x <= g.x + g.width && b.y >= g.y && b.y <= g.y + g.height) {
+            g.value += GATE_INC[g.reward];
+            bullets.splice(bi, 1);
+          }
+        });
+      });
+
       // Unified death check (bullets + laser both count toward kills/coins)
       for (let zi = zombies.length - 1; zi >= 0; zi--) {
         if (zombies[zi].hp <= 0) {
@@ -338,13 +353,14 @@
       }
 
       gates.forEach(g => {
-        if (!g.collected && g.x <= 50 + g.width && g.x + g.width >= 50) {
+        if (!g.collected && g.x <= SHOOTER_X && g.x + g.width >= SHOOTER_X) {
           if (targetY >= g.y && targetY <= g.y + g.height) {
             g.collected = true;
-            if (g.reward === 'fireRate') fireRate += 0.2;
-            else if (g.reward === 'damage') damage *= 1.1;
-            else if (g.reward === 'health') baseHp = Math.min(CONFIG.baseHpMax, baseHp + 30);
-            showAlert(`📊 ${g.reward}+`);
+            if (g.reward === 'fireRate') fireRate += g.value;
+            else if (g.reward === 'damage') damage += g.value;
+            else if (g.reward === 'health') baseHp = Math.min(CONFIG.baseHpMax, baseHp + g.value);
+            const shown = g.reward === 'health' ? Math.round(g.value) : g.value.toFixed(1);
+            showAlert(`📊 ${g.reward} +${shown}`);
             playSound(1200, 0.15);
           }
         }
@@ -361,23 +377,23 @@
       ctx.lineWidth = 3;
       ctx.setLineDash([10, 8]);
       ctx.beginPath();
-      ctx.moveTo(40, 10);
-      ctx.lineTo(40, CONFIG.H - 10);
+      ctx.moveTo(BASE_X, 10);
+      ctx.lineTo(BASE_X, CONFIG.H - 10);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(255,82,82,.08)';
-      ctx.fillRect(0, 0, 40, CONFIG.H);
+      ctx.fillRect(BASE_X, 0, CONFIG.W - BASE_X, CONFIG.H);
 
-      // Team (shooter with gun barrel, vanilla style)
+      // Team (shooter with gun barrel, on the RIGHT, barrel pointing left)
       ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.moveTo(50, targetY); ctx.lineTo(76, targetY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(SHOOTER_X, targetY); ctx.lineTo(SHOOTER_X - 26, targetY); ctx.stroke();
       ctx.fillStyle = '#dbe6f2';
-      ctx.beginPath(); ctx.arc(50, targetY, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(SHOOTER_X, targetY, 13, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#12181f';
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(squadSize, 50, targetY);
+      ctx.fillText(squadSize, SHOOTER_X, targetY);
       ctx.textBaseline = 'alphabetic';
 
       zombies.forEach(z => {
@@ -405,16 +421,18 @@
 
       if (laserActive && hasLaser) {
         ctx.fillStyle = 'rgba(0, 255, 0, 0.6)';
-        ctx.fillRect(50, targetY - 50, CONFIG.W - 50, 100);
+        ctx.fillRect(0, targetY - 50, SHOOTER_X, 100);
         ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 3;
-        ctx.strokeRect(50, targetY - 50, CONFIG.W - 50, 100);
+        ctx.strokeRect(0, targetY - 50, SHOOTER_X, 100);
       }
 
       gates.forEach(g => {
         const gc = { fireRate: '#4f9dff', damage: '#ef5350', health: '#8bd450' }[g.reward];
         const labels = { fireRate: 'FIRE RATE', damage: 'DAMAGE', health: 'HEAL' };
-        const vals = { fireRate: '+0.2', damage: 'x1.1', health: '+30' };
+        const valStr = g.reward === 'health' ? '+' + Math.round(g.value)
+                     : g.reward === 'damage' ? '+' + g.value.toFixed(1)
+                     : '+' + g.value.toFixed(2);
         ctx.fillStyle = g.collected ? 'rgba(120,120,120,.12)' : (gc + '22');
         ctx.fillRect(g.x, g.y, g.width, g.height);
         ctx.strokeStyle = g.collected ? '#666' : gc;
@@ -428,10 +446,10 @@
         ctx.textBaseline = 'middle';
         ctx.fillStyle = g.collected ? '#888' : '#fff';
         ctx.font = 'bold 12px "Segoe UI", sans-serif';
-        ctx.fillText(labels[g.reward], g.x + g.width / 2, g.y + g.height / 2 - 10);
+        ctx.fillText(labels[g.reward], g.x + g.width / 2, g.y + g.height / 2 - 12);
         ctx.fillStyle = g.collected ? '#888' : gc;
-        ctx.font = 'bold 18px "Segoe UI", sans-serif';
-        ctx.fillText(vals[g.reward], g.x + g.width / 2, g.y + g.height / 2 + 14);
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.fillText(valStr, g.x + g.width / 2, g.y + g.height / 2 + 14);
         ctx.restore();
       });
 
