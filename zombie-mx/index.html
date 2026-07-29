@@ -2315,6 +2315,8 @@
       ctx.fillStyle = 'rgba(79,157,255,.12)';
       ctx.fillRect(CONFIG.breachX, colY - half - 8, W - CONFIG.breachX, (half + 8) * 2);
       // zwarta kupa ekipy
+      const goldSkinActive = skinKey === 'gold';
+      const goldPulse = goldSkinActive ? (0.65 + 0.35 * Math.sin(performance.now() * 0.012)) : 0;
       for (let i = 0; i < N; i++) {
         const o = memberOffset(i);
         const x = CONFIG.squadX + o.x;
@@ -2325,9 +2327,29 @@
         ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
         ctx.fillStyle = gun.body;
         ctx.fillRect(x - Math.max(10, gun.length * 0.55), y - Math.max(3, gun.width * 0.5), Math.max(9, gun.length * 0.42), Math.max(6, gun.width));
-        ctx.fillStyle = sk.fill;
+        if (goldSkinActive) {
+          ctx.shadowColor = 'rgba(255, 223, 120, 0.95)';
+          ctx.shadowBlur = 10 + goldPulse * 20;
+          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + 4);
+          g.addColorStop(0, '#fffde7');
+          g.addColorStop(0.48, '#ffd54f');
+          g.addColorStop(1, '#b8860b');
+          ctx.fillStyle = g;
+        } else {
+          ctx.fillStyle = sk.fill;
+        }
         ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = sk.stroke; ctx.lineWidth = 2; ctx.stroke();
+        if (goldSkinActive) {
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 0.35 + goldPulse * 0.35;
+          ctx.strokeStyle = '#fff8cf';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(x, y, CONFIG.shooter.r + 2.4, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
       // pociski
       for (const b of bullets) {
