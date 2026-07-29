@@ -1411,8 +1411,11 @@
         updateHud();
         return;
       }
-      if (e.code === 'Digit1' || e.key === '1') {
+      if (e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '1') {
         e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
         jumpToWave(100);
         return;
       }
