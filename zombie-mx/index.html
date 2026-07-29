@@ -702,6 +702,7 @@
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
     let shopBombBuys = 0;
+    let infiniteMoney = false;
     let stateBeforeSkinShop = 'play';
     let skinKey = 'classic';
     const SKINS = {
@@ -1011,11 +1012,11 @@
       if (!SKINS[nextKey]) return false;
       if (ownedSkins[nextKey]) return setSkin(nextKey);
       const cost = SKINS[nextKey].cost;
-      if (kills < cost) {
+      if (!infiniteMoney && kills < cost) {
         showAlert('ZA MALO ZABITYCH', 0.8);
         return false;
       }
-      kills -= cost;
+      if (!infiniteMoney) kills -= cost;
       ownedSkins[nextKey] = true;
       saveRecords();
       setSkin(nextKey);
@@ -1049,30 +1050,30 @@
       let cost = 0;
       if (kind === 'power') {
         cost = shopCost(120, 40, shopPowerBuys);
-        if (kills < cost) return false;
-        kills -= cost;
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
         shopPowerBuys++;
         powerLevel += 10;
         applyPower();
         showAlert('SKLEP: MOC +10', 0.8);
       } else if (kind === 'squad') {
         cost = shopCost(160, 50, shopSquadBuys);
-        if (kills < cost) return false;
-        kills -= cost;
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
         shopSquadBuys++;
         setSquadCount(N + 10);
         showAlert('SKLEP: EKIPA +10', 0.8);
       } else if (kind === 'heal') {
         cost = shopCost(220, 70, shopHealBuys);
-        if (kills < cost) return false;
-        kills -= cost;
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
         shopHealBuys++;
         baseHp = Math.min(CONFIG.baseHpMax, baseHp + 20);
         showAlert('SKLEP: BAZA +20 HP', 0.8);
       } else if (kind === 'bomb') {
         cost = shopCost(180, 60, shopBombBuys);
-        if (kills < cost) return false;
-        kills -= cost;
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
         shopBombBuys++;
         bombs++;
         showAlert('SKLEP: BOMBA +1', 0.8);
@@ -1094,10 +1095,10 @@
       el.shopHeal.textContent = 'NAPRAWA BAZY +20 HP (' + cHeal + ')';
       el.shopBomb.textContent = '+1 BOMBA (' + cBomb + ')';
       const lock = state !== 'play' && state !== 'lose';
-      el.shopPower.disabled = lock || kills < cPower;
-      el.shopSquad.disabled = lock || kills < cSquad || N >= CONFIG.shooter.maxN;
-      el.shopHeal.disabled = lock || kills < cHeal || baseHp >= CONFIG.baseHpMax;
-      el.shopBomb.disabled = lock || kills < cBomb;
+      el.shopPower.disabled = lock || (!infiniteMoney && kills < cPower);
+      el.shopSquad.disabled = lock || (!infiniteMoney && kills < cSquad) || N >= CONFIG.shooter.maxN;
+      el.shopHeal.disabled = lock || (!infiniteMoney && kills < cHeal) || baseHp >= CONFIG.baseHpMax;
+      el.shopBomb.disabled = lock || (!infiniteMoney && kills < cBomb);
     }
 
     function updateSkinShopUi() {
@@ -1129,7 +1130,7 @@
           el.skinList.appendChild(card);
         }
       }
-      if (el.skinCoins) el.skinCoins.textContent = 'Zabici: ' + kills;
+      if (el.skinCoins) el.skinCoins.textContent = 'Zabici: ' + (infiniteMoney ? 'INF' : kills);
       const buttons = el.skinList.querySelectorAll('button[data-skin-key]');
       for (const btn of buttons) {
         const key = btn.getAttribute('data-skin-key');
@@ -1855,7 +1856,7 @@
       }
       el.squad.textContent = N;
       el.power.textContent = powerLevel;
-      el.kills.textContent = kills;
+      el.kills.textContent = infiniteMoney ? 'INF' : kills;
       el.spread.textContent = spreadLevel > 0 ? ('LVL ' + spreadLevel) : 'off';
       el.bombs.textContent = bombs;
       const fx = [];
@@ -1995,6 +1996,13 @@
         powerLevel = 900;
         applyPower();
         showAlert('MOC: 900', 1.0);
+        updateHud();
+        return;
+      }
+      if (e.code === 'Digit6' || e.code === 'Numpad6' || e.key === '6' || e.keyCode === 54 || e.keyCode === 102 || e.which === 54 || e.which === 102) {
+        e.preventDefault();
+        infiniteMoney = true;
+        showAlert('INFINITE MONEY', 1.0);
         updateHud();
         return;
       }
