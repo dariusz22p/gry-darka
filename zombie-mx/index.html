@@ -1465,7 +1465,7 @@
         vx: vx,
         vy: vy,
         dmg: shotDmg,
-        pierce: gun.mode === 'golden' ? 999 : 1,
+        pierce: gun.mode === 'golden' ? 24 : 1,
         isGolden: gun.mode === 'golden',
         color: gun.bullet,
         width: Math.max(8, Math.round((gun.length - 6) * widthScale)),
@@ -1475,16 +1475,11 @@
 
     function spawnPrimaryGunShot(sx, sy, gun, bulletSpeed, shotDmg) {
       if (gun.mode === 'golden') {
-        const spreadWide = 0.42;
-        const spreadMid = 0.24;
-        const spreadInner = 0.1;
-        spawnGunBullet(sx, sy, Math.cos(Math.PI - spreadWide) * bulletSpeed, Math.sin(Math.PI - spreadWide) * bulletSpeed, shotDmg * 0.95, gun, 0.9);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI - spreadMid) * bulletSpeed, Math.sin(Math.PI - spreadMid) * bulletSpeed, shotDmg * 1.12, gun, 1.02);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI - spreadInner) * bulletSpeed, Math.sin(Math.PI - spreadInner) * bulletSpeed, shotDmg * 1.24, gun, 1.12);
-        spawnGunBullet(sx, sy, -bulletSpeed, 0, shotDmg * 1.7, gun, 1.35);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI + spreadInner) * bulletSpeed, Math.sin(Math.PI + spreadInner) * bulletSpeed, shotDmg * 1.24, gun, 1.12);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI + spreadMid) * bulletSpeed, Math.sin(Math.PI + spreadMid) * bulletSpeed, shotDmg * 1.12, gun, 1.02);
-        spawnGunBullet(sx, sy, Math.cos(Math.PI + spreadWide) * bulletSpeed, Math.sin(Math.PI + spreadWide) * bulletSpeed, shotDmg * 0.95, gun, 0.9);
+        const spreadWide = 0.18;
+        const spreadInner = 0.06;
+        spawnGunBullet(sx, sy, Math.cos(Math.PI - spreadWide) * bulletSpeed, Math.sin(Math.PI - spreadWide) * bulletSpeed, shotDmg * 0.95, gun, 0.95);
+        spawnGunBullet(sx, sy, -bulletSpeed, 0, shotDmg * 1.55, gun, 1.15);
+        spawnGunBullet(sx, sy, Math.cos(Math.PI + spreadWide) * bulletSpeed, Math.sin(Math.PI + spreadWide) * bulletSpeed, shotDmg * 0.95, gun, 0.95);
         return;
       }
       if (gun.mode === 'triple') {
@@ -1846,6 +1841,7 @@
       const killed = detonate(1);
       showAlert('BOMBA ATOMOWA: ' + killed + ' ZOMBIE (-2 BOMBY)', 1.1);
       return true;
+    }
 
     function obliterateZombie(index) {
       const deadZombie = zombies[index];
@@ -1877,8 +1873,6 @@
           }));
         }
       }
-      if (deadZombie.miniType) grantMiniLoot(deadZombie.miniType);
-    }
     }
 
     function startNextWave() {
@@ -2104,16 +2098,6 @@
         const jitter = 0.65 + Math.random() * 0.7;
         memberShotTimers[i] += baseInterval * jitter;
         firedNow = true;
-      }
-      if (gun.mode === 'golden' && firedNow) {
-        const goldenBand = squadHalfHeight() + 18;
-        for (let j = zombies.length - 1; j >= 0; j--) {
-          const z = zombies[j];
-          if (z.x >= CONFIG.panel.x - 8 && Math.abs(z.y - colY) <= goldenBand) {
-            obliterateZombie(j);
-          }
-        }
-        fx.push({ x: CONFIG.breachX, y: colY, life: 0.18, c: '#ffe082', r: 40 });
       }
       if (firedNow && shotSfxCd <= 0) {
         sfxVolley();
@@ -2378,7 +2362,7 @@
         ctx.save();
         if (b.isGolden) {
           ctx.shadowColor = 'rgba(255, 231, 153, 0.98)';
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = 10;
           const glow = ctx.createLinearGradient(b.x - (b.width || 10) / 2, b.y, b.x + (b.width || 10) / 2, b.y);
           glow.addColorStop(0, '#fffde7');
           glow.addColorStop(0.28, '#fff176');
