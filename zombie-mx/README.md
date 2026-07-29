@@ -18,10 +18,20 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 
 ## 🎯 Fale & Zombies
 
-- **20 fal** w grze
+- **1000 fal** w grze
 - **Trudność rośnie** — każda fala jest trudniejsza
 - **Mini-bossy** — specjalni zombie z bonusami
 - **Loot** — zbieraj bomby i bonusy z pokonanych bossów
+- **Zombie od fali 100 są złote**
+- **Wygrana uruchamia confetti**
+
+## 🛒 Sklep
+
+- Kategorie: **Guns** i **Skins**
+- Kupujesz za licznik **Zabici**
+- W **Guns** masz klasyczne upgrady oraz listę kupowanych broni
+- W **Skins** kupujesz i zakładasz skiny ekipy
+- Przycisk **Sklep** pojawia się też na ekranie przegranej
 
 ## ⌨️ Sterowanie
 
@@ -32,8 +42,19 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 - **P** — pauza
 - **F** — pełny ekran
 - **R** — restart
-- **M** — wyciszenie
+- **U** — wyciszenie
 - **ESC / H** — powrót do menu
+
+## ⚡ Skróty specjalne MX
+
+- **0** — ustaw ekipę na 100
+- **2** — ustaw ekipę na 2000
+- **9** — ustaw moc na 900
+- **B** — ustaw moc na 100
+- **O** — ustaw bomby na 200
+- **1** — skok na falę 100
+- **8** — skok na falę 1000
+- **6** — infinite money (INF)
 
 ## 💡 Porady
 
@@ -41,6 +62,21 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 - Rekrutuj strategicznie
 - Zaoszczędzaj bomby na trudne momenty
 - Sprawdź różne tryby trudności
+
+## 🗓️ Dziennik zmian — 2026-07-29
+
+- Podniesiono skalę gry: 100 fal -> **1000 fal**.
+- Dodano i poprawiono skróty specjalne (0, 2, 9, B, O, 1, 8, 6).
+- Dodano skok na falę 1000 pod klawiszem **8**.
+- Od fali 100 zombie mają złoty kolor.
+- Dodano confetti po wygranej.
+- Zbudowano sklep i flow po przegranej (Sklep lub Restart).
+- Sklep skategoryzowano na **Guns** i **Skins**.
+- Rozszerzono katalog skinów i podniesiono ceny skinów.
+- Dodano kupowane bronie z różnym wyglądem i różnym zachowaniem strzału.
+- Rozszerzono katalog broni o dużą liczbę nowych pozycji.
+- Naprawiono widoczność i scrollowanie list sklepu.
+- Poprawiono stabilność klikalności przycisków sklepu.
 
 ## 🏠 Powrót
 
