@@ -157,7 +157,7 @@
   <script>
     'use strict';
 
-    const CONFIG = { W: 1200, H: 640, baseHpMax: 100, spawnEvery: 0.72 };
+    const CONFIG = { W: 1200, H: 640, baseHpMax: 100, spawnEvery: 0.45 };
     const SHOOTER_X = CONFIG.W - 60;   // team on the RIGHT
     const BASE_X = CONFIG.W - 44;      // base breach line on the RIGHT
     const GATE_SPEED = 1.2;            // gates 2x faster (was 0.6)
@@ -265,8 +265,8 @@
       if (gameTime > 180 && gameTime % 2.5 < 0.1) spawnZombie('red');
       if (gameTime > 300 && gameTime < 301) spawnZombie('boss');
 
-      // spawn rate ramps up over time for rising difficulty
-      const spawnRate = CONFIG.spawnEvery * (1 + gameTime / 45);
+      // spawn rate ramps up over time for rising difficulty (kept gentle)
+      const spawnRate = CONFIG.spawnEvery * (1 + gameTime / 70);
       if (Math.random() < spawnRate * dt) spawnZombie();
 
       if (gameTime > nextGateTime) spawnGate();
@@ -275,9 +275,9 @@
         if (g.x > CONFIG.W + 40) gates.splice(i, 1);
       });
 
-      // Effective fire rate & damage. Overheat: fireRate>=4 => rate/4 but damage x4 (RED heavy mode)
+      // Effective fire rate & damage. Overheat: fireRate>=4 => HALF speed but x4 damage (RED heavy mode)
       const overheated = fireRate >= 4;
-      const effFireRate = overheated ? fireRate / 4 : fireRate;
+      const effFireRate = overheated ? fireRate / 2 : fireRate;
       const effDamage = overheated ? damage * 4 : damage;
 
       // Gun: deterministic fire. Base = 1 bullet / 0.5s, faster as fireRate & squad grow
