@@ -385,7 +385,7 @@
           <canvas id="game" width="1000" height="520"></canvas>
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
-          <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 100 os&oacute;b">100👥</button>
+          <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2000👥</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
@@ -1656,8 +1656,8 @@
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
         hideOverlay();
-        setSquadCount(100);
-        showAlert('EKIPA: ' + N, 0.9);
+        setSquadCount(2000);
+        showAlert('EKIPA: ' + N, 1.0);
         updateHud();
       });
     }
