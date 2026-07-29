@@ -701,14 +701,20 @@
         berserkDur: 8,
         freezeDur: 11,
         recruitDur: 10,
+        overclockDur: 13,
         dmgMul: 1.55,
         fireMul: 1.35,
         shieldDmgMul: 0.55,
         healAmt: 18,
         megaHealAmt: 42,
+        medkitHealAmt: 30,
+        fortifyHealAmt: 24,
         bombAmt: 1,
         bombPackAmt: 2,
-        jackpotKills: 260
+        jackpotKills: 260,
+        bountyKills: 140,
+        rainfireSpreadAdd: 2,
+        nukeFraction: 0.35
       },
       spread: { levelMax: 30, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
@@ -1639,18 +1645,24 @@
 
     function randomPowerupType() {
       const r = Math.random();
-      if (r < 0.18) return 'spread';
-      if (r < 0.31) return 'dmg';
-      if (r < 0.43) return 'fire';
-      if (r < 0.54) return 'shield';
-      if (r < 0.64) return 'heal';
-      if (r < 0.72) return 'bomb';
-      if (r < 0.80) return 'berserk';
-      if (r < 0.87) return 'freeze';
-      if (r < 0.93) return 'recruit';
-      if (r < 0.97) return 'bombpack';
-      if (r < 0.99) return 'jackpot';
-      return 'megaheal';
+      if (r < 0.14) return 'spread';
+      if (r < 0.25) return 'dmg';
+      if (r < 0.35) return 'fire';
+      if (r < 0.44) return 'shield';
+      if (r < 0.52) return 'heal';
+      if (r < 0.58) return 'bomb';
+      if (r < 0.65) return 'berserk';
+      if (r < 0.71) return 'freeze';
+      if (r < 0.77) return 'recruit';
+      if (r < 0.82) return 'bombpack';
+      if (r < 0.86) return 'jackpot';
+      if (r < 0.90) return 'megaheal';
+      if (r < 0.93) return 'overclock';
+      if (r < 0.96) return 'fortify';
+      if (r < 0.98) return 'rainfire';
+      if (r < 0.992) return 'bounty';
+      if (r < 0.998) return 'nuke';
+      return 'medkit';
     }
 
     function powerupVisual(type) {
@@ -1665,7 +1677,13 @@
       if (type === 'recruit') return { color: '#c5e1a5', text: 'LOOT: REKRUTACJA +' };
       if (type === 'bombpack') return { color: '#b39ddb', text: 'LOOT: BOMB PACK' };
       if (type === 'jackpot') return { color: '#ffe082', text: 'LOOT: JACKPOT' };
-      return { color: '#a5d6a7', text: 'LOOT: MEGA HEAL' };
+      if (type === 'megaheal') return { color: '#a5d6a7', text: 'LOOT: MEGA HEAL' };
+      if (type === 'overclock') return { color: '#ffb74d', text: 'LOOT: OVERCLOCK' };
+      if (type === 'fortify') return { color: '#90a4ae', text: 'LOOT: FORTIFY' };
+      if (type === 'rainfire') return { color: '#ff8a65', text: 'LOOT: RAINFIRE' };
+      if (type === 'bounty') return { color: '#fff176', text: 'LOOT: BOUNTY' };
+      if (type === 'nuke') return { color: '#ef5350', text: 'LOOT: NUKE' };
+      return { color: '#c8e6c9', text: 'LOOT: MEDKIT+' };
     }
 
     function applyPowerup(type) {
@@ -1724,6 +1742,41 @@
       if (type === 'megaheal') {
         baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.megaHealAmt);
         showAlert('LOOT: MEGA HEAL +' + CONFIG.powerups.megaHealAmt + ' HP', 1.1);
+        return;
+      }
+      if (type === 'overclock') {
+        fireBoostTimer = Math.max(fireBoostTimer, CONFIG.powerups.overclockDur);
+        recruitBoostTimer = Math.max(recruitBoostTimer, CONFIG.powerups.overclockDur);
+        showAlert('LOOT: OVERCLOCK ' + CONFIG.powerups.overclockDur + 's', 1.1);
+        return;
+      }
+      if (type === 'fortify') {
+        shieldTimer = Math.max(shieldTimer, CONFIG.powerups.shieldDur);
+        baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.fortifyHealAmt);
+        showAlert('LOOT: FORTIFY +' + CONFIG.powerups.fortifyHealAmt + ' HP', 1.1);
+        return;
+      }
+      if (type === 'rainfire') {
+        fireBoostTimer = Math.max(fireBoostTimer, CONFIG.powerups.fireDur);
+        spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + CONFIG.powerups.rainfireSpreadAdd);
+        spreadDecayTimer = 0;
+        showAlert('LOOT: RAINFIRE LVL ' + spreadLevel, 1.1);
+        return;
+      }
+      if (type === 'bounty') {
+        kills += CONFIG.powerups.bountyKills;
+        waveKills += Math.floor(CONFIG.powerups.bountyKills * 0.35);
+        showAlert('LOOT: BOUNTY +' + CONFIG.powerups.bountyKills, 1.1);
+        return;
+      }
+      if (type === 'nuke') {
+        const nuked = detonate(CONFIG.powerups.nukeFraction);
+        showAlert('LOOT: NUKE ' + nuked + ' ZOMBIE', 1.1);
+        return;
+      }
+      if (type === 'medkit') {
+        baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.medkitHealAmt);
+        showAlert('LOOT: MEDKIT +' + CONFIG.powerups.medkitHealAmt + ' HP', 1.1);
         return;
       }
       bombs += CONFIG.powerups.bombAmt;
