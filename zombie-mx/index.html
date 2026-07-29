@@ -65,6 +65,37 @@
   #hud .stat b { font-size: 11px; }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
+  #shop {
+    display: grid;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid #2f3d4e;
+    border-radius: 6px;
+    background: #18212c;
+  }
+  #shopTitle {
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffd180;
+    letter-spacing: .4px;
+  }
+  .shopBtn {
+    width: 100%;
+    border: 1px solid #3a4c60;
+    border-radius: 6px;
+    background: #253244;
+    color: #e8edf2;
+    padding: 5px 6px;
+    font-size: 10px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .shopBtn:hover { background: #2f4056; }
+  .shopBtn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    background: #202b3a;
+  }
   #power900Btn {
     width: 100%;
     border: 1px solid #3a4c60;
@@ -456,6 +487,13 @@
             </select>
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
+          <div id="shop" aria-label="Sklep">
+            <div id="shopTitle">SKLEP (za Zabici)</div>
+            <button id="shopPower" class="shopBtn" type="button">+10 MOC (120)</button>
+            <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
+            <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
+            <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
+          </div>
         </div>
         <div id="help">
           <a class="back" href="../">&larr; Gry</a>
@@ -560,6 +598,10 @@
     let last = 0;
     let shotSfxCd = 0;
     let confetti = [];
+    let shopPowerBuys = 0;
+    let shopSquadBuys = 0;
+    let shopHealBuys = 0;
+    let shopBombBuys = 0;
 
     // ---- Dźwięk (Web Audio, syntezowany) ----
     let audioCtx = null, master = null, muted = false;
@@ -795,10 +837,74 @@
       powerNeed = CONFIG.panel.powerPer;
       spawnCycles = 0;
       confetti = [];
+      shopPowerBuys = 0;
+      shopSquadBuys = 0;
+      shopHealBuys = 0;
+      shopBombBuys = 0;
       if (el && el.winConfetti) el.winConfetti.innerHTML = '';
       hideAlert();
       hideOverlay();
       updateHud();
+    }
+
+    function shopCost(base, step, bought) {
+      return base + step * bought;
+    }
+
+    function buyFromShop(kind) {
+      if (state !== 'play') return false;
+      let cost = 0;
+      if (kind === 'power') {
+        cost = shopCost(120, 40, shopPowerBuys);
+        if (kills < cost) return false;
+        kills -= cost;
+        shopPowerBuys++;
+        powerLevel += 10;
+        applyPower();
+        showAlert('SKLEP: MOC +10', 0.8);
+      } else if (kind === 'squad') {
+        cost = shopCost(160, 50, shopSquadBuys);
+        if (kills < cost) return false;
+        kills -= cost;
+        shopSquadBuys++;
+        setSquadCount(N + 10);
+        showAlert('SKLEP: EKIPA +10', 0.8);
+      } else if (kind === 'heal') {
+        cost = shopCost(220, 70, shopHealBuys);
+        if (kills < cost) return false;
+        kills -= cost;
+        shopHealBuys++;
+        baseHp = Math.min(CONFIG.baseHpMax, baseHp + 20);
+        showAlert('SKLEP: BAZA +20 HP', 0.8);
+      } else if (kind === 'bomb') {
+        cost = shopCost(180, 60, shopBombBuys);
+        if (kills < cost) return false;
+        kills -= cost;
+        shopBombBuys++;
+        bombs++;
+        showAlert('SKLEP: BOMBA +1', 0.8);
+      } else {
+        return false;
+      }
+      updateHud();
+      return true;
+    }
+
+    function updateShopUi() {
+      if (!el.shopPower || !el.shopSquad || !el.shopHeal || !el.shopBomb) return;
+      const cPower = shopCost(120, 40, shopPowerBuys);
+      const cSquad = shopCost(160, 50, shopSquadBuys);
+      const cHeal = shopCost(220, 70, shopHealBuys);
+      const cBomb = shopCost(180, 60, shopBombBuys);
+      el.shopPower.textContent = '+10 MOC (' + cPower + ')';
+      el.shopSquad.textContent = '+10 EKIPA (' + cSquad + ')';
+      el.shopHeal.textContent = 'NAPRAWA BAZY +20 HP (' + cHeal + ')';
+      el.shopBomb.textContent = '+1 BOMBA (' + cBomb + ')';
+      const lock = state !== 'play';
+      el.shopPower.disabled = lock || kills < cPower;
+      el.shopSquad.disabled = lock || kills < cSquad || N >= CONFIG.shooter.maxN;
+      el.shopHeal.disabled = lock || kills < cHeal || baseHp >= CONFIG.baseHpMax;
+      el.shopBomb.disabled = lock || kills < cBomb;
     }
 
     function startConfetti() {
@@ -1462,6 +1568,10 @@
       restart: document.getElementById('restart'),
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
+      shopPower: document.getElementById('shopPower'),
+      shopSquad: document.getElementById('shopSquad'),
+      shopHeal: document.getElementById('shopHeal'),
+      shopBomb: document.getElementById('shopBomb'),
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
       bossNow: document.getElementById('bossNow'),
@@ -1505,6 +1615,7 @@
       if (bombs > 0) fx.push('Bomby ' + bombs);
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestKills.textContent = bestKills;
+      updateShopUi();
     }
     function showOverlay(title, sub) {
       el.overTitle.textContent = title;
@@ -1697,6 +1808,30 @@
         applyPower();
         showAlert('MOC: 900', 1.0);
         updateHud();
+      });
+    }
+    if (el.shopPower) {
+      el.shopPower.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('power');
+      });
+    }
+    if (el.shopSquad) {
+      el.shopSquad.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('squad');
+      });
+    }
+    if (el.shopHeal) {
+      el.shopHeal.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('heal');
+      });
+    }
+    if (el.shopBomb) {
+      el.shopBomb.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('bomb');
       });
     }
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
