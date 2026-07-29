@@ -65,6 +65,18 @@
   #hud .stat b { font-size: 11px; }
   #hud b { color: #fff; }
   #hud b.soft { color: #c7d3df; font-weight: 600; }
+  #power900Btn {
+    width: 100%;
+    border: 1px solid #3a4c60;
+    border-radius: 6px;
+    background: #2c3a4b;
+    color: #ffd180;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #power900Btn:hover { background: #34465b; }
   #ingameHudTop, #ingameHudBottom {
     position: absolute;
     right: 2px;
@@ -443,6 +455,7 @@
               <option value="hard">Hard</option>
             </select>
           </div>
+          <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
         </div>
         <div id="help">
           <a class="back" href="../">&larr; Gry</a>
@@ -1448,6 +1461,7 @@
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       restart: document.getElementById('restart'),
       difficulty: document.getElementById('difficulty'),
+      power900Btn: document.getElementById('power900Btn'),
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
       bossNow: document.getElementById('bossNow'),
@@ -1673,6 +1687,18 @@
       difficultyKey = el.difficulty.value;
       reset();
     });
+    if (el.power900Btn) {
+      el.power900Btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        powerLevel = 900;
+        applyPower();
+        showAlert('MOC: 900', 1.0);
+        updateHud();
+      });
+    }
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
     if (el.mobileBombBtn) {
       el.mobileBombBtn.addEventListener('click', function (e) {
