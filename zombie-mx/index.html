@@ -1125,7 +1125,7 @@
           continue;
         }
         it.btn.textContent = 'Kup ' + sk.cost;
-        it.btn.disabled = kills < sk.cost;
+        it.btn.disabled = false;
       }
     }
 
@@ -1932,6 +1932,11 @@
     }, { passive: false });
     window.addEventListener('keydown', function (e) {
       ensureAudio();
+      if (e.code === 'KeyK' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        openSkinShop();
+        return;
+      }
       if (e.key === 'Escape' || e.key === 'h' || e.key === 'H') {
         window.location.href = '../';
         return;
