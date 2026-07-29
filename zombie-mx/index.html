@@ -362,7 +362,8 @@
           <span><kbd>N</kbd> bomba atomowa (wszystkie zombie, zu&#380;ywa 2 bomby)</span>
           <span><kbd>P</kbd> pauza</span>
           <span><kbd>F</kbd> pe&#322;ny ekran</span>
-          <span><kbd>M</kbd> wyciszenie</span>
+          <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
+          <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
       </aside>
@@ -1362,6 +1363,14 @@
       }
       if (e.key === 'r' || e.key === 'R') { reset(); return; }
       if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        N = Math.min(CONFIG.shooter.maxN, 30);
+        colY = clamp(colY, minY(), maxY());
+        targetY = clamp(targetY, minY(), maxY());
+        showAlert('EKIPA: ' + N, 0.8);
+        return;
+      }
+      if (e.code === 'KeyU' || e.key === 'u' || e.key === 'U') {
         muted = !muted;
         if (master) master.gain.value = muted ? 0 : 0.18;
         return;
