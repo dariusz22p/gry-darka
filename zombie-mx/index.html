@@ -219,6 +219,52 @@
     display: grid;
     gap: 4px;
   }
+  #gunCoins {
+    font-size: 12px;
+    color: #c7d3df;
+    font-weight: 700;
+  }
+  #gunList {
+    display: grid;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #gunList::-webkit-scrollbar { width: 8px; }
+  #gunList::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
+  #gunList::-webkit-scrollbar-thumb { background: #3a4c60; border-radius: 999px; }
+  .gunPreview {
+    position: relative;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.14);
+    overflow: hidden;
+  }
+  .gunPreview::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 34px;
+    height: var(--gun-width, 6px);
+    margin-top: calc(var(--gun-width, 6px) / -2);
+    border-radius: 999px;
+    background: var(--gun-barrel, #90a4ae);
+    box-shadow: -16px 0 0 0 var(--gun-body, #607d8b);
+  }
+  .gunPreview::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 44px;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 50%;
+    background: var(--gun-bullet, #ffe082);
+  }
   #skinCoins {
     font-size: 12px;
     color: #c7d3df;
@@ -563,6 +609,9 @@
               <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
               <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
               <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
+              <div class="shopSectionTitle">BUY GUNS</div>
+              <div id="gunCoins">Zabici: 0</div>
+              <div id="gunList"></div>
             </div>
             <div class="shopSectionTitle">SKINS</div>
             <div id="shopSkins">
@@ -680,6 +729,7 @@
     let shopBombBuys = 0;
     let infiniteMoney = false;
     let skinKey = 'classic';
+    let gunKey = 'blaster';
     const SKINS = {
       classic: { fill: '#ef5350', stroke: '#b71c1c', cost: 0, label: 'Classic' },
       gold: { fill: '#ffd54f', stroke: '#a86f00', cost: 3000, label: 'Gold' },
@@ -723,6 +773,14 @@
       phoenix: { fill: '#ffab91', stroke: '#bf360c', cost: 135100, label: 'Phoenix' }
     };
     let ownedSkins = defaultOwnedSkins();
+    const GUNS = {
+      blaster: { label: 'Blaster', cost: 0, body: '#607d8b', barrel: '#cfd8dc', bullet: '#ffe082', fireMul: 1, dmgMul: 1, speedMul: 1, width: 6, length: 18 },
+      smg: { label: 'SMG', cost: 4200, body: '#455a64', barrel: '#90caf9', bullet: '#fff59d', fireMul: 1.28, dmgMul: 0.78, speedMul: 1.08, width: 4, length: 22 },
+      cannon: { label: 'Cannon', cost: 9600, body: '#6d4c41', barrel: '#ffcc80', bullet: '#ffab91', fireMul: 0.72, dmgMul: 1.9, speedMul: 0.9, width: 9, length: 20 },
+      laser: { label: 'Laser', cost: 16800, body: '#4a148c', barrel: '#ea80fc', bullet: '#00e5ff', fireMul: 1.1, dmgMul: 1.24, speedMul: 1.35, width: 3, length: 26 },
+      frost: { label: 'Frost Gun', cost: 28200, body: '#006064', barrel: '#80deea', bullet: '#e1f5fe', fireMul: 0.95, dmgMul: 1.45, speedMul: 1.12, width: 7, length: 24 }
+    };
+    let ownedGuns = defaultOwnedGuns();
 
     // ---- Dźwięk (Web Audio, syntezowany) ----
     let audioCtx = null, master = null, muted = false;
@@ -848,8 +906,9 @@
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
     function applyPower() {
-      fireRate = CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel;
-      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel);
+      const gun = currentGun();
+      fireRate = (CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel) * gun.fireMul;
+      dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel) * gun.dmgMul;
     }
 
     function loadRecords() {
@@ -858,6 +917,7 @@
       bestWave = Number.isFinite(w) ? w : 0;
       bestKills = Number.isFinite(k) ? k : 0;
       ownedSkins = defaultOwnedSkins();
+      ownedGuns = defaultOwnedGuns();
       try {
         const storedOwned = JSON.parse(localStorage.getItem('nz_owned_skins') || '{}');
         if (storedOwned && typeof storedOwned === 'object') {
@@ -869,9 +929,21 @@
         if (storedSkin && SKINS[storedSkin] && ownedSkins[storedSkin]) {
           skinKey = storedSkin;
         }
+        const storedOwnedGuns = JSON.parse(localStorage.getItem('nz_owned_guns') || '{}');
+        if (storedOwnedGuns && typeof storedOwnedGuns === 'object') {
+          for (const key of Object.keys(GUNS)) {
+            if (key !== 'blaster' && !!storedOwnedGuns[key]) ownedGuns[key] = true;
+          }
+        }
+        const storedGun = localStorage.getItem('nz_gun_key');
+        if (storedGun && GUNS[storedGun] && ownedGuns[storedGun]) {
+          gunKey = storedGun;
+        }
       } catch (_err) {
         ownedSkins = defaultOwnedSkins();
         skinKey = 'classic';
+        ownedGuns = defaultOwnedGuns();
+        gunKey = 'blaster';
       }
     }
 
@@ -880,11 +952,19 @@
       localStorage.setItem('nz_best_kills', String(bestKills));
       localStorage.setItem('nz_owned_skins', JSON.stringify(ownedSkins));
       localStorage.setItem('nz_skin_key', skinKey);
+      localStorage.setItem('nz_owned_guns', JSON.stringify(ownedGuns));
+      localStorage.setItem('nz_gun_key', gunKey);
     }
 
     function defaultOwnedSkins() {
       const out = {};
       for (const key of Object.keys(SKINS)) out[key] = key === 'classic';
+      return out;
+    }
+
+    function defaultOwnedGuns() {
+      const out = {};
+      for (const key of Object.keys(GUNS)) out[key] = key === 'blaster';
       return out;
     }
 
@@ -996,6 +1076,10 @@
       return SKINS[skinKey] || SKINS.classic;
     }
 
+    function currentGun() {
+      return GUNS[gunKey] || GUNS.blaster;
+    }
+
     function setSkin(nextKey) {
       if (!SKINS[nextKey] || !ownedSkins[nextKey]) return false;
       skinKey = nextKey;
@@ -1003,6 +1087,17 @@
       updateSkinShopUi();
       updateHud();
       showAlert('SKIN: ' + SKINS[nextKey].label.toUpperCase(), 0.8);
+      return true;
+    }
+
+    function setGun(nextKey) {
+      if (!GUNS[nextKey] || !ownedGuns[nextKey]) return false;
+      gunKey = nextKey;
+      applyPower();
+      saveRecords();
+      updateGunShopUi();
+      updateHud();
+      showAlert('GUN: ' + GUNS[nextKey].label.toUpperCase(), 0.8);
       return true;
     }
 
@@ -1018,6 +1113,22 @@
       ownedSkins[nextKey] = true;
       saveRecords();
       setSkin(nextKey);
+      updateHud();
+      return true;
+    }
+
+    function buyOrEquipGun(nextKey) {
+      if (!GUNS[nextKey]) return false;
+      if (ownedGuns[nextKey]) return setGun(nextKey);
+      const cost = GUNS[nextKey].cost;
+      if (!infiniteMoney && kills < cost) {
+        showAlert('ZA MALO ZABITYCH', 0.8);
+        return false;
+      }
+      if (!infiniteMoney) kills -= cost;
+      ownedGuns[nextKey] = true;
+      saveRecords();
+      setGun(nextKey);
       updateHud();
       return true;
     }
@@ -1089,6 +1200,59 @@
       el.shopSquad.disabled = lock || (!infiniteMoney && kills < cSquad) || N >= CONFIG.shooter.maxN;
       el.shopHeal.disabled = lock || (!infiniteMoney && kills < cHeal) || baseHp >= CONFIG.baseHpMax;
       el.shopBomb.disabled = lock || (!infiniteMoney && kills < cBomb);
+    }
+
+    function updateGunShopUi() {
+      if (!el.gunList) return;
+      if (!el.gunList.children.length) {
+        for (const [key, gun] of Object.entries(GUNS)) {
+          const card = document.createElement('div');
+          card.className = 'skinItem';
+
+          const preview = document.createElement('div');
+          preview.className = 'gunPreview';
+          preview.style.setProperty('--gun-body', gun.body);
+          preview.style.setProperty('--gun-barrel', gun.barrel);
+          preview.style.setProperty('--gun-bullet', gun.bullet);
+          preview.style.setProperty('--gun-width', gun.width + 'px');
+
+          const meta = document.createElement('div');
+          meta.className = 'skinMeta';
+
+          const label = document.createElement('span');
+          label.textContent = gun.label;
+
+          const btn = document.createElement('button');
+          btn.className = 'skinBtn';
+          btn.type = 'button';
+          btn.setAttribute('data-gun-key', key);
+
+          meta.appendChild(label);
+          meta.appendChild(btn);
+          card.appendChild(preview);
+          card.appendChild(meta);
+          el.gunList.appendChild(card);
+        }
+      }
+      if (el.gunCoins) el.gunCoins.textContent = 'Zabici: ' + (infiniteMoney ? 'INF' : kills);
+      const buttons = el.gunList.querySelectorAll('button[data-gun-key]');
+      for (const btn of buttons) {
+        const key = btn.getAttribute('data-gun-key');
+        const gun = GUNS[key];
+        if (!gun) continue;
+        if (gunKey === key) {
+          btn.textContent = 'Założony';
+          btn.disabled = true;
+          continue;
+        }
+        if (ownedGuns[key]) {
+          btn.textContent = 'Wyposaż';
+          btn.disabled = false;
+          continue;
+        }
+        btn.textContent = 'Kup ' + gun.cost;
+        btn.disabled = false;
+      }
     }
 
     function updateSkinShopUi() {
@@ -1502,6 +1666,8 @@
       const spreadDeg = Math.min(CONFIG.spread.angleMaxDeg, CONFIG.spread.baseAngleDeg + Math.sqrt(cappedLevel) * CONFIG.spread.anglePerLevelDeg);
       const spreadRad = (spreadDeg * Math.PI) / 180;
       const baseInterval = 1 / Math.max(0.001, fireRate);
+      const gun = currentGun();
+      const bulletSpeed = CONFIG.shooter.bulletSpeed * gun.speedMul;
       let firedNow = false;
       for (let i = 0; i < N; i++) {
         memberShotTimers[i] -= dt;
@@ -1509,15 +1675,18 @@
         const o = memberOffset(i);
         const sx = CONFIG.squadX + o.x - 14;
         const sy = colY + o.y;
-        bullets.push({ x: sx, y: sy, vx: -CONFIG.shooter.bulletSpeed, vy: 0, dmg: dmg });
+        bullets.push({ x: sx, y: sy, vx: -bulletSpeed, vy: 0, dmg: dmg, color: gun.bullet, width: Math.max(10, gun.length - 6), height: Math.max(3, Math.round(gun.width * 0.7)) });
         for (let p = 0; p < extraPellets; p++) {
           const a = Math.PI + (Math.random() * 2 - 1) * spreadRad;
           bullets.push({
             x: sx,
             y: sy,
-            vx: Math.cos(a) * CONFIG.shooter.bulletSpeed,
-            vy: Math.sin(a) * CONFIG.shooter.bulletSpeed,
-            dmg: dmg * 0.42
+            vx: Math.cos(a) * bulletSpeed,
+            vy: Math.sin(a) * bulletSpeed,
+            dmg: dmg * 0.42,
+            color: gun.bullet,
+            width: Math.max(8, gun.length - 10),
+            height: Math.max(2, Math.round(gun.width * 0.55))
           });
         }
         const jitter = 0.65 + Math.random() * 0.7;
@@ -1761,16 +1930,21 @@
         const o = memberOffset(i);
         const x = CONFIG.squadX + o.x;
         const y = colY + o.y;
-        ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 18, y); ctx.stroke();
         const sk = currentSkin();
+        const gun = currentGun();
+        ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width;
+        ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
+        ctx.fillStyle = gun.body;
+        ctx.fillRect(x - Math.max(10, gun.length * 0.55), y - Math.max(3, gun.width * 0.5), Math.max(9, gun.length * 0.42), Math.max(6, gun.width));
         ctx.fillStyle = sk.fill;
         ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = sk.stroke; ctx.lineWidth = 2; ctx.stroke();
       }
       // pociski
-      ctx.fillStyle = '#ffe082';
-      for (const b of bullets) { ctx.fillRect(b.x - 5, b.y - 2, 10, 4); }
+      for (const b of bullets) {
+        ctx.fillStyle = b.color || '#ffe082';
+        ctx.fillRect(b.x - (b.width || 10) / 2, b.y - (b.height || 4) / 2, b.width || 10, b.height || 4);
+      }
       // efekty
       for (const f of fx) {
         ctx.globalAlpha = Math.max(0, f.life * 3.5);
@@ -1804,6 +1978,8 @@
       restart: document.getElementById('restart'),
       shopGuns: document.getElementById('shopGuns'),
       shopSkins: document.getElementById('shopSkins'),
+      gunCoins: document.getElementById('gunCoins'),
+      gunList: document.getElementById('gunList'),
       skinCoins: document.getElementById('skinCoins'),
       skinList: document.getElementById('skinList'),
       difficulty: document.getElementById('difficulty'),
@@ -1856,6 +2032,7 @@
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestKills.textContent = bestKills;
       updateShopUi();
+      updateGunShopUi();
       updateSkinShopUi();
     }
     function showOverlay(title, sub) {
@@ -2082,6 +2259,16 @@
         e.preventDefault();
         const key = btn.getAttribute('data-skin-key');
         if (key) buyOrEquipSkin(key);
+      });
+    }
+    if (el.gunList) {
+      el.gunList.addEventListener('click', function (e) {
+        const target = e.target instanceof Element ? e.target : e.target && e.target.parentElement;
+        const btn = target ? target.closest('button[data-gun-key]') : null;
+        if (!btn) return;
+        e.preventDefault();
+        const key = btn.getAttribute('data-gun-key');
+        if (key) buyOrEquipGun(key);
       });
     }
     if (el.shopPower) {
