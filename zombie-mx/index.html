@@ -365,6 +365,7 @@
           <span><kbd>M</kbd> ustaw ekip&#281; na 30 os&oacute;b</span>
           <span><kbd>B</kbd> ustaw moc na 100</span>
           <span><kbd>O</kbd> ustaw bomby na 200</span>
+          <span><kbd>1</kbd> skok na fal&#281; 100</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
         </div>
@@ -787,6 +788,29 @@
       zHp += CONFIG.ramp.hpAdd * diff.rampHpMul;
       zSpeed += CONFIG.ramp.speedAdd * diff.rampSpeedMul;
       showAlert('FALA ' + wave + ' | BOMBA +1', 0.9);
+    }
+
+    function jumpToWave(targetWave) {
+      const w = Math.max(1, Math.min(CONFIG.waves.total, Math.floor(targetWave)));
+      const ramps = Math.max(0, w - 1);
+      const baseSpawnEvery = CONFIG.zombie.spawnEvery * diff.spawnEveryMul;
+      const baseZombieHp = CONFIG.zombie.hp * diff.zombieHpMul;
+      const baseZombieSpeed = CONFIG.zombie.speed * diff.zombieSpeedMul;
+
+      wave = w;
+      waveKills = 0;
+      waveKillNeed = killNeedForWave(w);
+      prepTimer = 0;
+      warnedBossCycle = -1;
+      spawnTimer = 0;
+      spawnEvery = Math.max(0.30, baseSpawnEvery * Math.pow(CONFIG.ramp.spawnMul, ramps));
+      zHp = baseZombieHp + ramps * CONFIG.ramp.hpAdd * diff.rampHpMul;
+      zSpeed = baseZombieSpeed + ramps * CONFIG.ramp.speedAdd * diff.rampSpeedMul;
+      zombies = [];
+      bullets = [];
+      pickups = [];
+      showAlert('SKOK DO FALI ' + w, 1.0);
+      updateHud();
     }
 
     function addRecruit() {
@@ -1385,6 +1409,11 @@
         bombs = 200;
         showAlert('BOMBY: 200', 0.9);
         updateHud();
+        return;
+      }
+      if (e.code === 'Digit1' || e.key === '1') {
+        e.preventDefault();
+        jumpToWave(100);
         return;
       }
       if (e.code === 'KeyU' || e.key === 'u' || e.key === 'U') {
