@@ -203,6 +203,28 @@
     background: rgba(255,193,7,.62);
     transform: scale(0.92);
   }
+  #mobileJumpBtn {
+    display: none;
+    position: absolute;
+    left: 6px;
+    top: calc(50% + 80px);
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,213,79,.42);
+    color: rgba(255,255,255,.92);
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    z-index: 2;
+    touch-action: manipulation;
+    pointer-events: auto;
+  }
+  #mobileJumpBtn:active {
+    background: rgba(255,213,79,.62);
+    transform: scale(0.92);
+  }
   #help {
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
@@ -262,7 +284,7 @@
     #difficulty { font-size: 10px; }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
-    #mobileBombBtn, #mobileNukeBtn { display: block; }
+    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn { display: block; }
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #wrap {
@@ -318,6 +340,7 @@
           <canvas id="game" width="1000" height="520"></canvas>
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
+          <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 100</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
@@ -1278,7 +1301,8 @@
       effect: document.getElementById('effect'),
       bestKills: document.getElementById('bestKills'),
       mobileBombBtn: document.getElementById('mobileBombBtn'),
-      mobileNukeBtn: document.getElementById('mobileNukeBtn')
+      mobileNukeBtn: document.getElementById('mobileNukeBtn'),
+      mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -1415,7 +1439,7 @@
         updateHud();
         return;
       }
-      if (e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '1') {
+      if (e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '1' || e.keyCode === 49 || e.keyCode === 97 || e.which === 49 || e.which === 97) {
         e.preventDefault();
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
@@ -1471,6 +1495,15 @@
       el.mobileNukeBtn.addEventListener('click', function (e) {
         e.preventDefault();
         useNuke();
+      });
+    }
+    if (el.mobileJumpBtn) {
+      el.mobileJumpBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        jumpToWave(100);
       });
     }
 
