@@ -31,7 +31,13 @@
     display: grid;
     gap: 6px;
     align-content: start;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
   }
+  #sidebar::-webkit-scrollbar { width: 8px; }
+  #sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
+  #sidebar::-webkit-scrollbar-thumb { background: #33465c; border-radius: 999px; }
   #hud {
     display: grid;
     grid-template-columns: 1fr;
@@ -72,7 +78,13 @@
     border: 1px solid #2f3d4e;
     border-radius: 6px;
     background: #18212c;
+    max-height: 68vh;
+    overflow-y: auto;
+    min-height: 0;
   }
+  #shop::-webkit-scrollbar { width: 8px; }
+  #shop::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
+  #shop::-webkit-scrollbar-thumb { background: #33465c; border-radius: 999px; }
   #shopTitle {
     font-size: 10px;
     font-weight: 700;
