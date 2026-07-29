@@ -181,8 +181,7 @@
     const SHOOTER_X = CONFIG.W - 60;   // team on the RIGHT
     const BASE_X = CONFIG.W - 44;      // base breach line on the RIGHT
     const GATE_SPEED = 1.2;            // gates 2x faster (was 0.6)
-    const GATE_BASE = { fireRate: 0.2, damage: 0.1, health: 10 };
-    const GATE_INC  = { fireRate: 0.05, damage: 0.1, health: 10 }; // per bullet that hits the gate
+    const FIRERATE_INC = 0.1;          // fireRate gate: +0.1 per pellet (flat)
 
     let audioContext, master, muted = false;
     function ensureAudio() {
@@ -217,14 +216,14 @@
     let nextGateTime = 0;
 
     const ZOMBIE_STATS = {
-      verySlow: { speed: 1, hp: 6, size: 13, color: '#5aa02a', stroke: '#3c6d1c' },
-      slow: { speed: 2, hp: 5, size: 12, color: '#6fb03a', stroke: '#4a7724' },
-      normal: { speed: 3, hp: 4, size: 11, color: '#8bd450', stroke: '#5c8f34' },
-      fast: { speed: 4.5, hp: 3, size: 10, color: '#b6e77a', stroke: '#7ba548' },
-      armored: { speed: 1.5, hp: 10, size: 15, color: '#8a8f98', stroke: '#565b63' },
-      yellow: { speed: 3, hp: 12, size: 12, color: '#ffe000', stroke: '#b39b00' },
-      red: { speed: 3, hp: 12, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
-      boss: { speed: 2, hp: 1000, size: 34, color: '#f4f4f4', stroke: '#b0b0b0' },
+      verySlow: { speed: 0.5, hp: 6, size: 9, color: '#5aa02a', stroke: '#3c6d1c' },
+      slow: { speed: 1, hp: 5, size: 8, color: '#6fb03a', stroke: '#4a7724' },
+      normal: { speed: 1.5, hp: 4, size: 8, color: '#8bd450', stroke: '#5c8f34' },
+      fast: { speed: 2.25, hp: 3, size: 7, color: '#b6e77a', stroke: '#7ba548' },
+      armored: { speed: 0.75, hp: 10, size: 11, color: '#8a8f98', stroke: '#565b63' },
+      yellow: { speed: 1.5, hp: 12, size: 8, color: '#ffe000', stroke: '#b39b00' },
+      red: { speed: 1.5, hp: 12, size: 9, color: '#ff3b3b', stroke: '#a11f1f' },
+      boss: { speed: 1, hp: 1000, size: 24, color: '#f4f4f4', stroke: '#b0b0b0' },
     };
 
     function spawnZombie(type = null) {
@@ -244,9 +243,13 @@
     function spawnGate() {
       const rewards = ['fireRate', 'damage', 'health'];
       const reward = rewards[Math.floor(Math.random() * rewards.length)];
+      // per-pellet increment scales with current damage: dmg gate +=damage, heal +=10*damage
+      const inc = reward === 'damage' ? damage
+                : reward === 'health' ? 10 * damage
+                : FIRERATE_INC;
       gates.push({
         x: -70, y: Math.random() * (CONFIG.H - 200) + 30,
-        width: 70, height: 170, reward: reward, value: GATE_BASE[reward], collected: false,
+        width: 70, height: 170, reward: reward, inc: inc, value: inc, collected: false,
       });
       nextGateTime = gameTime + 14;
     }
@@ -332,11 +335,11 @@
         });
       });
 
-      // Shoot a gate to charge its reward (heal +10, damage +0.1 per hit, fireRate +0.05)
+      // Shoot a gate to charge its reward (each pellet adds gate.inc, scaled by your damage)
       bullets.forEach((b, bi) => {
         gates.forEach(g => {
           if (!g.collected && b.x >= g.x && b.x <= g.x + g.width && b.y >= g.y && b.y <= g.y + g.height) {
-            g.value += GATE_INC[g.reward];
+            g.value += g.inc;
             bullets.splice(bi, 1);
           }
         });
@@ -358,8 +361,10 @@
             g.collected = true;
             if (g.reward === 'fireRate') fireRate += g.value;
             else if (g.reward === 'damage') damage += g.value;
-            else if (g.reward === 'health') baseHp = Math.min(CONFIG.baseHpMax, baseHp + g.value);
-            const shown = g.reward === 'health' ? Math.round(g.value) : g.value.toFixed(1);
+            else if (g.reward === 'health') { CONFIG.baseHpMax += g.value; baseHp += g.value; }
+            const shown = g.reward === 'health' ? Math.round(g.value)
+                        : g.reward === 'fireRate' ? g.value.toFixed(2)
+                        : (Number.isInteger(g.value) ? g.value : g.value.toFixed(1));
             showAlert(`📊 ${g.reward} +${shown}`);
             playSound(1200, 0.15);
           }
@@ -370,8 +375,16 @@
     }
 
     function draw() {
-      ctx.fillStyle = '#0f141b';
+      const bg = ctx.createLinearGradient(0, 0, 0, CONFIG.H);
+      bg.addColorStop(0, '#16202c');
+      bg.addColorStop(1, '#0b1017');
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
+      // faint grid
+      ctx.strokeStyle = 'rgba(120,170,220,0.05)';
+      ctx.lineWidth = 1;
+      for (let gx = 60; gx < CONFIG.W; gx += 60) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, CONFIG.H); ctx.stroke(); }
+      for (let gy = 60; gy < CONFIG.H; gy += 60) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(CONFIG.W, gy); ctx.stroke(); }
 
       ctx.strokeStyle = 'rgba(255,82,82,.7)';
       ctx.lineWidth = 3;
@@ -388,7 +401,10 @@
       ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
       ctx.beginPath(); ctx.moveTo(SHOOTER_X, targetY); ctx.lineTo(SHOOTER_X - 26, targetY); ctx.stroke();
       ctx.fillStyle = '#dbe6f2';
+      ctx.save();
+      ctx.shadowColor = 'rgba(79,157,255,.9)'; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(SHOOTER_X, targetY, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#12181f';
       ctx.font = 'bold 11px Arial';
@@ -414,10 +430,11 @@
         }
       });
 
-      bullets.forEach(b => {
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(b.x - 4, b.y - 2, 8, 4);
-      });
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,224,130,.9)'; ctx.shadowBlur = 6;
+      ctx.fillStyle = '#ffe082';
+      bullets.forEach(b => { ctx.fillRect(b.x - 5, b.y - 2, 10, 4); });
+      ctx.restore();
 
       if (laserActive && hasLaser) {
         ctx.fillStyle = 'rgba(0, 255, 0, 0.6)';
@@ -431,8 +448,8 @@
         const gc = { fireRate: '#4f9dff', damage: '#ef5350', health: '#8bd450' }[g.reward];
         const labels = { fireRate: 'FIRE RATE', damage: 'DAMAGE', health: 'HEAL' };
         const valStr = g.reward === 'health' ? '+' + Math.round(g.value)
-                     : g.reward === 'damage' ? '+' + g.value.toFixed(1)
-                     : '+' + g.value.toFixed(2);
+                     : g.reward === 'fireRate' ? '+' + g.value.toFixed(2)
+                     : '+' + (Number.isInteger(g.value) ? g.value : g.value.toFixed(1));
         ctx.fillStyle = g.collected ? 'rgba(120,120,120,.12)' : (gc + '22');
         ctx.fillRect(g.x, g.y, g.width, g.height);
         ctx.strokeStyle = g.collected ? '#666' : gc;
