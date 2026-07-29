@@ -615,6 +615,9 @@
 
     // Kolor zwyklych zombie wg fali: zmiana co 5 fal.
     function zombieColorForWave(w) {
+      if (Math.floor(w) >= 100) {
+        return { fill: '#ffd54f', stroke: '#a86f00' };
+      }
       const arr = CONFIG.zombieColors;
       const idx = Math.floor((Math.max(1, w) - 1) / 5) % arr.length;
       return arr[idx];
@@ -1190,16 +1193,17 @@
       ctx.fillStyle = 'rgba(255,82,82,.10)'; ctx.fillRect(CONFIG.breachX, CONFIG.wallTop, W - CONFIG.breachX, CONFIG.wallBottom - CONFIG.wallTop);
       // zombie
       const zc = zombieColorForWave(wave);
+      const goldenWave = Math.floor(wave) >= 100;
       for (const z of zombies) {
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
-        ctx.fillStyle = z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill;
-        ctx.strokeStyle = z.boss ? '#bf4c2b' : zc.stroke;
+        ctx.fillStyle = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill);
+        ctx.strokeStyle = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : zc.stroke);
         ctx.lineWidth = z.boss ? 3 : 2;
         ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         if (z.hp < z.maxhp) {
           const bw = z.r * 2.1;
           ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw, 5);
-          ctx.fillStyle = z.boss ? '#ffb199' : '#8bd450';
+          ctx.fillStyle = goldenWave ? '#ffec8b' : (z.boss ? '#ffb199' : '#8bd450');
           ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw * (z.hp / z.maxhp), 5);
         }
       }
