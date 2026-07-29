@@ -1930,31 +1930,9 @@
         }
       }
       colY = clamp(colY, minY(), maxY());
-        const goldenGunActive = gunKey === 'goldengun';
-        const gunGlowPulse = goldenGunActive ? (0.55 + 0.45 * Math.sin(performance.now() * 0.014)) : 0;
-        if (goldenGunActive) {
-          ctx.shadowColor = 'rgba(255, 223, 120, 0.95)';
-          ctx.shadowBlur = 10 + gunGlowPulse * 18;
-        }
       targetY = clamp(targetY, minY(), maxY());
     }
-        if (goldenGunActive) {
-          const barrelGlow = ctx.createLinearGradient(x - gun.length, y - 4, x, y + 4);
-          barrelGlow.addColorStop(0, '#fff7c2');
-          barrelGlow.addColorStop(0.45, '#ffd54f');
-          barrelGlow.addColorStop(1, '#b8860b');
-          ctx.fillStyle = barrelGlow;
-        } else {
-          ctx.fillStyle = gun.body;
-        }
     function setRecruitNeed(nextNeed) {
-        if (goldenGunActive) {
-          ctx.globalAlpha = 0.25 + gunGlowPulse * 0.25;
-          ctx.fillStyle = '#fff8cf';
-          ctx.fillRect(x - Math.max(9, gun.length * 0.43), y - 1, Math.max(8, gun.length * 0.22), 2);
-          ctx.globalAlpha = 1;
-          ctx.shadowBlur = 0;
-        }
       const oldNeed = Math.max(1, recruitNeed);
       const progress = Math.max(0, Math.min(1, recruitHits / oldNeed));
       recruitNeed = Math.max(CONFIG.panel.recruitPer, Math.ceil(nextNeed));
