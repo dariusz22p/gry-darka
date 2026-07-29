@@ -602,6 +602,7 @@
               <option value="hard">Hard</option>
             </select>
           </div>
+          <div class="stat"><button id="openSkinShopBtn" type="button">SKLEP SKINÓW</button></div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
@@ -718,6 +719,7 @@
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
     let shopBombBuys = 0;
+    let stateBeforeSkinShop = 'play';
     let skinKey = 'classic';
     let ownedSkins = { classic: true, gold: false, neon: false, royal: false };
 
@@ -1024,6 +1026,8 @@
     }
 
     function openSkinShop() {
+      stateBeforeSkinShop = state;
+      if (state === 'play') state = 'pause';
       hideOverlay();
       if (el.skinShop) el.skinShop.classList.remove('hidden');
       updateSkinShopUi();
@@ -1033,6 +1037,8 @@
       if (el.skinShop) el.skinShop.classList.add('hidden');
       if (state === 'lose') {
         showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
+      } else if (stateBeforeSkinShop === 'play' && state === 'pause') {
+        state = 'play';
       }
     }
 
@@ -1784,6 +1790,7 @@
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       overlayShop: document.getElementById('overlayShop'),
       restart: document.getElementById('restart'),
+      openSkinShopBtn: document.getElementById('openSkinShopBtn'),
       skinShop: document.getElementById('skinShop'),
       skinCoins: document.getElementById('skinCoins'),
       skinClassicBtn: document.getElementById('skinClassicBtn'),
@@ -2028,6 +2035,12 @@
       difficultyKey = el.difficulty.value;
       reset();
     });
+    if (el.openSkinShopBtn) {
+      el.openSkinShopBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        openSkinShop();
+      });
+    }
     if (el.power900Btn) {
       el.power900Btn.addEventListener('click', function (e) {
         e.preventDefault();
