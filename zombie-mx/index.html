@@ -1846,6 +1846,39 @@
       const killed = detonate(1);
       showAlert('BOMBA ATOMOWA: ' + killed + ' ZOMBIE (-2 BOMBY)', 1.1);
       return true;
+
+    function obliterateZombie(index) {
+      const deadZombie = zombies[index];
+      if (!deadZombie) return;
+      zombies.splice(index, 1);
+      kills += deadZombie.score || 1;
+      waveKills += deadZombie.score || 1;
+      fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
+      if (deadZombie.miniType === 'splitter') {
+        const splitHp = Math.max(6, zombieHpForWave(wave) * CONFIG.miniBoss.splitter.splitHpMul);
+        const splitScore = zombieScoreForWave(wave);
+        const splitMass = zombieMassForWave(wave);
+        for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
+          const ring = Math.floor(s / 20) + 1;
+          const inRing = s % 20;
+          const angle = (inRing / 20) * Math.PI * 2;
+          const radius = 8 + ring * 4;
+          const sy = clamp(deadZombie.y + Math.sin(angle) * radius, laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
+          const sx = deadZombie.x - 8 - ring * 6 + Math.cos(angle) * 5;
+          zombies.push(makeZombie(sx, sy, {
+            hp: splitHp,
+            r: CONFIG.zombie.r,
+            speed: zSpeed * CONFIG.miniBoss.splitter.splitSpeedMul,
+            dmg: CONFIG.zombie.dmg,
+            boss: false,
+            score: splitScore,
+            mass: splitMass,
+            trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
+          }));
+        }
+      }
+      if (deadZombie.miniType) grantMiniLoot(deadZombie.miniType);
+    }
     }
 
     function startNextWave() {
@@ -2094,6 +2127,16 @@
         memberShotTimers[i] += baseInterval * jitter;
         firedNow = true;
       }
+      if (gun.mode === 'golden' && firedNow) {
+        const goldenBand = squadHalfHeight() + 18;
+        for (let j = zombies.length - 1; j >= 0; j--) {
+          const z = zombies[j];
+          if (z.x >= CONFIG.panel.x - 8 && Math.abs(z.y - colY) <= goldenBand) {
+            obliterateZombie(j);
+          }
+        }
+        fx.push({ x: CONFIG.breachX, y: colY, life: 0.18, c: '#ffe082', r: 40 });
+      }
       if (firedNow && shotSfxCd <= 0) {
         sfxVolley();
         shotSfxCd = 0.11;
@@ -2195,35 +2238,7 @@
               const recoil = CONFIG.zombie.hitRecoil / Math.max(1, z.mass || 1);
               z.x = Math.max(-60, z.x - recoil);
               if (z.hp <= 0) {
-                const deadZombie = z;
-                zombies.splice(j, 1);
-                kills += deadZombie.score || 1;
-                waveKills += deadZombie.score || 1;
-                fx.push({ x: deadZombie.x, y: deadZombie.y, life: 0.25, c: deadZombie.boss ? '#ff9e80' : '#8bd450', r: deadZombie.boss ? 20 : 14 });
-                if (deadZombie.miniType === 'splitter') {
-                  const splitHp = Math.max(6, zombieHpForWave(wave) * CONFIG.miniBoss.splitter.splitHpMul);
-                  const splitScore = zombieScoreForWave(wave);
-                  const splitMass = zombieMassForWave(wave);
-                  for (let s = 0; s < CONFIG.miniBoss.splitter.splitCount; s++) {
-                    const ring = Math.floor(s / 20) + 1;
-                    const inRing = s % 20;
-                    const angle = (inRing / 20) * Math.PI * 2;
-                    const radius = 8 + ring * 4;
-                    const sy = clamp(deadZombie.y + Math.sin(angle) * radius, laneTop + CONFIG.zombie.r, laneBot - CONFIG.zombie.r);
-                    const sx = deadZombie.x - 8 - ring * 6 + Math.cos(angle) * 5;
-                    zombies.push(makeZombie(sx, sy, {
-                      hp: splitHp,
-                      r: CONFIG.zombie.r,
-                      speed: zSpeed * CONFIG.miniBoss.splitter.splitSpeedMul,
-                      dmg: CONFIG.zombie.dmg,
-                      boss: false,
-                      score: splitScore,
-                      mass: splitMass,
-                      trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
-                    }));
-                  }
-                }
-                if (deadZombie.miniType) grantMiniLoot(deadZombie.miniType);
+                obliterateZombie(j);
               }
               break;
             }
