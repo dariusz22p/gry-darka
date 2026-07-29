@@ -582,7 +582,7 @@
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2000👥</button>
           <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">900⚡</button>
-          <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
+          <button id="mobileJumpBtn" aria-label="Skok do fali 1000">1000</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 1000</b></div>
@@ -2296,7 +2296,7 @@
       }
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { keys.up = true; e.preventDefault(); }
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { keys.down = true; e.preventDefault(); }
-    });
+    }, true);
     window.addEventListener('keyup', function (e) {
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
@@ -2410,7 +2410,7 @@
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
         hideOverlay();
-        jumpToWave(100);
+        jumpToWave(1000);
       });
     }
 
