@@ -225,6 +225,28 @@
     background: rgba(255,213,79,.62);
     transform: scale(0.92);
   }
+  #mobileSquadBtn {
+    display: none;
+    position: absolute;
+    left: 6px;
+    top: calc(50% + 120px);
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(79,157,255,.42);
+    color: rgba(255,255,255,.92);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    z-index: 2;
+    touch-action: manipulation;
+    pointer-events: auto;
+  }
+  #mobileSquadBtn:active {
+    background: rgba(79,157,255,.62);
+    transform: scale(0.92);
+  }
   #help {
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
@@ -284,7 +306,7 @@
     #difficulty { font-size: 10px; }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
-    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn { display: block; }
+    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn { display: block; }
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #wrap {
@@ -340,6 +362,7 @@
           <canvas id="game" width="1000" height="520"></canvas>
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
+          <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 100 os&oacute;b">100👥</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 100">100</button>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 100</b></div>
@@ -848,6 +871,18 @@
       }
     }
 
+    function setSquadCount(targetCount) {
+      const prev = N;
+      N = Math.max(0, Math.min(CONFIG.shooter.maxN, Math.floor(targetCount)));
+      for (let i = prev; i < N; i++) {
+        if (!Number.isFinite(memberShotTimers[i])) {
+          memberShotTimers[i] = Math.random() * (1 / Math.max(0.001, fireRate));
+        }
+      }
+      colY = clamp(colY, minY(), maxY());
+      targetY = clamp(targetY, minY(), maxY());
+    }
+
     function setRecruitNeed(nextNeed) {
       const oldNeed = Math.max(1, recruitNeed);
       const progress = Math.max(0, Math.min(1, recruitHits / oldNeed));
@@ -1303,6 +1338,7 @@
       bestKills: document.getElementById('bestKills'),
       mobileBombBtn: document.getElementById('mobileBombBtn'),
       mobileNukeBtn: document.getElementById('mobileNukeBtn'),
+      mobileSquadBtn: document.getElementById('mobileSquadBtn'),
       mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
     function updateHud() {
@@ -1419,17 +1455,17 @@
       if (e.key === 'r' || e.key === 'R') { reset(); return; }
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
-        N = Math.min(CONFIG.shooter.maxN, 30);
-        colY = clamp(colY, minY(), maxY());
-        targetY = clamp(targetY, minY(), maxY());
+        setSquadCount(30);
         showAlert('EKIPA: ' + N, 0.8);
+        updateHud();
         return;
       }
       if (e.code === 'Digit0' || e.code === 'Numpad0' || e.key === '0' || e.keyCode === 48 || e.keyCode === 96 || e.which === 48 || e.which === 96) {
         e.preventDefault();
-        N = Math.min(CONFIG.shooter.maxN, 100);
-        colY = clamp(colY, minY(), maxY());
-        targetY = clamp(targetY, minY(), maxY());
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        setSquadCount(100);
         showAlert('EKIPA: ' + N, 0.9);
         updateHud();
         return;
@@ -1505,6 +1541,17 @@
       el.mobileNukeBtn.addEventListener('click', function (e) {
         e.preventDefault();
         useNuke();
+      });
+    }
+    if (el.mobileSquadBtn) {
+      el.mobileSquadBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        setSquadCount(100);
+        showAlert('EKIPA: ' + N, 0.9);
+        updateHud();
       });
     }
     if (el.mobileJumpBtn) {
