@@ -153,7 +153,7 @@
   #alert.show { opacity: 1; }
   .homeLink {
     position: absolute; top: 6px; left: 6px; z-index: 1;
-    font-size: 20px; line-height: 1; opacity: .3;
+    font-size: 20px; line-height: 1; opacity: .7; color: #ffd180;
     text-decoration: none; transition: opacity .12s ease;
     pointer-events: auto;
   }
@@ -1356,6 +1356,10 @@
     }, { passive: false });
     window.addEventListener('keydown', function (e) {
       ensureAudio();
+      if (e.key === 'Escape') {
+        window.location.href = '../';
+        return;
+      }
       if (e.key === 'r' || e.key === 'R') { reset(); return; }
       if (e.key === 'm' || e.key === 'M') {
         muted = !muted;
