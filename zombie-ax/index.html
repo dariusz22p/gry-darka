@@ -161,8 +161,8 @@
     const SHOOTER_X = CONFIG.W - 60;   // team on the RIGHT
     const BASE_X = CONFIG.W - 44;      // base breach line on the RIGHT
     const GATE_SPEED = 1.2;            // gates 2x faster (was 0.6)
-    const FLAT_INC = { fireRate: 0.05, damage: 1, health: 10 }; // gate charge per pellet (FLAT, not damage-scaled -> no exponential blowup)
-    const GATE_CAP = { fireRate: 1.0, damage: 40, health: 300 }; // max a single gate can bank
+    const FLAT_INC = { fireRate: 0.1, damage: 1, health: 10 }; // gate charge per pellet (FLAT, not damage-scaled -> no exponential blowup)
+    const GATE_CAP = { fireRate: 5.0, damage: 40, health: 300 }; // max a single gate can bank
 
     let audioContext, master, muted = false;
     function ensureAudio() {
