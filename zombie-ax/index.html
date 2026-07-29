@@ -161,8 +161,8 @@
     const SHOOTER_X = CONFIG.W - 60;   // team on the RIGHT
     const BASE_X = CONFIG.W - 44;      // base breach line on the RIGHT
     const GATE_SPEED = 1.2;            // gates 2x faster (was 0.6)
-    const FLAT_INC = { fireRate: 0.1, damage: 1, health: 10 }; // gate charge per pellet (FLAT, not damage-scaled -> no exponential blowup)
-    const GATE_CAP = { fireRate: 5.0, damage: 40, health: 300 }; // max a single gate can bank
+    const FLAT_INC = { fireRate: 0.1, damage: 0.5, health: 10 }; // gate charge per pellet (FLAT)
+    const GATE_CAP = { fireRate: 5.0, damage: 12, health: 300 };  // max a single gate can bank (dmg 12 -> max ~40 damage per run if collecting all gates)
 
     let audioContext, master, muted = false;
     function ensureAudio() {
@@ -204,8 +204,10 @@
       armored: { speed: 0.375, hp: 10, size: 11, color: '#8a8f98', stroke: '#565b63' },
       yellow: { speed: 0.75, hp: 200, size: 12, color: '#ffe000', stroke: '#b39b00' },
       red: { speed: 0.75, hp: 160, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
-      boss: { speed: 0.5, hp: 2000, size: 30, color: '#f4f4f4', stroke: '#b0b0b0' },
+      boss: { speed: 0.5, hp: 999999, size: 30, color: '#f4f4f4', stroke: '#b0b0b0' },
     };
+    // Boss HP is not from stats — computed at spawn time based on gameTime so it's always a threat
+    function bossHp() { return Math.round(5000 * Math.pow(gameTime / 60, 2) + 50000); }
 
     function spawnZombie(type = null) {
       if (!type) {
@@ -214,7 +216,9 @@
       }
       const stats = ZOMBIE_STATS[type];
       const special = (type === 'yellow' || type === 'red' || type === 'boss');
-      const hp = special ? stats.hp : Math.round(stats.hp * hpScale());
+      const hp = type === 'boss' ? bossHp()
+               : special ? stats.hp
+               : Math.round(stats.hp * hpScale());
       const y = Math.random() * (CONFIG.H - 60) + 30;
       zombies.push({
         x: -30, y: y, type: type,
@@ -261,10 +265,14 @@
       if (gameTime > 60 && gameTime < 60.5) showAlert('⚠️ YELLOW WAVE!');
       if (gameTime > 180 && gameTime < 180.5) showAlert('🔴 RED WAVE!');
       if (gameTime > 300 && gameTime < 300.5) showAlert('👑 WHITE BOSS!');
+      if (gameTime > 360 && gameTime < 360.5) showAlert('🔥 MINUTE 6 — ULTRA WAVE!');
 
       if (gameTime > 60 && gameTime % 2 < 0.1) spawnZombie('yellow');
       if (gameTime > 180 && gameTime % 2.5 < 0.1) spawnZombie('red');
       if (gameTime > 300 && gameTime < 301) spawnZombie('boss');
+      // Minute 6: ultra-armored horde + repeat boss every 30s from here
+      if (gameTime > 360 && gameTime % 1.5 < 0.05) { spawnZombie('armored'); spawnZombie('yellow'); }
+      if (gameTime > 360 && gameTime % 30 < 0.05) spawnZombie('boss');
 
       // spawn rate ramps up over time for rising difficulty (kept gentle)
       const spawnRate = CONFIG.spawnEvery * (1 + gameTime / 70);
