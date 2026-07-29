@@ -151,12 +151,6 @@
     z-index: 3;
   }
   #alert.show { opacity: 1; }
-  .homeLink {
-    position: absolute; top: 6px; left: 6px; z-index: 1;
-    font-size: 20px; line-height: 1; opacity: .7; color: #ffd180;
-    text-decoration: none; transition: opacity .12s ease;
-    pointer-events: auto;
-  }
   .homeLink:hover { opacity: .7; }
   #mobileBombBtn {
     display: none;
@@ -314,7 +308,6 @@
     <div id="layout">
       <div id="stageCol">
         <div id="stage">
-          <a href="../" class="homeLink" title="Powrót do gier">🏠</a>
           <canvas id="game" width="1000" height="520"></canvas>
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
@@ -1356,7 +1349,7 @@
     }, { passive: false });
     window.addEventListener('keydown', function (e) {
       ensureAudio();
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'h' || e.key === 'H') {
         window.location.href = '../';
         return;
       }

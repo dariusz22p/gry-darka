@@ -50,7 +50,7 @@ Wariant osobisty dla Janka.
 - **F** — pełny ekran
 - **R** — restart
 - **M** — wyciszenie dźwięku
-- **ESC** — powrót do menu głównego
+- **ESC** / **H** — powrót do menu głównego
 
 ### Pojedynek Zamków
 - Używaj myszy do ustawiania kąta i mocy
@@ -60,7 +60,7 @@ Wariant osobisty dla Janka.
 
 ## 🏠 Nawigacja
 
-Każda gra ma ikonę domu (🏠) w górnym lewym rogu. Kliknij ją lub wciśnij **ESC**, aby wrócić do menu głównego.
+Wciśnij **ESC** lub **H**, aby wrócić do menu głównego z dowolnej gry.
 
 ---
 
