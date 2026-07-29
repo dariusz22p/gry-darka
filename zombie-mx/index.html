@@ -698,11 +698,17 @@
         dmgDur: 12,
         fireDur: 10,
         shieldDur: 9,
+        berserkDur: 8,
+        freezeDur: 11,
+        recruitDur: 10,
         dmgMul: 1.55,
         fireMul: 1.35,
         shieldDmgMul: 0.55,
         healAmt: 18,
-        bombAmt: 1
+        megaHealAmt: 42,
+        bombAmt: 1,
+        bombPackAmt: 2,
+        jackpotKills: 260
       },
       spread: { levelMax: 30, pelletsPerLevel: 1, anglePerLevelDeg: 1.0, baseAngleDeg: 0.4, angleMaxDeg: 3.2, decayEvery: 10 },
       collision: { iterations: 3, damping: 0.92 },
@@ -1633,12 +1639,18 @@
 
     function randomPowerupType() {
       const r = Math.random();
-      if (r < 0.26) return 'spread';
-      if (r < 0.44) return 'dmg';
-      if (r < 0.60) return 'fire';
-      if (r < 0.74) return 'shield';
-      if (r < 0.88) return 'heal';
-      return 'bomb';
+      if (r < 0.18) return 'spread';
+      if (r < 0.31) return 'dmg';
+      if (r < 0.43) return 'fire';
+      if (r < 0.54) return 'shield';
+      if (r < 0.64) return 'heal';
+      if (r < 0.72) return 'bomb';
+      if (r < 0.80) return 'berserk';
+      if (r < 0.87) return 'freeze';
+      if (r < 0.93) return 'recruit';
+      if (r < 0.97) return 'bombpack';
+      if (r < 0.99) return 'jackpot';
+      return 'megaheal';
     }
 
     function powerupVisual(type) {
@@ -1647,7 +1659,13 @@
       if (type === 'fire') return { color: '#ffd54f', text: 'LOOT: FIRE BOOST' };
       if (type === 'shield') return { color: '#80cbc4', text: 'LOOT: TARCZA BAZY' };
       if (type === 'heal') return { color: '#8bd450', text: 'LOOT: NAPRAWA BAZY' };
-      return { color: '#ce93d8', text: 'LOOT: BOMBA +' };
+      if (type === 'bomb') return { color: '#ce93d8', text: 'LOOT: BOMBA +' };
+      if (type === 'berserk') return { color: '#ff7043', text: 'LOOT: BERSERK' };
+      if (type === 'freeze') return { color: '#81d4fa', text: 'LOOT: FREEZE FIELD' };
+      if (type === 'recruit') return { color: '#c5e1a5', text: 'LOOT: REKRUTACJA +' };
+      if (type === 'bombpack') return { color: '#b39ddb', text: 'LOOT: BOMB PACK' };
+      if (type === 'jackpot') return { color: '#ffe082', text: 'LOOT: JACKPOT' };
+      return { color: '#a5d6a7', text: 'LOOT: MEGA HEAL' };
     }
 
     function applyPowerup(type) {
@@ -1675,6 +1693,37 @@
       if (type === 'heal') {
         baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.healAmt);
         showAlert('LOOT: BAZA +' + CONFIG.powerups.healAmt + ' HP', 1.1);
+        return;
+      }
+      if (type === 'berserk') {
+        dmgBoostTimer = Math.max(dmgBoostTimer, CONFIG.powerups.berserkDur);
+        fireBoostTimer = Math.max(fireBoostTimer, CONFIG.powerups.berserkDur);
+        showAlert('LOOT: BERSERK ' + CONFIG.powerups.berserkDur + 's', 1.1);
+        return;
+      }
+      if (type === 'freeze') {
+        slowFieldTimer = Math.max(slowFieldTimer, CONFIG.powerups.freezeDur);
+        showAlert('LOOT: FREEZE FIELD ' + CONFIG.powerups.freezeDur + 's', 1.1);
+        return;
+      }
+      if (type === 'recruit') {
+        recruitBoostTimer = Math.max(recruitBoostTimer, CONFIG.powerups.recruitDur);
+        showAlert('LOOT: REKRUTACJA +' + CONFIG.powerups.recruitDur + 's', 1.1);
+        return;
+      }
+      if (type === 'bombpack') {
+        bombs += CONFIG.powerups.bombPackAmt;
+        showAlert('LOOT: BOMB PACK +' + CONFIG.powerups.bombPackAmt, 1.1);
+        return;
+      }
+      if (type === 'jackpot') {
+        kills += CONFIG.powerups.jackpotKills;
+        showAlert('LOOT: JACKPOT +' + CONFIG.powerups.jackpotKills, 1.1);
+        return;
+      }
+      if (type === 'megaheal') {
+        baseHp = Math.min(CONFIG.baseHpMax, baseHp + CONFIG.powerups.megaHealAmt);
+        showAlert('LOOT: MEGA HEAL +' + CONFIG.powerups.megaHealAmt + ' HP', 1.1);
         return;
       }
       bombs += CONFIG.powerups.bombAmt;
