@@ -1465,7 +1465,7 @@
         vx: vx,
         vy: vy,
         dmg: shotDmg,
-        pierce: gun.mode === 'golden' ? 4 : 1,
+        pierce: gun.mode === 'golden' ? 999 : 1,
         isGolden: gun.mode === 'golden',
         color: gun.bullet,
         width: Math.max(8, Math.round((gun.length - 6) * widthScale)),
@@ -2183,7 +2183,11 @@
             const z = zombies[j];
             const dx = z.x - b.x, dy = z.y - b.y, rr = z.r + 4;
             if (dx * dx + dy * dy <= rr * rr) {
-              z.hp -= z.boss ? (b.isGolden ? 5 : 1) : b.dmg;
+              if (b.isGolden) {
+                z.hp = 0;
+              } else {
+                z.hp -= z.boss ? 1 : b.dmg;
+              }
               b.pierce = Math.max(0, (b.pierce || 1) - 1);
               dead = b.pierce <= 0;
               if (b.isGolden) fx.push({ x: z.x, y: z.y, life: 0.2, c: '#ffe082', r: 16 });
@@ -2374,8 +2378,20 @@
       }
       // pociski
       for (const b of bullets) {
-        ctx.fillStyle = b.color || '#ffe082';
+        if (b.isGolden) {
+          ctx.shadowColor = 'rgba(255, 231, 153, 0.98)';
+          ctx.shadowBlur = 18;
+          const glow = ctx.createLinearGradient(b.x - (b.width || 10) / 2, b.y, b.x + (b.width || 10) / 2, b.y);
+          glow.addColorStop(0, '#fffde7');
+          glow.addColorStop(0.28, '#fff176');
+          glow.addColorStop(0.6, '#ffd54f');
+          glow.addColorStop(1, '#ffca28');
+          ctx.fillStyle = glow;
+        } else {
+          ctx.fillStyle = b.color || '#ffe082';
+        }
         ctx.fillRect(b.x - (b.width || 10) / 2, b.y - (b.height || 4) / 2, b.width || 10, b.height || 4);
+        if (b.isGolden) ctx.shadowBlur = 0;
       }
       // efekty
       for (const f of fx) {
