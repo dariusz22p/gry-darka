@@ -68,6 +68,19 @@
     padding: 4px 12px; border-radius: 6px; color: #ff006e; opacity: 0.7; transition: opacity .15s ease;
   }
   #stage:hover .variant-badge { opacity: 1; }
+  #shopIcon {
+    position: absolute; top: 6px; left: 6px; z-index: 3;
+    width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+    background: rgba(0, 217, 255, 0.15); border: 2px solid #00d9ff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; transition: all .15s ease; user-select: none;
+  }
+  #shopIcon:hover { background: rgba(0, 217, 255, 0.4); transform: scale(1.08); box-shadow: 0 0 14px rgba(0,217,255,.6); }
+  #shopIcon .coinTag {
+    position: absolute; bottom: -8px; right: -8px;
+    background: #ffd180; color: #12181f; font-size: 10px; font-weight: 800;
+    padding: 1px 5px; border-radius: 8px; min-width: 18px; text-align: center;
+  }
   #shopPanel {
     position: absolute; bottom: 6px; left: 6px; z-index: 3;
     background: rgba(16, 16, 42, 0.9); border: 2px solid #00d9ff;
@@ -105,6 +118,7 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
+          <div id="shopIcon" title="Sklep">🛍️<span class="coinTag" id="iconCoins">0</span></div>
           <div id="shopPanel">
             <h3>🛍️ SHOP</h3>
             <div id="shopItems"></div>
@@ -149,7 +163,7 @@
           <span><strong>Controls:</strong></span>
           <span>↑↓ or W/S = Move</span>
           <span>SPACE = Shoot</span>
-          <span>S = Shop</span>
+          <span>🛍️ icon = Shop</span>
           <span>P = Pause</span>
           <span>F = Fullscreen</span>
           <span>R = Restart</span>
@@ -198,14 +212,14 @@
     let nextGateTime = 0;
 
     const ZOMBIE_STATS = {
-      verySlow: { speed: 1, hp: 50, size: 20, color: '#00aa00' },
-      slow: { speed: 2, hp: 40, size: 18, color: '#22bb22' },
-      normal: { speed: 3, hp: 30, size: 16, color: '#44dd44' },
-      fast: { speed: 4.5, hp: 20, size: 14, color: '#66ff66' },
-      armored: { speed: 1.5, hp: 80, size: 22, color: '#888888' },
-      yellow: { speed: 3, hp: 90, size: 18, color: '#ffff00' },
-      red: { speed: 3, hp: 90, size: 18, color: '#ff0000' },
-      boss: { speed: 2, hp: 7500, size: 40, color: '#ffffff' },
+      verySlow: { speed: 1, hp: 12, size: 13, color: '#5aa02a', stroke: '#3c6d1c' },
+      slow: { speed: 2, hp: 10, size: 12, color: '#6fb03a', stroke: '#4a7724' },
+      normal: { speed: 3, hp: 8, size: 11, color: '#8bd450', stroke: '#5c8f34' },
+      fast: { speed: 4.5, hp: 5, size: 10, color: '#b6e77a', stroke: '#7ba548' },
+      armored: { speed: 1.5, hp: 20, size: 15, color: '#8a8f98', stroke: '#565b63' },
+      yellow: { speed: 3, hp: 24, size: 12, color: '#ffe000', stroke: '#b39b00' },
+      red: { speed: 3, hp: 24, size: 13, color: '#ff3b3b', stroke: '#a11f1f' },
+      boss: { speed: 2, hp: 2000, size: 34, color: '#f4f4f4', stroke: '#b0b0b0' },
     };
 
     function spawnZombie(type = null) {
@@ -218,7 +232,7 @@
       zombies.push({
         x: CONFIG.W + 30, y: y, type: type,
         hp: stats.hp, maxHp: stats.hp,
-        speed: stats.speed, size: stats.size, color: stats.color,
+        speed: stats.speed, size: stats.size, color: stats.color, stroke: stats.stroke,
       });
     }
 
@@ -226,10 +240,10 @@
       const rewards = ['fireRate', 'damage', 'health'];
       const reward = rewards[Math.floor(Math.random() * rewards.length)];
       gates.push({
-        x: CONFIG.W, y: Math.random() * (CONFIG.H - 100) + 50,
-        width: 80, height: 100, reward: reward, collected: false,
+        x: CONFIG.W, y: Math.random() * (CONFIG.H - 180) + 30,
+        width: 70, height: 150, reward: reward, collected: false,
       });
-      nextGateTime = gameTime + 12;
+      nextGateTime = gameTime + 14;
     }
 
     function showAlert(text, dur = 1) {
@@ -260,8 +274,8 @@
 
       if (gameTime > nextGateTime) spawnGate();
       gates.forEach((g, i) => {
-        g.x -= 2.5;
-        if (!g.collected && g.x < -100) gates.splice(i, 1);
+        g.x -= 0.6;
+        if (!g.collected && g.x < -120) gates.splice(i, 1);
       });
 
       let shootInterval = 1 / (fireRate * squadSize);
@@ -318,13 +332,15 @@
       });
 
       gates.forEach(g => {
-        if (!g.collected && Math.hypot(50 - g.x, targetY - g.y) < 50) {
-          g.collected = true;
-          if (g.reward === 'fireRate') fireRate += 0.2;
-          else if (g.reward === 'damage') damage *= 1.1;
-          else if (g.reward === 'health') baseHp = Math.min(CONFIG.baseHpMax, baseHp + 30);
-          showAlert(`📊 ${g.reward}+`);
-          playSound(1200, 0.15);
+        if (!g.collected && g.x <= 50 + g.width && g.x + g.width >= 50) {
+          if (targetY >= g.y && targetY <= g.y + g.height) {
+            g.collected = true;
+            if (g.reward === 'fireRate') fireRate += 0.2;
+            else if (g.reward === 'damage') damage *= 1.1;
+            else if (g.reward === 'health') baseHp = Math.min(CONFIG.baseHpMax, baseHp + 30);
+            showAlert(`📊 ${g.reward}+`);
+            playSound(1200, 0.15);
+          }
         }
       });
 
@@ -335,32 +351,45 @@
       ctx.fillStyle = '#0f141b';
       ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
 
-      ctx.strokeStyle = 'rgba(255, 100, 100, 0.3)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,82,82,.7)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 8]);
       ctx.beginPath();
       ctx.moveTo(40, 10);
       ctx.lineTo(40, CONFIG.H - 10);
       ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,82,82,.08)';
+      ctx.fillRect(0, 0, 40, CONFIG.H);
 
-      ctx.fillStyle = '#4f9dff';
-      ctx.beginPath();
-      ctx.arc(50, targetY, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(squadSize, 50, targetY + 3);
+      // Team (shooter with gun barrel, vanilla style)
+      ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(50, targetY); ctx.lineTo(76, targetY); ctx.stroke();
+      ctx.fillStyle = '#dbe6f2';
+      ctx.beginPath(); ctx.arc(50, targetY, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2b6cc0'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#12181f';
+      ctx.font = 'bold 11px Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(squadSize, 50, targetY);
+      ctx.textBaseline = 'alphabetic';
 
       zombies.forEach(z => {
         ctx.fillStyle = z.color;
+        ctx.strokeStyle = z.stroke || '#3c6d1c';
+        ctx.lineWidth = z.type === 'boss' ? 3 : 2;
         ctx.beginPath();
         ctx.arc(z.x, z.y, z.size, 0, Math.PI * 2);
         ctx.fill();
-        
-        ctx.fillStyle = '#ff3333';
-        ctx.fillRect(z.x - z.size, z.y - z.size - 8, z.size * 2, 4);
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(z.x - z.size, z.y - z.size - 8, z.size * 2 * (z.hp / z.maxHp), 4);
+        ctx.stroke();
+
+        if (z.hp < z.maxHp) {
+          const bw = z.size * 2.1;
+          ctx.fillStyle = '#0f141b';
+          ctx.fillRect(z.x - bw / 2, z.y - z.size - 10, bw, 5);
+          ctx.fillStyle = z.type === 'boss' ? '#ffb199' : '#8bd450';
+          ctx.fillRect(z.x - bw / 2, z.y - z.size - 10, bw * (z.hp / z.maxHp), 5);
+        }
       });
 
       bullets.forEach(b => {
@@ -377,17 +406,27 @@
       }
 
       gates.forEach(g => {
-        ctx.fillStyle = 'rgba(255, 209, 128, 0.1)';
+        const gc = { fireRate: '#4f9dff', damage: '#ef5350', health: '#8bd450' }[g.reward];
+        const labels = { fireRate: 'FIRE RATE', damage: 'DAMAGE', health: 'HEAL' };
+        const vals = { fireRate: '+0.2', damage: 'x1.1', health: '+30' };
+        ctx.fillStyle = g.collected ? 'rgba(120,120,120,.12)' : (gc + '22');
         ctx.fillRect(g.x, g.y, g.width, g.height);
-        ctx.strokeStyle = '#ffd180';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = g.collected ? '#666' : gc;
+        ctx.lineWidth = 4;
         ctx.strokeRect(g.x, g.y, g.width, g.height);
-        
-        const icons = { fireRate: '⚡', damage: '💥', health: '❤️' };
-        ctx.fillStyle = '#ffd180';
-        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = g.collected ? '#666' : gc;
+        ctx.fillRect(g.x - 4, g.y - 8, g.width + 8, 10);
+        ctx.fillRect(g.x - 4, g.y + g.height - 2, g.width + 8, 10);
+        ctx.save();
         ctx.textAlign = 'center';
-        ctx.fillText(icons[g.reward], g.x + g.width / 2, g.y + g.height / 2);
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = g.collected ? '#888' : '#fff';
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.fillText(labels[g.reward], g.x + g.width / 2, g.y + g.height / 2 - 10);
+        ctx.fillStyle = g.collected ? '#888' : gc;
+        ctx.font = 'bold 18px "Segoe UI", sans-serif';
+        ctx.fillText(vals[g.reward], g.x + g.width / 2, g.y + g.height / 2 + 14);
+        ctx.restore();
       });
 
       document.getElementById('timer').textContent = 
@@ -399,6 +438,7 @@
       document.getElementById('kills').textContent = kills;
       document.getElementById('weapon').textContent = hasLaser ? 'LASER' : 'gun';
       document.getElementById('coins').textContent = coins;
+      document.getElementById('iconCoins').textContent = coins;
       document.getElementById('hpfill').style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
     }
 
@@ -437,6 +477,15 @@
       document.getElementById('shopCoins').textContent = `💰 ${coins}`;
     }
 
+    function toggleShop(force) {
+      const shop = document.getElementById('shopPanel');
+      const show = force !== undefined ? force : shop.style.display === 'none' || !shop.style.display;
+      shop.style.display = show ? 'block' : 'none';
+      if (show) updateShop();
+    }
+
+    document.getElementById('shopIcon').addEventListener('click', () => { ensureAudio(); toggleShop(); });
+
     const pointerY = (e) => clamp((e.clientY - canvas.getBoundingClientRect().top) * (CONFIG.H / canvas.getBoundingClientRect().height), minY(), maxY());
 
     canvas.addEventListener('pointerdown', e => {
@@ -464,12 +513,6 @@
       ensureAudio();
       if (e.key === 'Escape' || e.key === 'h' || e.key === 'H') {
         window.location.href = '../';
-        return;
-      }
-      if (e.key === 's' || e.key === 'S') {
-        const shop = document.getElementById('shopPanel');
-        shop.style.display = shop.style.display === 'none' ? 'block' : 'none';
-        updateShop();
         return;
       }
       if (e.key === 'r' || e.key === 'R') { location.reload(); return; }
