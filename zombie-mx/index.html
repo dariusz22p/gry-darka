@@ -208,6 +208,94 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
+  #skinShop {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 10px;
+    background: rgba(8,12,17,.88);
+    z-index: 6;
+    padding: 18px;
+  }
+  #skinShop.hidden { display: none; }
+  #skinShopCard {
+    width: min(560px, 96%);
+    border: 1px solid #3a4c60;
+    border-radius: 10px;
+    background: #18212c;
+    padding: 12px;
+    display: grid;
+    gap: 8px;
+  }
+  #skinShopTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  #skinShopTop h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #ffd180;
+  }
+  #skinCoins {
+    font-size: 12px;
+    color: #c7d3df;
+    font-weight: 700;
+  }
+  #skinList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .skinItem {
+    border: 1px solid #33465c;
+    border-radius: 8px;
+    padding: 8px;
+    background: #202b3a;
+    display: grid;
+    gap: 6px;
+  }
+  .skinSwatch {
+    height: 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.25);
+  }
+  .skinMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .skinBtn {
+    border: 1px solid #3a4c60;
+    border-radius: 6px;
+    background: #2c3a4b;
+    color: #e8edf2;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  .skinBtn:hover { background: #34465b; }
+  .skinBtn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+  #skinShopClose {
+    border: 1px solid #3a4c60;
+    border-radius: 6px;
+    background: #2c3a4b;
+    color: #e8edf2;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  #skinShopClose:hover { background: #34465b; }
   #alert {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
@@ -477,6 +565,33 @@
             <button id="overlayShop" type="button">Sklep</button>
             <button id="restart">Zagraj ponownie (R)</button>
           </div>
+          <div id="skinShop" class="hidden" aria-label="Sklep skinów">
+            <div id="skinShopCard">
+              <div id="skinShopTop">
+                <h3>SKLEP SKINÓW</h3>
+                <div id="skinCoins">Zabici: 0</div>
+              </div>
+              <div id="skinList">
+                <div class="skinItem">
+                  <div class="skinSwatch" style="background: linear-gradient(90deg,#ef5350,#b71c1c)"></div>
+                  <div class="skinMeta"><span>Classic</span><button id="skinClassicBtn" class="skinBtn" type="button">Wyposaż</button></div>
+                </div>
+                <div class="skinItem">
+                  <div class="skinSwatch" style="background: linear-gradient(90deg,#ffd54f,#a86f00)"></div>
+                  <div class="skinMeta"><span>Gold</span><button id="skinGoldBtn" class="skinBtn" type="button">Kup 500</button></div>
+                </div>
+                <div class="skinItem">
+                  <div class="skinSwatch" style="background: linear-gradient(90deg,#4fc3f7,#00639a)"></div>
+                  <div class="skinMeta"><span>Neon</span><button id="skinNeonBtn" class="skinBtn" type="button">Kup 900</button></div>
+                </div>
+                <div class="skinItem">
+                  <div class="skinSwatch" style="background: linear-gradient(90deg,#ce93d8,#5e35b1)"></div>
+                  <div class="skinMeta"><span>Royal</span><button id="skinRoyalBtn" class="skinBtn" type="button">Kup 1400</button></div>
+                </div>
+              </div>
+              <button id="skinShopClose" type="button">Zamknij</button>
+            </div>
+          </div>
           <div class="variant-badge">MX</div>
         </div>
         <div id="hud">
@@ -603,6 +718,15 @@
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
     let shopBombBuys = 0;
+    let skinKey = 'classic';
+    let ownedSkins = { classic: true, gold: false, neon: false, royal: false };
+
+    const SKINS = {
+      classic: { fill: '#ef5350', stroke: '#b71c1c', cost: 0, label: 'Classic' },
+      gold: { fill: '#ffd54f', stroke: '#a86f00', cost: 500, label: 'Gold' },
+      neon: { fill: '#4fc3f7', stroke: '#00639a', cost: 900, label: 'Neon' },
+      royal: { fill: '#ce93d8', stroke: '#5e35b1', cost: 1400, label: 'Royal' }
+    };
 
     // ---- Dźwięk (Web Audio, syntezowany) ----
     let audioCtx = null, master = null, muted = false;
@@ -737,11 +861,31 @@
       const k = parseInt(localStorage.getItem('nz_best_kills') || '0', 10);
       bestWave = Number.isFinite(w) ? w : 0;
       bestKills = Number.isFinite(k) ? k : 0;
+      try {
+        const storedOwned = JSON.parse(localStorage.getItem('nz_owned_skins') || '{}');
+        if (storedOwned && typeof storedOwned === 'object') {
+          ownedSkins = {
+            classic: true,
+            gold: !!storedOwned.gold,
+            neon: !!storedOwned.neon,
+            royal: !!storedOwned.royal
+          };
+        }
+        const storedSkin = localStorage.getItem('nz_skin_key');
+        if (storedSkin && SKINS[storedSkin] && ownedSkins[storedSkin]) {
+          skinKey = storedSkin;
+        }
+      } catch (_err) {
+        ownedSkins = { classic: true, gold: false, neon: false, royal: false };
+        skinKey = 'classic';
+      }
     }
 
     function saveRecords() {
       localStorage.setItem('nz_best_wave', String(bestWave));
       localStorage.setItem('nz_best_kills', String(bestKills));
+      localStorage.setItem('nz_owned_skins', JSON.stringify({ gold: ownedSkins.gold, neon: ownedSkins.neon, royal: ownedSkins.royal }));
+      localStorage.setItem('nz_skin_key', skinKey);
     }
 
     function maybeUpdateRecords() {
@@ -843,9 +987,53 @@
       shopHealBuys = 0;
       shopBombBuys = 0;
       if (el && el.winConfetti) el.winConfetti.innerHTML = '';
+      if (el && el.skinShop) el.skinShop.classList.add('hidden');
       hideAlert();
       hideOverlay();
       updateHud();
+    }
+
+    function currentSkin() {
+      return SKINS[skinKey] || SKINS.classic;
+    }
+
+    function setSkin(nextKey) {
+      if (!SKINS[nextKey] || !ownedSkins[nextKey]) return false;
+      skinKey = nextKey;
+      saveRecords();
+      updateSkinShopUi();
+      updateHud();
+      showAlert('SKIN: ' + SKINS[nextKey].label.toUpperCase(), 0.8);
+      return true;
+    }
+
+    function buyOrEquipSkin(nextKey) {
+      if (!SKINS[nextKey]) return false;
+      if (ownedSkins[nextKey]) return setSkin(nextKey);
+      const cost = SKINS[nextKey].cost;
+      if (kills < cost) {
+        showAlert('ZA MALO ZABITYCH', 0.8);
+        return false;
+      }
+      kills -= cost;
+      ownedSkins[nextKey] = true;
+      saveRecords();
+      setSkin(nextKey);
+      updateHud();
+      return true;
+    }
+
+    function openSkinShop() {
+      hideOverlay();
+      if (el.skinShop) el.skinShop.classList.remove('hidden');
+      updateSkinShopUi();
+    }
+
+    function closeSkinShop() {
+      if (el.skinShop) el.skinShop.classList.add('hidden');
+      if (state === 'lose') {
+        showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
+      }
     }
 
     function shopCost(base, step, bought) {
@@ -906,6 +1094,33 @@
       el.shopSquad.disabled = lock || kills < cSquad || N >= CONFIG.shooter.maxN;
       el.shopHeal.disabled = lock || kills < cHeal || baseHp >= CONFIG.baseHpMax;
       el.shopBomb.disabled = lock || kills < cBomb;
+    }
+
+    function updateSkinShopUi() {
+      if (!el.skinShop) return;
+      if (el.skinCoins) el.skinCoins.textContent = 'Zabici: ' + kills;
+      const map = [
+        { key: 'classic', btn: el.skinClassicBtn },
+        { key: 'gold', btn: el.skinGoldBtn },
+        { key: 'neon', btn: el.skinNeonBtn },
+        { key: 'royal', btn: el.skinRoyalBtn }
+      ];
+      for (const it of map) {
+        if (!it.btn) continue;
+        const sk = SKINS[it.key];
+        if (skinKey === it.key) {
+          it.btn.textContent = 'Założony';
+          it.btn.disabled = true;
+          continue;
+        }
+        if (ownedSkins[it.key]) {
+          it.btn.textContent = 'Wyposaż';
+          it.btn.disabled = false;
+          continue;
+        }
+        it.btn.textContent = 'Kup ' + sk.cost;
+        it.btn.disabled = kills < sk.cost;
+      }
     }
 
     function startConfetti() {
@@ -1530,9 +1745,10 @@
         const y = colY + o.y;
         ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineWidth = 7;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 18, y); ctx.stroke();
-        ctx.fillStyle = '#ef5350';
+        const sk = currentSkin();
+        ctx.fillStyle = sk.fill;
         ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = sk.stroke; ctx.lineWidth = 2; ctx.stroke();
       }
       // pociski
       ctx.fillStyle = '#ffe082';
@@ -1568,6 +1784,13 @@
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
       overlayShop: document.getElementById('overlayShop'),
       restart: document.getElementById('restart'),
+      skinShop: document.getElementById('skinShop'),
+      skinCoins: document.getElementById('skinCoins'),
+      skinClassicBtn: document.getElementById('skinClassicBtn'),
+      skinGoldBtn: document.getElementById('skinGoldBtn'),
+      skinNeonBtn: document.getElementById('skinNeonBtn'),
+      skinRoyalBtn: document.getElementById('skinRoyalBtn'),
+      skinShopClose: document.getElementById('skinShopClose'),
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
       shopPower: document.getElementById('shopPower'),
@@ -1627,6 +1850,7 @@
         const isLose = title.indexOf('Przegrana') === 0;
         el.overlayShop.style.display = isLose ? 'inline-block' : 'none';
       }
+      if (el.skinShop) el.skinShop.classList.add('hidden');
       el.overlay.classList.remove('hidden');
     }
     function hideOverlay() { el.overlay.classList.add('hidden'); }
@@ -1819,11 +2043,19 @@
     if (el.overlayShop) {
       el.overlayShop.addEventListener('click', function (e) {
         e.preventDefault();
-        hideOverlay();
-        showAlert('SKLEP ODWARTY', 0.8);
-        updateHud();
+        openSkinShop();
       });
     }
+    if (el.skinShopClose) {
+      el.skinShopClose.addEventListener('click', function (e) {
+        e.preventDefault();
+        closeSkinShop();
+      });
+    }
+    if (el.skinClassicBtn) el.skinClassicBtn.addEventListener('click', function (e) { e.preventDefault(); buyOrEquipSkin('classic'); });
+    if (el.skinGoldBtn) el.skinGoldBtn.addEventListener('click', function (e) { e.preventDefault(); buyOrEquipSkin('gold'); });
+    if (el.skinNeonBtn) el.skinNeonBtn.addEventListener('click', function (e) { e.preventDefault(); buyOrEquipSkin('neon'); });
+    if (el.skinRoyalBtn) el.skinRoyalBtn.addEventListener('click', function (e) { e.preventDefault(); buyOrEquipSkin('royal'); });
     if (el.shopPower) {
       el.shopPower.addEventListener('click', function (e) {
         e.preventDefault();
