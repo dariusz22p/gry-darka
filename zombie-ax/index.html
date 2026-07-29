@@ -319,7 +319,7 @@
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
-            <div class="stat"><span>Fala</span><b id="wave">1 / 100</b></div>
+            <div class="stat"><span>Fala</span><b id="wave">1 / 20</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
             <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
             <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
@@ -405,7 +405,7 @@
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 50, powerPer: 50 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
-      waves: { total: 100, killsBase: 1000, breakDuration: 2.4 },
+      waves: { total: 20, killsBase: 1000, breakDuration: 2.4 },
       // Fale intro (1..intro.waves) lzejsze: mniejszy prog zabic, rzadszy/mniejszy spawn, wolniejsze zombie. Bossy dopiero od boss.firstWave.
       intro: { waves: 2, killNeedMul: 0.5, spawnEveryMul: 1.5, burstReduce: 2, speedMul: 0.82 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
