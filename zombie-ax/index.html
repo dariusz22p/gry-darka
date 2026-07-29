@@ -248,8 +248,11 @@
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
     const minY = () => 30, maxY = () => CONFIG.H - 30;
-    // Difficulty ramp: regular enemy HP scales up over time (massive after ~1 min)
-    function hpScale() { return 1 + Math.pow(gameTime / 60, 2) * 2; }
+    // Difficulty ramp: enemy HP scales with time AND player power, so upgrades stay meaningful
+    // but never trivialise the game (sqrt coupling => you can still out-scale with heavy investment).
+    function hpScale() {
+      return (1 + Math.pow(gameTime / 60, 2) * 3) * (1 + Math.sqrt(Math.max(0, damage)) * 0.5);
+    }
 
     function update(dt) {
       gameTime += dt;
@@ -311,7 +314,7 @@
       zombies.forEach((z, zi) => {
         z.x += z.speed;
         if (z.x > BASE_X) {
-          baseHp -= 10;
+          baseHp -= 12;
           zombies.splice(zi, 1);
           if (baseHp <= 0) {
             state = 'lose';
