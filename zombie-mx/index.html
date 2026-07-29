@@ -474,6 +474,7 @@
           <div id="overlay" class="hidden">
             <h2 id="overTitle">Przegrana</h2>
             <p id="overSub"></p>
+            <button id="overlayShop" type="button">Sklep</button>
             <button id="restart">Zagraj ponownie (R)</button>
           </div>
           <div class="variant-badge">MX</div>
@@ -852,7 +853,7 @@
     }
 
     function buyFromShop(kind) {
-      if (state !== 'play') return false;
+      if (state !== 'play' && state !== 'lose') return false;
       let cost = 0;
       if (kind === 'power') {
         cost = shopCost(120, 40, shopPowerBuys);
@@ -900,7 +901,7 @@
       el.shopSquad.textContent = '+10 EKIPA (' + cSquad + ')';
       el.shopHeal.textContent = 'NAPRAWA BAZY +20 HP (' + cHeal + ')';
       el.shopBomb.textContent = '+1 BOMBA (' + cBomb + ')';
-      const lock = state !== 'play';
+      const lock = state !== 'play' && state !== 'lose';
       el.shopPower.disabled = lock || kills < cPower;
       el.shopSquad.disabled = lock || kills < cSquad || N >= CONFIG.shooter.maxN;
       el.shopHeal.disabled = lock || kills < cHeal || baseHp >= CONFIG.baseHpMax;
@@ -1565,6 +1566,7 @@
       power: document.getElementById('power'),
       kills: document.getElementById('kills'), overlay: document.getElementById('overlay'),
       overTitle: document.getElementById('overTitle'), overSub: document.getElementById('overSub'),
+      overlayShop: document.getElementById('overlayShop'),
       restart: document.getElementById('restart'),
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
@@ -1621,6 +1623,10 @@
       el.overTitle.textContent = title;
       el.overTitle.style.color = title.indexOf('Wygrana') === 0 ? '#8bd450' : '#ef5350';
       el.overSub.textContent = sub;
+      if (el.overlayShop) {
+        const isLose = title.indexOf('Przegrana') === 0;
+        el.overlayShop.style.display = isLose ? 'inline-block' : 'none';
+      }
       el.overlay.classList.remove('hidden');
     }
     function hideOverlay() { el.overlay.classList.add('hidden'); }
@@ -1807,6 +1813,14 @@
         powerLevel = 900;
         applyPower();
         showAlert('MOC: 900', 1.0);
+        updateHud();
+      });
+    }
+    if (el.overlayShop) {
+      el.overlayShop.addEventListener('click', function (e) {
+        e.preventDefault();
+        hideOverlay();
+        showAlert('SKLEP ODWARTY', 0.8);
         updateHud();
       });
     }
