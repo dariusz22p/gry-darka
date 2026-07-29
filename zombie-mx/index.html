@@ -208,44 +208,33 @@
     font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
   }
   #overlay button:hover { background: #3b8bf0; }
-  #skinShop {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 10px;
-    background: rgba(8,12,17,.88);
-    z-index: 6;
-    padding: 18px;
-  }
-  #skinShop.hidden { display: none; }
-  #skinShopCard {
-    width: min(560px, 96%);
-    border: 1px solid #3a4c60;
-    border-radius: 10px;
-    background: #18212c;
-    padding: 12px;
-    display: grid;
-    gap: 8px;
-    max-height: min(86vh, 760px);
-    overflow: hidden;
-  }
-  #skinShopTop {
+  #shopTabs {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 6px;
   }
-  #skinShopTop h3 {
-    margin: 0;
-    font-size: 16px;
-    color: #ffd180;
+  .shopTab {
+    flex: 1;
+    border: 1px solid #3a4c60;
+    border-radius: 8px;
+    background: #202b3a;
+    color: #c7d3df;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 8px 10px;
+    cursor: pointer;
   }
+  .shopTab.active {
+    background: #4f9dff;
+    border-color: #4f9dff;
+    color: #fff;
+  }
+  .shopPane.hidden { display: none; }
   #skinCoins {
     font-size: 12px;
     color: #c7d3df;
     font-weight: 700;
+    margin-bottom: 8px;
   }
   #skinList {
     display: grid;
@@ -253,6 +242,7 @@
     gap: 8px;
     overflow-y: auto;
     padding-right: 4px;
+    max-height: 420px;
   }
   #skinList::-webkit-scrollbar { width: 8px; }
   #skinList::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
@@ -292,17 +282,6 @@
     opacity: .5;
     cursor: not-allowed;
   }
-  #skinShopClose {
-    border: 1px solid #3a4c60;
-    border-radius: 6px;
-    background: #2c3a4b;
-    color: #e8edf2;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px 10px;
-    cursor: pointer;
-  }
-  #skinShopClose:hover { background: #34465b; }
   #alert {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
@@ -488,12 +467,9 @@
     #help span, #help a { min-height: 11px; }
     .back, kbd { font-size: 6px; }
     #difficulty { font-size: 10px; }
-    #skinShopCard {
-      width: min(680px, 98%);
-      max-height: min(92vh, 880px);
-    }
     #skinList {
       grid-template-columns: 1fr;
+      max-height: 320px;
     }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
@@ -579,16 +555,6 @@
             <button id="overlayShop" type="button">Sklep</button>
             <button id="restart">Zagraj ponownie (R)</button>
           </div>
-          <div id="skinShop" class="hidden" aria-label="Sklep skinów">
-            <div id="skinShopCard">
-              <div id="skinShopTop">
-                <h3>SKLEP SKINÓW</h3>
-                <div id="skinCoins">Zabici: 0</div>
-              </div>
-              <div id="skinList"></div>
-              <button id="skinShopClose" type="button">Zamknij</button>
-            </div>
-          </div>
           <div class="variant-badge">MX</div>
         </div>
         <div id="hud">
@@ -603,10 +569,20 @@
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
-            <button id="shopPower" class="shopBtn" type="button">+10 MOC (120)</button>
-            <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
-            <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
-            <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
+            <div id="shopTabs">
+              <button id="shopTabGuns" class="shopTab active" type="button">GUNS</button>
+              <button id="shopTabSkins" class="shopTab" type="button">SKINS</button>
+            </div>
+            <div id="shopGuns" class="shopPane">
+              <button id="shopPower" class="shopBtn" type="button">+10 MOC (120)</button>
+              <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
+              <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
+              <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
+            </div>
+            <div id="shopSkins" class="shopPane hidden">
+              <div id="skinCoins">Zabici: 0</div>
+              <div id="skinList"></div>
+            </div>
           </div>
         </div>
         <div id="help">
@@ -717,7 +693,7 @@
     let shopHealBuys = 0;
     let shopBombBuys = 0;
     let infiniteMoney = false;
-    let stateBeforeSkinShop = 'play';
+    let activeShopCategory = 'guns';
     let skinKey = 'classic';
     const SKINS = {
       classic: { fill: '#ef5350', stroke: '#b71c1c', cost: 0, label: 'Classic' },
@@ -1026,7 +1002,7 @@
       shopHealBuys = 0;
       shopBombBuys = 0;
       if (el && el.winConfetti) el.winConfetti.innerHTML = '';
-      if (el && el.skinShop) el.skinShop.classList.add('hidden');
+      setShopCategory('guns');
       hideAlert();
       hideOverlay();
       updateHud();
@@ -1063,20 +1039,21 @@
     }
 
     function openSkinShop() {
-      stateBeforeSkinShop = state;
-      if (state === 'play') state = 'pause';
       hideOverlay();
-      if (el.skinShop) el.skinShop.classList.remove('hidden');
+      setShopCategory('skins');
       updateSkinShopUi();
     }
 
     function closeSkinShop() {
-      if (el.skinShop) el.skinShop.classList.add('hidden');
-      if (state === 'lose') {
-        showOverlay('Przegrana', 'Baza padła na fali ' + wave + '. Zabici: ' + kills);
-      } else if (stateBeforeSkinShop === 'play' && state === 'pause') {
-        state = 'play';
-      }
+      setShopCategory('guns');
+    }
+
+    function setShopCategory(nextCategory) {
+      activeShopCategory = nextCategory === 'skins' ? 'skins' : 'guns';
+      if (el.shopTabGuns) el.shopTabGuns.classList.toggle('active', activeShopCategory === 'guns');
+      if (el.shopTabSkins) el.shopTabSkins.classList.toggle('active', activeShopCategory === 'skins');
+      if (el.shopGuns) el.shopGuns.classList.toggle('hidden', activeShopCategory !== 'guns');
+      if (el.shopSkins) el.shopSkins.classList.toggle('hidden', activeShopCategory !== 'skins');
     }
 
     function shopCost(base, step, bought) {
@@ -1140,7 +1117,7 @@
     }
 
     function updateSkinShopUi() {
-      if (!el.skinShop || !el.skinList) return;
+      if (!el.skinList) return;
       if (!el.skinList.children.length) {
         for (const [key, sk] of Object.entries(SKINS)) {
           const card = document.createElement('div');
@@ -1851,10 +1828,12 @@
       overlayShop: document.getElementById('overlayShop'),
       restart: document.getElementById('restart'),
       openSkinShopBtn: document.getElementById('openSkinShopBtn'),
-      skinShop: document.getElementById('skinShop'),
+      shopTabGuns: document.getElementById('shopTabGuns'),
+      shopTabSkins: document.getElementById('shopTabSkins'),
+      shopGuns: document.getElementById('shopGuns'),
+      shopSkins: document.getElementById('shopSkins'),
       skinCoins: document.getElementById('skinCoins'),
       skinList: document.getElementById('skinList'),
-      skinShopClose: document.getElementById('skinShopClose'),
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
       shopPower: document.getElementById('shopPower'),
@@ -1905,6 +1884,7 @@
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestKills.textContent = bestKills;
       updateShopUi();
+      updateSkinShopUi();
     }
     function showOverlay(title, sub) {
       el.overTitle.textContent = title;
@@ -1914,7 +1894,6 @@
         const isLose = title.indexOf('Przegrana') === 0;
         el.overlayShop.style.display = isLose ? 'inline-block' : 'none';
       }
-      if (el.skinShop) el.skinShop.classList.add('hidden');
       el.overlay.classList.remove('hidden');
     }
     function hideOverlay() { el.overlay.classList.add('hidden'); }
@@ -2129,12 +2108,15 @@
         openSkinShop();
       });
     }
-    if (el.skinShopClose) {
-      el.skinShopClose.addEventListener('click', function (e) {
-        e.preventDefault();
-        closeSkinShop();
-      });
-    }
+    if (el.shopTabGuns) el.shopTabGuns.addEventListener('click', function (e) {
+      e.preventDefault();
+      setShopCategory('guns');
+    });
+    if (el.shopTabSkins) el.shopTabSkins.addEventListener('click', function (e) {
+      e.preventDefault();
+      setShopCategory('skins');
+      updateSkinShopUi();
+    });
     if (el.skinList) {
       el.skinList.addEventListener('click', function (e) {
         const target = e.target instanceof Element ? e.target : e.target && e.target.parentElement;
