@@ -278,20 +278,22 @@
         if (!g.collected && g.x < -120) gates.splice(i, 1);
       });
 
-      let shootInterval = 1 / (fireRate * squadSize);
-      if (state === 'play' && Math.random() < shootInterval * dt) {
-        if (hasLaser) {
-          laserActive = true;
-          setTimeout(() => { laserActive = false; }, 100);
-        } else {
-          bullets.push({ x: 50, y: targetY, vx: 8, vy: 0, damage: damage });
+      // Gun: fire straight bullets at a rate scaled by fireRate & squad
+      if (!hasLaser) {
+        const shotsPerSec = 5 * fireRate * squadSize;
+        if (state === 'play' && Math.random() < shotsPerSec * dt) {
+          bullets.push({ x: 60, y: targetY, vx: 9, vy: 0, damage: damage });
           playSound(400, 0.05);
         }
       }
 
-      if (laserActive && hasLaser) {
+      // Laser: continuous beam, 1/5 gun strength, hits every zombie in the lane
+      laserActive = false;
+      if (hasLaser && state === 'play') {
+        laserActive = true;
+        const dps = 5 * fireRate * squadSize * damage * 0.2; // 1/5 of gun DPS
         zombies.forEach(z => {
-          if (Math.abs(z.y - targetY) < 60) z.hp -= damage * 0.2 * dt;
+          if (Math.abs(z.y - targetY) < 55 && z.x > 55) z.hp -= dps * dt;
         });
       }
 
@@ -317,19 +319,23 @@
       });
 
       bullets.forEach((b, bi) => {
-        zombies.forEach((z, zi) => {
-          if (Math.hypot(b.x - z.x, b.y - z.y) < z.size + 8) {
+        zombies.forEach((z) => {
+          if (z.hp > 0 && Math.hypot(b.x - z.x, b.y - z.y) < z.size + 8) {
             z.hp -= b.damage;
             bullets.splice(bi, 1);
-            if (z.hp <= 0) {
-              zombies.splice(zi, 1);
-              coins += 1;
-              kills += 1;
-              playSound(800, 0.1);
-            }
           }
         });
       });
+
+      // Unified death check (bullets + laser both count toward kills/coins)
+      for (let zi = zombies.length - 1; zi >= 0; zi--) {
+        if (zombies[zi].hp <= 0) {
+          zombies.splice(zi, 1);
+          coins += 1;
+          kills += 1;
+          playSound(800, 0.1);
+        }
+      }
 
       gates.forEach(g => {
         if (!g.collected && g.x <= 50 + g.width && g.x + g.width >= 50) {
