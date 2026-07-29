@@ -2002,6 +2002,7 @@
       if (e.code === 'Digit6' || e.code === 'Numpad6' || e.key === '6' || e.keyCode === 54 || e.keyCode === 102 || e.which === 54 || e.which === 102) {
         e.preventDefault();
         infiniteMoney = true;
+        kills = Math.max(kills, 1000000000);
         showAlert('INFINITE MONEY', 1.0);
         updateHud();
         return;
