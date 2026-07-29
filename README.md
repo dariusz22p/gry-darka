@@ -1,10 +1,16 @@
-# GRY DARKA 🎮
+# Gry Darka, Janka i Ekipy 🎮
 
 Zbiór małych gier przeglądarowe — **graj od razu, bez instalacji**.
 
 ## 🚀 Graj teraz!
 
-**[👉 OTWÓRZ GRY DARKA](https://dariusz22p.github.io/gry-darka/)**
+**[👉 OTWÓRZ GRY](https://dariusz22p.github.io/gry-darka/)**
+
+---
+
+## ⌨️ Szybka nawigacja: **ESC** lub **H**
+
+Z dowolnej gry wciśnij **ESC** albo **H**, aby wrócić do menu głównego.
 
 ---
 
@@ -39,6 +45,10 @@ Wariant osobisty dla Janka.
 
 ---
 
+> **💡 Szybki powrót z gry:** Wciśnij **ESC** lub **H** z dowolnej gry, aby wrócić do menu głównego.
+
+---
+
 ## ⌨️ Sterowanie
 
 ### Zombie (wszystkie warianty)
@@ -55,12 +65,6 @@ Wariant osobisty dla Janka.
 ### Pojedynek Zamków
 - Używaj myszy do ustawiania kąta i mocy
 - **SPACEBAR** — strzał
-
----
-
-## 🏠 Nawigacja
-
-Wciśnij **ESC** lub **H**, aby wrócić do menu głównego z dowolnej gry.
 
 ---
 
