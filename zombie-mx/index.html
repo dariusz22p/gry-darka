@@ -912,7 +912,7 @@
     let ownedSkins = defaultOwnedSkins();
     const GUNS = {
       blaster: { label: 'Blaster', desc: 'balanced', cost: 0, body: '#607d8b', barrel: '#cfd8dc', bullet: '#ffe082', fireMul: 1, dmgMul: 1, speedMul: 1, width: 6, length: 18, mode: 'single' },
-      goldengun: { label: 'Golden Gun', desc: 'royal one-shot style', cost: 250000, body: '#b8860b', barrel: '#ffd54f', bullet: '#fff8e1', fireMul: 0.58, dmgMul: 4.4, speedMul: 1.22, width: 5, length: 31, mode: 'single' },
+      goldengun: { label: 'Golden Gun', desc: 'royal one-shot style', cost: 25000, body: '#b8860b', barrel: '#ffd54f', bullet: '#fff8e1', fireMul: 0.58, dmgMul: 4.4, speedMul: 1.22, width: 5, length: 31, mode: 'single' },
       smg: { label: 'SMG', desc: 'super fast spray', cost: 4200, body: '#455a64', barrel: '#90caf9', bullet: '#fff59d', fireMul: 1.42, dmgMul: 0.72, speedMul: 1.1, width: 4, length: 22, mode: 'single' },
       cannon: { label: 'Cannon', desc: 'slow heavy shots', cost: 9600, body: '#6d4c41', barrel: '#ffcc80', bullet: '#ffab91', fireMul: 0.68, dmgMul: 2.2, speedMul: 0.9, width: 10, length: 20, mode: 'single' },
       laser: { label: 'Laser', desc: 'thin fast beam', cost: 16800, body: '#4a148c', barrel: '#ea80fc', bullet: '#00e5ff', fireMul: 1.12, dmgMul: 1.3, speedMul: 1.42, width: 3, length: 28, mode: 'single' },
@@ -1394,43 +1394,48 @@
 
     function updateGunShopUi() {
       if (!el.gunList) return;
-      if (!el.gunList.children.length) {
-        for (const [key, gun] of Object.entries(GUNS)) {
-          const card = document.createElement('div');
-          card.className = 'skinItem';
+      const existing = new Set();
+      const existingButtons = el.gunList.querySelectorAll('button[data-gun-key]');
+      for (const btn of existingButtons) {
+        const key = btn.getAttribute('data-gun-key');
+        if (key) existing.add(key);
+      }
+      for (const [key, gun] of Object.entries(GUNS)) {
+        if (existing.has(key)) continue;
+        const card = document.createElement('div');
+        card.className = 'skinItem';
 
-          const preview = document.createElement('div');
-          preview.className = 'gunPreview';
-          preview.style.setProperty('--gun-body', gun.body);
-          preview.style.setProperty('--gun-barrel', gun.barrel);
-          preview.style.setProperty('--gun-bullet', gun.bullet);
-          preview.style.setProperty('--gun-width', gun.width + 'px');
+        const preview = document.createElement('div');
+        preview.className = 'gunPreview';
+        preview.style.setProperty('--gun-body', gun.body);
+        preview.style.setProperty('--gun-barrel', gun.barrel);
+        preview.style.setProperty('--gun-bullet', gun.bullet);
+        preview.style.setProperty('--gun-width', gun.width + 'px');
 
-          const meta = document.createElement('div');
-          meta.className = 'skinMeta';
+        const meta = document.createElement('div');
+        meta.className = 'skinMeta';
 
-          const textWrap = document.createElement('div');
+        const textWrap = document.createElement('div');
 
-          const label = document.createElement('span');
-          label.textContent = gun.label;
+        const label = document.createElement('span');
+        label.textContent = gun.label;
 
-          const note = document.createElement('div');
-          note.className = 'shopMiniNote';
-          note.textContent = gun.desc;
+        const note = document.createElement('div');
+        note.className = 'shopMiniNote';
+        note.textContent = gun.desc;
 
-          const btn = document.createElement('button');
-          btn.className = 'skinBtn';
-          btn.type = 'button';
-          btn.setAttribute('data-gun-key', key);
+        const btn = document.createElement('button');
+        btn.className = 'skinBtn';
+        btn.type = 'button';
+        btn.setAttribute('data-gun-key', key);
 
-          textWrap.appendChild(label);
-          textWrap.appendChild(note);
-          meta.appendChild(textWrap);
-          meta.appendChild(btn);
-          card.appendChild(preview);
-          card.appendChild(meta);
-          el.gunList.appendChild(card);
-        }
+        textWrap.appendChild(label);
+        textWrap.appendChild(note);
+        meta.appendChild(textWrap);
+        meta.appendChild(btn);
+        card.appendChild(preview);
+        card.appendChild(meta);
+        el.gunList.appendChild(card);
       }
       if (el.gunCoins) el.gunCoins.textContent = 'Zabici: ' + (infiniteMoney ? 'INF' : kills);
       const buttons = el.gunList.querySelectorAll('button[data-gun-key]');
