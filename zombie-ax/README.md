@@ -4,7 +4,7 @@ Wariant rozwijany przez **Aleksandra Panasiuka**. Oparty na prototypie Vanilla, 
 
 ## 🎮 Graj teraz
 
-**[👉 ZAGRAJ](../)**
+**[👉 ZAGRAJ](https://dariusz22p.github.io/gry-darka/zombie-ax/)**
 
 ## 📖 Jak grać
 
@@ -52,11 +52,11 @@ Jesteś dowódcą zespołu. Twoim zadaniem jest:
 
 ## 🔀 Inne warianty
 
-- [Vanilla (1.0)](../zombie-vanilla/) — prototyp bazowy
-- [MX](../zombie-mx/) — wariant Maksa
-- [Daz](../zombie-daz/) — wariant Daza
-- [Jan](../zombie-jan/) — wariant Janka
+- [Vanilla (1.0)](https://dariusz22p.github.io/gry-darka/zombie-vanilla/) — prototyp bazowy
+- [MX](https://dariusz22p.github.io/gry-darka/zombie-mx/) — wariant Maksa
+- [Daz](https://dariusz22p.github.io/gry-darka/zombie-daz/) — wariant Daza
+- [Jan](https://dariusz22p.github.io/gry-darka/zombie-jan/) — wariant Janka
 
 ---
 
-[« Wróć do głównego menu](../)
+[« Wróć do głównego menu](https://dariusz22p.github.io/gry-darka/)
