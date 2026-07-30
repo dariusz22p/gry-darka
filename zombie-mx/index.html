@@ -923,7 +923,7 @@
     let ownedSkins = defaultOwnedSkins();
     const GUNS = {
       blaster: { label: 'Blaster', desc: 'balanced', cost: 0, body: '#607d8b', barrel: '#cfd8dc', bullet: '#ffe082', fireMul: 1, dmgMul: 1, speedMul: 1, width: 6, length: 18, mode: 'single' },
-      goldengun: { label: 'Golden Gun', desc: 'cosmic singularity cannon', cost: 1000000, body: '#6a1b9a', barrel: '#80d8ff', bullet: '#e1f5fe', fireMul: 1.8, dmgMul: 9.5, speedMul: 2.1, width: 9, length: 42, mode: 'golden' },
+      goldengun: { label: 'Golden Gun', desc: 'intergalactic singularity cannon', cost: 1000000, body: '#4a148c', barrel: '#80d8ff', bullet: '#e1f5fe', fireMul: 2.0, dmgMul: 10.8, speedMul: 2.35, width: 10, length: 44, mode: 'golden' },
       smg: { label: 'SMG', desc: 'super fast spray', cost: 4200, body: '#455a64', barrel: '#90caf9', bullet: '#fff59d', fireMul: 1.42, dmgMul: 0.72, speedMul: 1.1, width: 4, length: 22, mode: 'single' },
       cannon: { label: 'Cannon', desc: 'slow heavy shots', cost: 9600, body: '#6d4c41', barrel: '#ffcc80', bullet: '#ffab91', fireMul: 0.68, dmgMul: 2.2, speedMul: 0.9, width: 10, length: 20, mode: 'single' },
       laser: { label: 'Laser', desc: 'thin fast beam', cost: 16800, body: '#4a148c', barrel: '#ea80fc', bullet: '#00e5ff', fireMul: 1.12, dmgMul: 1.3, speedMul: 1.42, width: 3, length: 28, mode: 'single' },
@@ -1545,7 +1545,7 @@
         dmg: shotDmg,
         pierce: gun.mode === 'golden' ? 24 : 1,
         isGolden: gun.mode === 'golden',
-        splash: gun.mode === 'golden' ? 36 : 0,
+        splash: gun.mode === 'golden' ? 54 : 0,
         phase: Math.random() * Math.PI * 2,
         color: gun.bullet,
         width: Math.max(8, Math.round((gun.length - 6) * widthScale)),
@@ -2279,7 +2279,10 @@
               }
               b.pierce = Math.max(0, (b.pierce || 1) - 1);
               dead = b.pierce <= 0;
-              if (b.isGolden) fx.push({ x: hitX, y: hitY, life: 0.24, c: '#b388ff', r: 22 });
+              if (b.isGolden) {
+                fx.push({ x: hitX, y: hitY, life: 0.28, c: '#b388ff', r: 24 });
+                fx.push({ x: hitX, y: hitY, life: 0.2, c: '#80d8ff', r: 14 });
+              }
               z.hitSlow = Math.max(z.hitSlow || 0, CONFIG.zombie.hitSlowDur);
               const recoil = CONFIG.zombie.hitRecoil / Math.max(1, z.mass || 1);
               z.x = Math.max(-60, z.x - recoil);
@@ -2296,7 +2299,8 @@
                       obliterateZombie(k);
                     }
                   }
-                  fx.push({ x: hitX, y: hitY, life: 0.34, c: '#7c4dff', r: b.splash * 0.72 });
+                  fx.push({ x: hitX, y: hitY, life: 0.4, c: '#7c4dff', r: b.splash * 0.8 });
+                  fx.push({ x: hitX, y: hitY, life: 0.32, c: '#40c4ff', r: b.splash * 0.56 });
                 }
               }
               break;
@@ -2375,6 +2379,21 @@
       ctx.shadowColor = 'transparent';
       ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#1a2230'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
+      if (gunKey === 'goldengun') {
+        const t = performance.now() * 0.0018;
+        const nebA = 0.12 + 0.06 * Math.sin(t * 2.3);
+        const nebB = 0.1 + 0.05 * Math.cos(t * 1.7);
+        const gradA = ctx.createRadialGradient(W * 0.74, H * 0.34, 24, W * 0.74, H * 0.34, 320);
+        gradA.addColorStop(0, 'rgba(179,136,255,' + (0.34 + nebA) + ')');
+        gradA.addColorStop(1, 'rgba(179,136,255,0)');
+        ctx.fillStyle = gradA;
+        ctx.fillRect(0, 0, W, H);
+        const gradB = ctx.createRadialGradient(W * 0.58, H * 0.68, 18, W * 0.58, H * 0.68, 280);
+        gradB.addColorStop(0, 'rgba(128,216,255,' + (0.28 + nebB) + ')');
+        gradB.addColorStop(1, 'rgba(128,216,255,0)');
+        ctx.fillStyle = gradB;
+        ctx.fillRect(0, 0, W, H);
+      }
       // pasy paneli na lewej ścianie
       drawBand(recruitBand, '#8bd450', 'LUDZIE', recruitHits, recruitNeed);
       drawBand(powerBand, '#ffb74d', 'MOC', powerHits, powerNeed);
@@ -2435,14 +2454,14 @@
         ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width * goldComboScale;
         ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
         if (goldenGunActive) {
-          ctx.shadowColor = goldCombo ? 'rgba(255, 245, 190, 0.98)' : 'rgba(255, 224, 128, 0.95)';
+          ctx.shadowColor = goldCombo ? 'rgba(191, 155, 255, 1)' : 'rgba(128, 216, 255, 0.95)';
           ctx.shadowBlur = (goldCombo ? 24 : 10) + goldenGunPulse * (goldCombo ? 28 : 12);
           const coneTip = x - gun.length - (goldCombo ? 14 : 8);
           const coneWidth = ((goldCombo ? 8 : 6) + goldenGunPulse * (goldCombo ? 6 : 4)) * goldComboScale;
           const cone = ctx.createLinearGradient(x - gun.length, y, coneTip, y);
-          cone.addColorStop(0, goldCombo ? 'rgba(255,255,230,1)' : 'rgba(255,245,182,0.95)');
-          cone.addColorStop(0.5, goldCombo ? 'rgba(255,223,120,1)' : 'rgba(255,213,79,0.95)');
-          cone.addColorStop(1, goldCombo ? 'rgba(184,134,11,0.28)' : 'rgba(184,134,11,0.15)');
+          cone.addColorStop(0, goldCombo ? 'rgba(225,245,254,1)' : 'rgba(200,232,255,0.95)');
+          cone.addColorStop(0.45, goldCombo ? 'rgba(179,136,255,1)' : 'rgba(128,216,255,0.95)');
+          cone.addColorStop(1, goldCombo ? 'rgba(74,20,140,0.34)' : 'rgba(74,20,140,0.2)');
           ctx.fillStyle = cone;
           ctx.beginPath();
           ctx.moveTo(x - gun.length + 1, y - coneWidth);
