@@ -2700,6 +2700,25 @@
         }
         ctx.fillStyle = gun.body;
         ctx.fillRect(x - Math.max(10, gun.length * 0.55 * goldComboScale), y - Math.max(3, gun.width * 0.5 * goldComboScale), Math.max(9, gun.length * 0.42 * goldComboScale), Math.max(6, gun.width * goldComboScale));
+        const humanPulse = 0.52 + 0.48 * Math.sin(nowS * 5.5 + i * 0.16);
+        const auraR = (CONFIG.shooter.r + 5 + humanPulse * 2.2) * goldComboScale;
+        const aura = ctx.createRadialGradient(x, y, CONFIG.shooter.r * 0.4, x, y, auraR);
+        aura.addColorStop(0, 'rgba(255,255,255,0)');
+        aura.addColorStop(0.55, 'rgba(101,216,255,0.16)');
+        aura.addColorStop(1, 'rgba(101,216,255,0.01)');
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(x, y, auraR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        // Tactical shoulder/back armor to make squad feel more advanced than zombies.
+        ctx.fillStyle = 'rgba(20,31,44,0.95)';
+        ctx.fillRect(x + 0.6, y - 3.3 * goldComboScale, 3.6 * goldComboScale, 2.2 * goldComboScale);
+        ctx.fillRect(x + 0.8, y + 1.2 * goldComboScale, 3.2 * goldComboScale, 2.1 * goldComboScale);
+        ctx.fillStyle = 'rgba(134,214,255,0.6)';
+        ctx.fillRect(x + 1.2, y - 2.8 * goldComboScale, 2.2 * goldComboScale, 0.5 * goldComboScale);
+        ctx.fillRect(x + 1.2, y + 2.0 * goldComboScale, 2.0 * goldComboScale, 0.45 * goldComboScale);
         if (goldSkinActive) {
           ctx.shadowColor = goldCombo ? 'rgba(255, 248, 210, 1)' : 'rgba(179, 136, 255, 0.95)';
           ctx.shadowBlur = (goldCombo ? 34 : 16) + goldPulse * (goldCombo ? 48 : 22);
@@ -2727,6 +2746,27 @@
         ctx.strokeStyle = goldSkinActive ? (goldCombo ? '#fff8cf' : '#80d8ff') : sk.stroke;
         ctx.lineWidth = goldSkinActive ? (goldCombo ? 2.2 : 2) : 2;
         ctx.stroke();
+        // Helmet rim + visor + rank stripe: keeps people distinct and more "pro" than mobs.
+        const headR = CONFIG.shooter.r * goldComboScale;
+        const visorGrad = ctx.createLinearGradient(x - headR, y - 1.5 * goldComboScale, x + headR, y + 1.5 * goldComboScale);
+        visorGrad.addColorStop(0, 'rgba(182,239,255,0.95)');
+        visorGrad.addColorStop(0.5, 'rgba(101,216,255,0.88)');
+        visorGrad.addColorStop(1, 'rgba(39,102,157,0.9)');
+        ctx.fillStyle = visorGrad;
+        ctx.beginPath();
+        ctx.ellipse(x - 0.9 * goldComboScale, y - 0.2 * goldComboScale, headR * 0.95, headR * 0.36, -0.08, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(219,246,255,0.82)';
+        ctx.lineWidth = 0.8 * goldComboScale;
+        ctx.beginPath();
+        ctx.arc(x, y, headR + 0.8 * goldComboScale, 3.5, 5.8);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,209,102,0.92)';
+        ctx.fillRect(x - 1.2 * goldComboScale, y + 2.4 * goldComboScale, 2.4 * goldComboScale, 0.75 * goldComboScale);
+        ctx.fillStyle = 'rgba(255,248,220,0.95)';
+        ctx.beginPath();
+        ctx.arc(x - 2.2 * goldComboScale, y - 1.8 * goldComboScale, 0.85 * goldComboScale, 0, Math.PI * 2);
+        ctx.fill();
         if (goldSkinActive) {
           const orbitR = (CONFIG.shooter.r + (goldCombo ? 5.5 : 4.2) + goldGalaxyPulse * 1.4) * goldComboScale;
           const orbitR2 = (orbitR + (goldCombo ? 2.8 : 2.1));
