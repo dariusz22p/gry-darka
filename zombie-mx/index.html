@@ -1116,7 +1116,7 @@
 
     function musicBeatDuration() {
       const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
-      const bpm = 104 + tension;
+      const bpm = 82 + tension * 0.42;
       return 60 / bpm;
     }
 
@@ -1169,6 +1169,7 @@
       const v = opts.volume || 0.03;
       o.type = opts.type || 'triangle';
       o.frequency.setValueAtTime(opts.freq, t0);
+      if (typeof opts.detune === 'number') o.detune.setValueAtTime(opts.detune, t0);
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.linearRampToValueAtTime(v, t0 + a);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + r);
@@ -1180,27 +1181,37 @@
 
     function scheduleMusicStep(t) {
       const beat = musicBeatDuration();
-      const rootProg = [0, -2, -5, -7];
+      const rootProg = [0, -1, -5, -6];
       const root = rootProg[Math.floor(musicStep / 8) % rootProg.length];
-      const arp = [0, 3, 7, 10, 12, 10, 7, 3];
-      const leadSemitone = root + arp[musicStep % arp.length];
-      const bassSemitone = root + (musicStep % 2 === 0 ? -12 : -5);
-      const padSemitone = root + (musicStep % 2 === 0 ? 7 : 10);
+      const phrase = musicStep % 8;
+      const arp = [0, 1, 5, 6, 8, 6, 5, 1];
+      const leadSemitone = root + arp[phrase];
+      const bassSemitone = root + (phrase % 4 === 0 ? -12 : (phrase % 2 === 0 ? -7 : -5));
+      const padSemitone = root + (phrase % 2 === 0 ? 6 : 8);
 
       const stress = Math.min(1, (wave || 1) / 60);
-      const leadVol = 0.036 + stress * 0.01;
-      const bassVol = 0.048 + stress * 0.012;
-      const padVol = 0.02 + stress * 0.008;
+      const leadVol = 0.028 + stress * 0.008;
+      const bassVol = 0.046 + stress * 0.012;
+      const padVol = 0.022 + stress * 0.006;
+      const droneVol = 0.016 + stress * 0.005;
 
-      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 0.92, volume: bassVol, type: 'sawtooth', attack: 0.003, release: 0.07 });
-      scheduleTone({ time: t + beat * 0.02, freq: stepToFreq(leadSemitone), duration: beat * 0.5, volume: leadVol, type: 'square', attack: 0.002, release: 0.04 });
+      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.05, volume: bassVol, type: 'sawtooth', attack: 0.005, release: 0.12, detune: -11 });
+      scheduleTone({ time: t + beat * 0.02, freq: stepToFreq(leadSemitone), duration: beat * 0.42, volume: leadVol, type: 'triangle', attack: 0.003, release: 0.05, detune: (phrase % 2 === 0 ? -7 : 7) });
       if (musicStep % 2 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 1.8, volume: padVol, type: 'triangle', attack: 0.022, release: 0.16 });
+        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 2.1, volume: padVol, type: 'sine', attack: 0.03, release: 0.24, detune: -4 });
+      }
+      if (musicStep % 8 === 0) {
+        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 3.2, volume: droneVol, type: 'triangle', attack: 0.08, release: 0.45, detune: -18 });
+        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 3.8, volume: droneVol * 0.72, type: 'sine', attack: 0.12, release: 0.55, detune: 8 });
+      }
+      if (musicStep % 4 === 1) {
+        scheduleTone({ time: t + beat * 0.12, freq: stepToFreq(root + 1), duration: beat * 0.22, volume: 0.016 + stress * 0.004, type: 'square', attack: 0.001, release: 0.03, detune: -16 });
       }
 
-      if (musicStep % 4 === 0 || musicStep % 4 === 2) scheduleKick(t, 0.15 + stress * 0.04);
-      if (musicStep % 4 === 2) scheduleNoiseHit(t + beat * 0.02, 0.045 + stress * 0.018, 1450, 0.09);
-      scheduleNoiseHit(t + beat * 0.5, 0.022 + stress * 0.01, 4200, 0.03);
+      if (musicStep % 4 === 0 || musicStep % 4 === 2) scheduleKick(t, 0.12 + stress * 0.03);
+      if (musicStep % 4 === 2) scheduleNoiseHit(t + beat * 0.02, 0.032 + stress * 0.012, 1100, 0.12);
+      if (musicStep % 8 === 4) scheduleNoiseHit(t + beat * 0.14, 0.028 + stress * 0.01, 2600, 0.06);
+      scheduleNoiseHit(t + beat * 0.55, 0.018 + stress * 0.008, 3400, 0.04);
 
       musicStep++;
     }
@@ -1225,16 +1236,16 @@
         master.gain.value = MASTER_VOL;
         master.connect(audioCtx.destination);
         musicBus = audioCtx.createGain();
-        musicBus.gain.value = 0.86;
+        musicBus.gain.value = 0.82;
         musicComp = audioCtx.createDynamicsCompressor();
-        musicComp.threshold.value = -24;
-        musicComp.knee.value = 20;
-        musicComp.ratio.value = 3;
+        musicComp.threshold.value = -28;
+        musicComp.knee.value = 24;
+        musicComp.ratio.value = 4;
         musicComp.attack.value = 0.006;
-        musicComp.release.value = 0.15;
+        musicComp.release.value = 0.18;
         musicBus.connect(musicComp);
         musicComp.connect(master);
-        noiseBuffer = noiseBuf(0.25);
+        noiseBuffer = noiseBuf(0.35);
       }
       if (audioCtx.state === 'suspended') audioCtx.resume();
       tickMusic();
