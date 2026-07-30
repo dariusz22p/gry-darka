@@ -2197,9 +2197,9 @@
     // Detonacja: niszczy ulamek zombie (najblizsze bazie = najgrozniejsze). Zwraca liczbe zabitych.
     function spawnDeathFx(x, y, isBoss, style) {
       const mode = style || 'normal';
-      const core = mode === 'vortex' ? '#fff59d' : mode === 'bomb' ? '#ffab91' : '#8bd450';
-      const ring = mode === 'vortex' ? '#b388ff' : mode === 'bomb' ? '#ff7043' : '#b2ff59';
-      const glow = mode === 'vortex' ? '#80d8ff' : mode === 'bomb' ? '#ffd180' : '#e8ffd2';
+      const core = mode === 'vortex' ? '#fff59d' : mode === 'bomb' ? '#ff8a80' : '#d32f2f';
+      const ring = mode === 'vortex' ? '#b388ff' : mode === 'bomb' ? '#ff5252' : '#ff6f61';
+      const glow = mode === 'vortex' ? '#80d8ff' : mode === 'bomb' ? '#ffcdd2' : '#ffccbc';
       const baseR = isBoss ? 24 : 15;
       addCameraShake(isBoss ? 2.8 : 1.2, isBoss ? 0.18 : 0.1);
       fx.push({ x: x, y: y, life: isBoss ? 0.38 : 0.3, c: core, r: baseR });
