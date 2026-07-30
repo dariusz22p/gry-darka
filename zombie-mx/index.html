@@ -661,6 +661,7 @@
           <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>1</kbd> skok na fal&#281; 100</span>
           <span><kbd>8</kbd> skok na fal&#281; 1 bilion</span>
+          <span><kbd>X</kbd> skok na fal&#281; 1 bilion</span>
           <span><kbd>5</kbd> losowy power-up</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
@@ -2853,6 +2854,14 @@
         return;
       }
       if (e.code === 'Digit8' || e.code === 'Numpad8' || e.key === '8' || e.keyCode === 56 || e.keyCode === 104 || e.which === 56 || e.which === 104) {
+        e.preventDefault();
+        if (state === 'lose' || state === 'win') reset();
+        if (state === 'pause') state = 'play';
+        hideOverlay();
+        jumpToWave(1000000000000);
+        return;
+      }
+      if (e.code === 'KeyX' || e.key === 'x' || e.key === 'X') {
         e.preventDefault();
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
