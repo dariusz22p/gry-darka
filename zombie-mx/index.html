@@ -1636,6 +1636,8 @@
     }
 
     function spawnGunBullet(sx, sy, vx, vy, shotDmg, gun, widthScale) {
+      const bw = Math.max(8, Math.round((gun.length - 6) * widthScale));
+      const bh = Math.max(2, Math.round(gun.width * Math.max(0.45, widthScale * 0.7)));
       bullets.push({
         x: sx,
         y: sy,
@@ -1646,9 +1648,12 @@
         isGolden: gun.mode === 'golden',
         splash: gun.mode === 'golden' ? 54 : 0,
         phase: Math.random() * Math.PI * 2,
+        sparkle: Math.random() * Math.PI * 2,
+        tint: Math.random(),
         color: gun.bullet,
-        width: Math.max(8, Math.round((gun.length - 6) * widthScale)),
-        height: Math.max(2, Math.round(gun.width * Math.max(0.45, widthScale * 0.7)))
+        width: bw,
+        height: bh,
+        trailLen: Math.max(10, Math.round(bw * 1.1))
       });
     }
 
@@ -2962,30 +2967,72 @@
       // pociski
       for (const b of bullets) {
         ctx.save();
-        ctx.globalAlpha = 0.28;
-        ctx.fillStyle = b.isGolden ? 'rgba(179,136,255,0.55)' : 'rgba(255,235,170,0.42)';
-        ctx.fillRect(b.x - (b.width || 10), b.y - (b.height || 4) * 0.4, Math.max(6, (b.width || 10) * 0.75), Math.max(2, (b.height || 4) * 0.8));
+        const bw = b.width || 10;
+        const bh = b.height || 4;
+        const vx = b.vx || -1;
+        const vy = b.vy || 0;
+        const speed = Math.max(1, Math.hypot(vx, vy));
+        const pulse = 0.56 + 0.44 * Math.sin(nowS * 24 + (b.phase || 0));
+        const spin = nowS * 14 + (b.sparkle || 0);
+        const trailLen = (b.trailLen || Math.max(10, bw * 1.1)) + speed * 0.016;
+
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.atan2(vy, vx));
+
+        ctx.globalAlpha = b.isGolden ? (0.36 + pulse * 0.22) : (0.28 + pulse * 0.14);
+        ctx.fillStyle = b.isGolden ? 'rgba(179,136,255,0.64)' : 'rgba(112,205,255,0.38)';
+        ctx.fillRect(-trailLen - bw * 0.6, -bh * 0.5, trailLen + bw * 0.6, bh);
+
+        ctx.globalAlpha = b.isGolden ? (0.5 + pulse * 0.22) : (0.34 + pulse * 0.18);
+        ctx.fillStyle = b.isGolden ? 'rgba(128,216,255,0.76)' : 'rgba(255,245,210,0.54)';
+        ctx.fillRect(-trailLen * 0.64 - bw * 0.38, -bh * 0.22, trailLen * 0.64 + bw * 0.38, bh * 0.44);
+
         ctx.globalAlpha = 1;
         if (b.isGolden) {
           const cosmicPulse = 0.5 + 0.5 * Math.sin((performance.now() * 0.02) + (b.phase || 0));
           ctx.shadowColor = 'rgba(155, 89, 255, 0.98)';
           ctx.shadowBlur = 12 + cosmicPulse * 10;
-          const glow = ctx.createLinearGradient(b.x - (b.width || 10) / 2, b.y, b.x + (b.width || 10) / 2, b.y);
+          const glow = ctx.createLinearGradient(-bw / 2, 0, bw / 2, 0);
           glow.addColorStop(0, '#e1f5fe');
           glow.addColorStop(0.35, '#b388ff');
           glow.addColorStop(0.68, '#80d8ff');
           glow.addColorStop(1, '#ffd54f');
           ctx.fillStyle = glow;
         } else {
-          ctx.fillStyle = b.color || '#ffe082';
+          const tracer = ctx.createLinearGradient(-bw / 2, 0, bw / 2, 0);
+          tracer.addColorStop(0, '#ffffff');
+          tracer.addColorStop(0.42, b.tint > 0.5 ? '#ffe082' : '#b3e5fc');
+          tracer.addColorStop(1, b.color || '#ffe082');
+          ctx.shadowColor = 'rgba(122,214,255,0.68)';
+          ctx.shadowBlur = 5 + pulse * 5;
+          ctx.fillStyle = tracer;
         }
-        ctx.fillRect(b.x - (b.width || 10) / 2, b.y - (b.height || 4) / 2, b.width || 10, b.height || 4);
+
+        ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fillRect(-bw * 0.1, -bh * 0.26, bw * 0.38, bh * 0.52);
+
         if (b.isGolden) {
           ctx.globalAlpha = 0.55;
           ctx.fillStyle = 'rgba(179,136,255,0.65)';
-          ctx.fillRect(b.x - (b.width || 10), b.y - 1, Math.max(6, (b.width || 10) * 0.8), 2);
-          ctx.globalAlpha = 1;
+          ctx.fillRect(-bw, -1, Math.max(6, bw * 0.8), 2);
+          ctx.globalAlpha = 0.62;
+          ctx.fillStyle = '#fff59d';
+          const orbR = 0.85 + pulse * 1.2;
+          ctx.beginPath();
+          ctx.arc(Math.cos(spin) * (bw * 0.43), Math.sin(spin) * (bh * 0.84), orbR, 0, Math.PI * 2);
+          ctx.arc(Math.cos(-spin * 1.17) * (bw * 0.58), Math.sin(-spin * 1.17) * (bh * 0.96), orbR * 0.74, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.globalAlpha = 0.46;
+          ctx.fillStyle = 'rgba(170,235,255,0.86)';
+          const dotR = 0.48 + pulse * 0.56;
+          ctx.beginPath();
+          ctx.arc(Math.cos(spin * 0.82) * (bw * 0.26), Math.sin(spin * 0.82) * (bh * 0.64), dotR, 0, Math.PI * 2);
+          ctx.fill();
         }
+        ctx.globalAlpha = 1;
         ctx.restore();
       }
       // efekty
