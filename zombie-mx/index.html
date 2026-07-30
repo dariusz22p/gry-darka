@@ -1116,7 +1116,7 @@
 
     function musicBeatDuration() {
       const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
-      const bpm = 82 + tension * 0.42;
+      const bpm = 50 + tension * 0.18;
       return 60 / bpm;
     }
 
@@ -1181,37 +1181,40 @@
 
     function scheduleMusicStep(t) {
       const beat = musicBeatDuration();
-      const rootProg = [0, -1, -5, -6];
+      const rootProg = [0, -2, -5, -7];
       const root = rootProg[Math.floor(musicStep / 8) % rootProg.length];
-      const phrase = musicStep % 8;
-      const arp = [0, 1, 5, 6, 8, 6, 5, 1];
+      const phrase = musicStep % 12;
+      const arp = [0, 1, 3, 1, 6, 5, 8, 6, 1, 0, -1, 1];
       const leadSemitone = root + arp[phrase];
-      const bassSemitone = root + (phrase % 4 === 0 ? -12 : (phrase % 2 === 0 ? -7 : -5));
+      const bassSemitone = root + (phrase % 6 === 0 ? -12 : (phrase % 3 === 0 ? -17 : -7));
       const padSemitone = root + (phrase % 2 === 0 ? 6 : 8);
 
       const stress = Math.min(1, (wave || 1) / 60);
-      const leadVol = 0.028 + stress * 0.008;
-      const bassVol = 0.046 + stress * 0.012;
-      const padVol = 0.022 + stress * 0.006;
-      const droneVol = 0.016 + stress * 0.005;
+      const leadVol = 0.018 + stress * 0.006;
+      const bassVol = 0.058 + stress * 0.014;
+      const padVol = 0.016 + stress * 0.004;
+      const droneVol = 0.022 + stress * 0.006;
 
-      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.05, volume: bassVol, type: 'sawtooth', attack: 0.005, release: 0.12, detune: -11 });
-      scheduleTone({ time: t + beat * 0.02, freq: stepToFreq(leadSemitone), duration: beat * 0.42, volume: leadVol, type: 'triangle', attack: 0.003, release: 0.05, detune: (phrase % 2 === 0 ? -7 : 7) });
-      if (musicStep % 2 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 2.1, volume: padVol, type: 'sine', attack: 0.03, release: 0.24, detune: -4 });
+      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.4, volume: bassVol, type: 'sawtooth', attack: 0.01, release: 0.18, detune: -18 });
+      if (phrase !== 2 && phrase !== 7 && phrase !== 10) {
+        scheduleTone({ time: t + beat * 0.08, freq: stepToFreq(leadSemitone), duration: beat * 0.28, volume: leadVol, type: 'triangle', attack: 0.004, release: 0.06, detune: (phrase % 2 === 0 ? -14 : 13) });
       }
-      if (musicStep % 8 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 3.2, volume: droneVol, type: 'triangle', attack: 0.08, release: 0.45, detune: -18 });
-        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 3.8, volume: droneVol * 0.72, type: 'sine', attack: 0.12, release: 0.55, detune: 8 });
+      if (musicStep % 3 === 0) {
+        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 2.8, volume: padVol, type: 'sine', attack: 0.05, release: 0.34, detune: -7 });
       }
-      if (musicStep % 4 === 1) {
-        scheduleTone({ time: t + beat * 0.12, freq: stepToFreq(root + 1), duration: beat * 0.22, volume: 0.016 + stress * 0.004, type: 'square', attack: 0.001, release: 0.03, detune: -16 });
+      if (musicStep % 4 === 0) {
+        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 4.1, volume: droneVol, type: 'triangle', attack: 0.11, release: 0.62, detune: -28 });
+        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 4.8, volume: droneVol * 0.86, type: 'sine', attack: 0.16, release: 0.78, detune: 12 });
+        scheduleTone({ time: t + beat * 0.24, freq: stepToFreq(root + 1), duration: beat * 0.24, volume: 0.012 + stress * 0.004, type: 'square', attack: 0.002, release: 0.04, detune: -24 });
+      }
+      if (musicStep % 12 === 5) {
+        scheduleTone({ time: t + beat * 0.16, freq: stepToFreq(root + 6), duration: beat * 0.16, volume: 0.01 + stress * 0.003, type: 'square', attack: 0.001, release: 0.02, detune: 24 });
       }
 
-      if (musicStep % 4 === 0 || musicStep % 4 === 2) scheduleKick(t, 0.12 + stress * 0.03);
-      if (musicStep % 4 === 2) scheduleNoiseHit(t + beat * 0.02, 0.032 + stress * 0.012, 1100, 0.12);
-      if (musicStep % 8 === 4) scheduleNoiseHit(t + beat * 0.14, 0.028 + stress * 0.01, 2600, 0.06);
-      scheduleNoiseHit(t + beat * 0.55, 0.018 + stress * 0.008, 3400, 0.04);
+      if (musicStep % 4 === 0) scheduleKick(t, 0.08 + stress * 0.02);
+      if (musicStep % 12 === 2 || musicStep % 12 === 9) scheduleNoiseHit(t + beat * 0.04, 0.026 + stress * 0.01, 800, 0.16);
+      if (musicStep % 6 === 4) scheduleNoiseHit(t + beat * 0.18, 0.022 + stress * 0.008, 2200, 0.07);
+      scheduleNoiseHit(t + beat * 0.62, 0.02 + stress * 0.006, 2900, 0.05);
 
       musicStep++;
     }
