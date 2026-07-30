@@ -626,6 +626,12 @@
               <button id="shopSquad" class="shopBtn" type="button">+10 EKIPA (160)</button>
               <button id="shopHeal" class="shopBtn" type="button">NAPRAWA BAZY +20 HP (220)</button>
               <button id="shopBomb" class="shopBtn" type="button">+1 BOMBA (180)</button>
+              <div class="shopSectionTitle">BOOSTS</div>
+              <button id="shopSpread" class="shopBtn" type="button">ROZRZUT +3 (260)</button>
+              <button id="shopFire" class="shopBtn" type="button">FIRE BOOST +12s (340)</button>
+              <button id="shopDmg" class="shopBtn" type="button">DMG BOOST +12s (380)</button>
+              <button id="shopFreeze" class="shopBtn" type="button">FREEZE FIELD +10s (420)</button>
+              <button id="shopJackpot" class="shopBtn" type="button">JACKPOT +1200 (620)</button>
               <div class="shopSectionTitle">BUY GUNS</div>
               <div id="gunCoins">Zabici: 0</div>
               <div id="gunList"></div>
@@ -771,6 +777,11 @@
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
     let shopBombBuys = 0;
+    let shopSpreadBuys = 0;
+    let shopFireBuys = 0;
+    let shopDmgBuys = 0;
+    let shopFreezeBuys = 0;
+    let shopJackpotBuys = 0;
     let infiniteMoney = false;
     let skinKey = 'classic';
     let gunKey = 'blaster';
@@ -1264,6 +1275,11 @@
       shopSquadBuys = 0;
       shopHealBuys = 0;
       shopBombBuys = 0;
+      shopSpreadBuys = 0;
+      shopFireBuys = 0;
+      shopDmgBuys = 0;
+      shopFreezeBuys = 0;
+      shopJackpotBuys = 0;
       if (el && el.winConfetti) el.winConfetti.innerHTML = '';
       hideAlert();
       hideOverlay();
@@ -1377,6 +1393,44 @@
         shopBombBuys++;
         bombs++;
         showAlert('SKLEP: BOMBA +1', 0.8);
+      } else if (kind === 'spread') {
+        cost = shopCost(260, 90, shopSpreadBuys);
+        if (!infiniteMoney && kills < cost) return false;
+        if (spreadLevel >= CONFIG.spread.levelMax) return false;
+        if (!infiniteMoney) kills -= cost;
+        shopSpreadBuys++;
+        spreadLevel = Math.min(CONFIG.spread.levelMax, spreadLevel + 3);
+        spreadDecayTimer = 0;
+        showAlert('SKLEP: ROZRZUT LVL ' + spreadLevel, 0.9);
+      } else if (kind === 'fireboost') {
+        cost = shopCost(340, 110, shopFireBuys);
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
+        shopFireBuys++;
+        fireBoostTimer = Math.max(fireBoostTimer, CONFIG.powerups.fireDur + 12);
+        showAlert('SKLEP: FIRE BOOST +12s', 0.9);
+      } else if (kind === 'dmgboost') {
+        cost = shopCost(380, 120, shopDmgBuys);
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
+        shopDmgBuys++;
+        dmgBoostTimer = Math.max(dmgBoostTimer, CONFIG.powerups.dmgDur + 12);
+        showAlert('SKLEP: DMG BOOST +12s', 0.9);
+      } else if (kind === 'freeze') {
+        cost = shopCost(420, 130, shopFreezeBuys);
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
+        shopFreezeBuys++;
+        slowFieldTimer = Math.max(slowFieldTimer, CONFIG.loot.slowDur + 10);
+        showAlert('SKLEP: FREEZE FIELD +10s', 0.9);
+      } else if (kind === 'jackpot') {
+        cost = shopCost(620, 180, shopJackpotBuys);
+        if (!infiniteMoney && kills < cost) return false;
+        if (!infiniteMoney) kills -= cost;
+        shopJackpotBuys++;
+        const bonus = 1200 + Math.floor(wave * 8);
+        kills += bonus;
+        showAlert('SKLEP: JACKPOT +' + bonus, 0.9);
       } else {
         return false;
       }
@@ -1385,20 +1439,35 @@
     }
 
     function updateShopUi() {
-      if (!el.shopPower || !el.shopSquad || !el.shopHeal || !el.shopBomb) return;
+      if (!el.shopPower || !el.shopSquad || !el.shopHeal || !el.shopBomb || !el.shopSpread || !el.shopFire || !el.shopDmg || !el.shopFreeze || !el.shopJackpot) return;
       const cPower = shopCost(120, 40, shopPowerBuys);
       const cSquad = shopCost(160, 50, shopSquadBuys);
       const cHeal = shopCost(220, 70, shopHealBuys);
       const cBomb = shopCost(180, 60, shopBombBuys);
+      const cSpread = shopCost(260, 90, shopSpreadBuys);
+      const cFire = shopCost(340, 110, shopFireBuys);
+      const cDmg = shopCost(380, 120, shopDmgBuys);
+      const cFreeze = shopCost(420, 130, shopFreezeBuys);
+      const cJackpot = shopCost(620, 180, shopJackpotBuys);
       el.shopPower.textContent = '+10 MOC (' + cPower + ')';
       el.shopSquad.textContent = '+10 EKIPA (' + cSquad + ')';
       el.shopHeal.textContent = 'NAPRAWA BAZY +20 HP (' + cHeal + ')';
       el.shopBomb.textContent = '+1 BOMBA (' + cBomb + ')';
+      el.shopSpread.textContent = 'ROZRZUT +3 (' + cSpread + ')';
+      el.shopFire.textContent = 'FIRE BOOST +12s (' + cFire + ')';
+      el.shopDmg.textContent = 'DMG BOOST +12s (' + cDmg + ')';
+      el.shopFreeze.textContent = 'FREEZE FIELD +10s (' + cFreeze + ')';
+      el.shopJackpot.textContent = 'JACKPOT +1200 (' + cJackpot + ')';
       const lock = state !== 'play' && state !== 'lose';
       el.shopPower.disabled = lock || (!infiniteMoney && kills < cPower);
       el.shopSquad.disabled = lock || (!infiniteMoney && kills < cSquad) || N >= CONFIG.shooter.maxN;
       el.shopHeal.disabled = lock || (!infiniteMoney && kills < cHeal) || baseHp >= CONFIG.baseHpMax;
       el.shopBomb.disabled = lock || (!infiniteMoney && kills < cBomb);
+      el.shopSpread.disabled = lock || (!infiniteMoney && kills < cSpread) || spreadLevel >= CONFIG.spread.levelMax;
+      el.shopFire.disabled = lock || (!infiniteMoney && kills < cFire);
+      el.shopDmg.disabled = lock || (!infiniteMoney && kills < cDmg);
+      el.shopFreeze.disabled = lock || (!infiniteMoney && kills < cFreeze);
+      el.shopJackpot.disabled = lock || (!infiniteMoney && kills < cJackpot);
     }
 
     function updateGunShopUi() {
@@ -2457,6 +2526,11 @@
       shopSquad: document.getElementById('shopSquad'),
       shopHeal: document.getElementById('shopHeal'),
       shopBomb: document.getElementById('shopBomb'),
+      shopSpread: document.getElementById('shopSpread'),
+      shopFire: document.getElementById('shopFire'),
+      shopDmg: document.getElementById('shopDmg'),
+      shopFreeze: document.getElementById('shopFreeze'),
+      shopJackpot: document.getElementById('shopJackpot'),
       nextWave: document.getElementById('nextWave'),
       nextBoss: document.getElementById('nextBoss'),
       bossNow: document.getElementById('bossNow'),
@@ -2780,6 +2854,36 @@
       el.shopBomb.addEventListener('click', function (e) {
         e.preventDefault();
         buyFromShop('bomb');
+      });
+    }
+    if (el.shopSpread) {
+      el.shopSpread.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('spread');
+      });
+    }
+    if (el.shopFire) {
+      el.shopFire.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('fireboost');
+      });
+    }
+    if (el.shopDmg) {
+      el.shopDmg.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('dmgboost');
+      });
+    }
+    if (el.shopFreeze) {
+      el.shopFreeze.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('freeze');
+      });
+    }
+    if (el.shopJackpot) {
+      el.shopJackpot.addEventListener('click', function (e) {
+        e.preventDefault();
+        buyFromShop('jackpot');
       });
     }
     el.restart.addEventListener('click', function () { ensureAudio(); reset(); });
