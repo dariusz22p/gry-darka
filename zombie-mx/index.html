@@ -6,6 +6,7 @@
 <title>Zombie MX</title>
 <meta name="theme-color" content="#12181f" />
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Orbitron:wght@500;700&display=swap');
   :root {
     --bg0: #070b11;
     --bg1: #0f1724;
@@ -18,13 +19,15 @@
     --soft: #bdd0e6;
     --accent: #65d8ff;
     --accent-hot: #ffd166;
+    --font-ui: "Rajdhani", "Segoe UI", sans-serif;
+    --font-title: "Orbitron", "Rajdhani", sans-serif;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; overscroll-behavior: none;
     background: radial-gradient(1200px 560px at 12% -4%, #223656 0%, var(--bg1) 46%, var(--bg0) 100%);
     color: var(--text);
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: var(--font-ui);
     -webkit-user-select: none; user-select: none;
     width: 100%; height: 100%;
     overflow: hidden;
@@ -86,6 +89,12 @@
   }
   #hud .stat span { font-size: 10px; }
   #hud .stat b { font-size: 11px; }
+  #hud .stat span {
+    letter-spacing: .42px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: rgba(200,220,244,.84);
+  }
   #hud b { color: #fff; }
   #hud b.soft { color: var(--soft); font-weight: 600; }
   #shop {
@@ -107,7 +116,8 @@
     font-size: 10px;
     font-weight: 700;
     color: var(--accent-hot);
-    letter-spacing: .4px;
+    letter-spacing: .7px;
+    font-family: var(--font-title);
   }
   .shopBtn {
     width: 100%;
@@ -261,7 +271,8 @@
     font-size: 10px;
     font-weight: 800;
     color: #bad1ea;
-    letter-spacing: .6px;
+    letter-spacing: .9px;
+    font-family: var(--font-title);
     margin-top: 4px;
   }
   #shopGuns, #shopSkins {
@@ -384,7 +395,8 @@
   .homeLink:hover { opacity: .7; }
   .variant-badge {
     position: absolute; bottom: 6px; right: 6px; z-index: 2;
-    font-size: 18px; font-weight: 900; letter-spacing: 2px;
+    font-size: 16px; font-weight: 700; letter-spacing: 1.6px;
+    font-family: var(--font-title);
     background: linear-gradient(180deg, rgba(0, 217, 255, 0.26), rgba(0, 118, 173, 0.22));
     border: 2px solid #51deff;
     padding: 4px 12px; border-radius: 8px; color: #8de9ff;
@@ -403,21 +415,23 @@
     left: 6px;
     top: 50%;
     transform: translateY(-50%);
-    width: 56px;
-    height: 56px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(239,83,80,.42);
-    color: rgba(255,255,255,.82);
-    font-size: 24px;
+    width: 64px;
+    height: 34px;
+    border: 1px solid rgba(120,190,245,.52);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(53,77,105,.9), rgba(31,45,63,.95));
+    color: rgba(232,246,255,.9);
+    font-size: 12px;
     font-weight: 700;
+    font-family: var(--font-title);
+    letter-spacing: .6px;
     cursor: pointer;
     z-index: 2;
     touch-action: manipulation;
     pointer-events: auto;
   }
   #mobileBombBtn:active {
-    background: rgba(239,83,80,.62);
+    background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: translateY(-50%) scale(0.92);
   }
   #mobileNukeBtn {
@@ -425,21 +439,23 @@
     position: absolute;
     left: 6px;
     top: calc(50% + 40px);
-    width: 56px;
-    height: 56px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255,193,7,.42);
-    color: rgba(255,255,255,.9);
-    font-size: 22px;
+    width: 64px;
+    height: 34px;
+    border: 1px solid rgba(120,190,245,.52);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(53,77,105,.9), rgba(31,45,63,.95));
+    color: rgba(232,246,255,.9);
+    font-size: 12px;
     font-weight: 700;
+    font-family: var(--font-title);
+    letter-spacing: .6px;
     cursor: pointer;
     z-index: 2;
     touch-action: manipulation;
     pointer-events: auto;
   }
   #mobileNukeBtn:active {
-    background: rgba(255,193,7,.62);
+    background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: scale(0.92);
   }
   #mobileJumpBtn {
@@ -447,21 +463,23 @@
     position: absolute;
     left: 6px;
     top: calc(50% + 80px);
-    width: 56px;
-    height: 56px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255,213,79,.42);
-    color: rgba(255,255,255,.92);
-    font-size: 20px;
+    width: 64px;
+    height: 34px;
+    border: 1px solid rgba(120,190,245,.52);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(53,77,105,.9), rgba(31,45,63,.95));
+    color: rgba(232,246,255,.9);
+    font-size: 12px;
     font-weight: 800;
+    font-family: var(--font-title);
+    letter-spacing: .6px;
     cursor: pointer;
     z-index: 2;
     touch-action: manipulation;
     pointer-events: auto;
   }
   #mobileJumpBtn:active {
-    background: rgba(255,213,79,.62);
+    background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: scale(0.92);
   }
   #mobileSquadBtn {
@@ -469,21 +487,23 @@
     position: absolute;
     left: 6px;
     top: calc(50% + 120px);
-    width: 56px;
-    height: 56px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(79,157,255,.42);
-    color: rgba(255,255,255,.92);
-    font-size: 13px;
+    width: 64px;
+    height: 34px;
+    border: 1px solid rgba(120,190,245,.52);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(53,77,105,.9), rgba(31,45,63,.95));
+    color: rgba(232,246,255,.9);
+    font-size: 12px;
     font-weight: 800;
+    font-family: var(--font-title);
+    letter-spacing: .6px;
     cursor: pointer;
     z-index: 2;
     touch-action: manipulation;
     pointer-events: auto;
   }
   #mobileSquadBtn:active {
-    background: rgba(79,157,255,.62);
+    background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: scale(0.92);
   }
   #mobilePowerBtn {
@@ -491,21 +511,23 @@
     position: absolute;
     left: 6px;
     top: calc(50% + 160px);
-    width: 56px;
-    height: 56px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255,183,77,.46);
-    color: rgba(255,255,255,.94);
-    font-size: 14px;
+    width: 64px;
+    height: 34px;
+    border: 1px solid rgba(120,190,245,.52);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(53,77,105,.9), rgba(31,45,63,.95));
+    color: rgba(232,246,255,.9);
+    font-size: 12px;
     font-weight: 800;
+    font-family: var(--font-title);
+    letter-spacing: .6px;
     cursor: pointer;
     z-index: 2;
     touch-action: manipulation;
     pointer-events: auto;
   }
   #mobilePowerBtn:active {
-    background: rgba(255,183,77,.68);
+    background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: scale(0.92);
   }
   #help {
@@ -633,10 +655,10 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
-          <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">💣</button>
-          <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
-          <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2000👥</button>
-          <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">900⚡</button>
+          <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">BMB</button>
+          <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">NUK</button>
+          <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2K</button>
+          <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">PWR</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 1 bilion">1T</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
@@ -833,6 +855,8 @@
     let confetti = [];
     let ambientDust = [];
     let breachFlashTimer = 0;
+    let cameraShake = 0;
+    let cameraShakeTimer = 0;
     let shopPowerBuys = 0;
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
@@ -1343,6 +1367,8 @@
       spawnCycles = 0;
       confetti = [];
       breachFlashTimer = 0;
+      cameraShake = 0;
+      cameraShakeTimer = 0;
       initAmbientDust();
       shopPowerBuys = 0;
       shopSquadBuys = 0;
@@ -1843,6 +1869,11 @@
       }
     }
 
+    function addCameraShake(power, duration) {
+      cameraShake = Math.max(cameraShake, power || 0);
+      cameraShakeTimer = Math.max(cameraShakeTimer, duration || 0.12);
+    }
+
     function randomPowerupType() {
       const r = Math.random();
       if (r < 0.14) return 'spread';
@@ -1990,6 +2021,7 @@
       const ring = mode === 'vortex' ? '#b388ff' : mode === 'bomb' ? '#ff7043' : '#b2ff59';
       const glow = mode === 'vortex' ? '#80d8ff' : mode === 'bomb' ? '#ffd180' : '#e8ffd2';
       const baseR = isBoss ? 24 : 15;
+      addCameraShake(isBoss ? 2.8 : 1.2, isBoss ? 0.18 : 0.1);
       fx.push({ x: x, y: y, life: isBoss ? 0.38 : 0.3, c: core, r: baseR });
       fx.push({ x: x, y: y, life: isBoss ? 0.34 : 0.27, type: 'ring', c: ring, r: baseR * 1.55, w: isBoss ? 3.4 : 2.4 });
       fx.push({ x: x, y: y, life: isBoss ? 0.3 : 0.24, type: 'ring', c: glow, r: baseR * 1.05, w: isBoss ? 2.1 : 1.5 });
@@ -2174,6 +2206,12 @@
         }
       }
       if (breachFlashTimer > 0) breachFlashTimer = Math.max(0, breachFlashTimer - dt);
+      if (cameraShakeTimer > 0) {
+        cameraShakeTimer = Math.max(0, cameraShakeTimer - dt);
+        cameraShake *= 0.9;
+      } else {
+        cameraShake = 0;
+      }
 
       // fale
       if (prepTimer > 0) {
@@ -2390,6 +2428,7 @@
           const breachDmg = z.dmg * (shieldTimer > 0 ? CONFIG.powerups.shieldDmgMul : 1);
           baseHp -= breachDmg;
           breachFlashTimer = Math.max(breachFlashTimer, 0.22);
+          addCameraShake(z.boss ? 4.2 : 2.5, z.boss ? 0.24 : 0.16);
           loseRecruit(z.boss ? 2 : 1);
           sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
@@ -2547,12 +2586,12 @@
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.strokeRect(1, band.top + 1, CONFIG.panel.x - 2, band.bot - band.top - 2);
       ctx.save();
       ctx.translate(CONFIG.panel.x / 2, (band.top + band.bot) / 2); ctx.rotate(-Math.PI / 2);
-      ctx.fillStyle = color; ctx.font = 'bold 16px "Segoe UI", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = color; ctx.font = '700 16px "Orbitron", "Rajdhani", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(label, 0, 0);
       ctx.restore();
 
       ctx.fillStyle = color;
-      ctx.font = 'bold 15px "Segoe UI", sans-serif';
+      ctx.font = '700 15px "Rajdhani", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(hits + ' / ' + per, CONFIG.panel.x + 14, (band.top + band.bot) / 2);
@@ -2565,6 +2604,10 @@
       ctx.shadowColor = 'transparent';
       const now = performance.now();
       const nowS = now * 0.001;
+      const shakeNow = cameraShakeTimer > 0 ? cameraShake : 0;
+      if (shakeNow > 0.01) {
+        ctx.translate((Math.random() * 2 - 1) * shakeNow, (Math.random() * 2 - 1) * shakeNow);
+      }
       ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
       const laneGradient = ctx.createLinearGradient(0, CONFIG.wallTop, 0, CONFIG.wallBottom);
       laneGradient.addColorStop(0, 'rgba(54,78,104,0.08)');
@@ -2948,11 +2991,11 @@
         ctx.fillStyle = 'rgba(6,10,14,.45)';
         ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = 'rgba(255,255,255,.9)';
-        ctx.font = 'bold 42px "Segoe UI", sans-serif';
+        ctx.font = '700 42px "Orbitron", "Rajdhani", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('PAUZA', W / 2, H / 2 - 10);
-        ctx.font = '16px "Segoe UI", sans-serif';
+        ctx.font = '600 16px "Rajdhani", sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,.75)';
         ctx.fillText('Wcisnij P aby wznowic', W / 2, H / 2 + 24);
       }
