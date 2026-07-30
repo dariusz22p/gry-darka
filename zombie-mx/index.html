@@ -2483,6 +2483,16 @@
           g.addColorStop(0.7, goldCombo ? '#ffca28' : '#b388ff');
           g.addColorStop(1, goldCombo ? '#ef6c00' : '#4a148c');
           ctx.fillStyle = g;
+          const outerNebula = ctx.createRadialGradient(x, y, CONFIG.shooter.r * 0.55, x, y, (CONFIG.shooter.r + (goldCombo ? 24 : 16)) * goldComboScale);
+          outerNebula.addColorStop(0, 'rgba(255,255,255,0)');
+          outerNebula.addColorStop(0.55, goldCombo ? 'rgba(255,224,130,0.24)' : 'rgba(128,216,255,0.2)');
+          outerNebula.addColorStop(1, goldCombo ? 'rgba(179,136,255,0.02)' : 'rgba(179,136,255,0.01)');
+          ctx.globalAlpha = goldCombo ? 0.85 : 0.55 + goldGalaxyPulse * 0.18;
+          ctx.fillStyle = outerNebula;
+          ctx.beginPath();
+          ctx.arc(x, y, (CONFIG.shooter.r + (goldCombo ? 24 : 16)) * goldComboScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
         } else {
           ctx.fillStyle = sk.fill;
         }
@@ -2494,6 +2504,7 @@
           const orbitR = (CONFIG.shooter.r + (goldCombo ? 5.5 : 4.2) + goldGalaxyPulse * 1.4) * goldComboScale;
           const orbitR2 = (orbitR + (goldCombo ? 2.8 : 2.1));
           const spin = performance.now() * 0.0042;
+          const crownR = (CONFIG.shooter.r + (goldCombo ? 8.2 : 6.8)) * goldComboScale;
           ctx.globalAlpha = goldCombo ? 0.75 : 0.32 + goldPulse * 0.36;
           ctx.strokeStyle = goldCombo ? '#fffde7' : '#e1f5fe';
           ctx.lineWidth = (goldCombo ? 2.6 : 1.6) * goldComboScale;
@@ -2511,6 +2522,18 @@
           ctx.beginPath();
           ctx.arc(x, y, orbitR2, -spin * 0.7, -spin * 0.7 + Math.PI * 1.1);
           ctx.stroke();
+          ctx.globalAlpha = goldCombo ? 0.62 : 0.26 + goldGalaxyPulse * 0.2;
+          ctx.strokeStyle = goldCombo ? '#fff8e1' : '#b388ff';
+          ctx.lineWidth = (goldCombo ? 1.4 : 1.05) * goldComboScale;
+          for (let j = 0; j < 6; j++) {
+            const a = spin * 1.15 + j * (Math.PI / 3);
+            const inner = crownR - (goldCombo ? 1.8 : 1.2);
+            const outer = crownR + (goldCombo ? 4.2 : 2.8) + goldGalaxyPulse;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(a) * inner, y + Math.sin(a) * inner);
+            ctx.lineTo(x + Math.cos(a) * outer, y + Math.sin(a) * outer);
+            ctx.stroke();
+          }
           ctx.globalAlpha = goldCombo ? 0.44 : 0.2 + goldPulse * 0.18;
           ctx.fillStyle = goldCombo ? '#fffde7' : '#e1f5fe';
           ctx.beginPath();
