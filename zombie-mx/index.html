@@ -153,6 +153,18 @@
     cursor: pointer;
   }
   #power900Btn:hover { background: linear-gradient(180deg, rgba(72,96,128,.95), rgba(39,54,74,.98)); }
+  #musicBtn {
+    width: 100%;
+    border: 1px solid rgba(101,216,255,.52);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(55,92,122,.9), rgba(31,53,72,.95));
+    color: #b9f2ff;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #musicBtn:hover { background: linear-gradient(180deg, rgba(62,105,138,.95), rgba(35,61,82,.98)); }
   #ingameHudTop, #ingameHudBottom {
     position: absolute;
     right: 2px;
@@ -695,6 +707,7 @@
             </select>
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
+          <div class="stat"><button id="musicBtn" type="button">MUZYKA: ON (T)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
             <div class="shopSectionTitle">GUNS</div>
@@ -741,6 +754,7 @@
           <span><kbd>X</kbd> skok na fal&#281; 1 bilion</span>
           <span><kbd>5</kbd> losowy power-up</span>
           <span><kbd>U</kbd> wyciszenie</span>
+          <span><kbd>T</kbd> muzyka on/off</span>
           <span><kbd>R</kbd> restart</span>
         </div>
       </aside>
@@ -1066,6 +1080,88 @@
 
     // ---- Dźwięk (Web Audio, syntezowany) ----
     let audioCtx = null, master = null, muted = false;
+    let musicBus = null;
+    let musicEnabled = true;
+    let musicStep = 0;
+    let musicNextTime = 0;
+
+    try {
+      musicEnabled = localStorage.getItem('mx_music_enabled') !== '0';
+    } catch (e) {
+      musicEnabled = true;
+    }
+
+    function setMusicEnabled(nextEnabled) {
+      musicEnabled = !!nextEnabled;
+      if (!musicEnabled) musicNextTime = 0;
+      try {
+        localStorage.setItem('mx_music_enabled', musicEnabled ? '1' : '0');
+      } catch (e) {}
+      updateMusicUi();
+    }
+
+    function updateMusicUi() {
+      if (!el || !el.musicBtn) return;
+      el.musicBtn.textContent = musicEnabled ? 'MUZYKA: ON (T)' : 'MUZYKA: OFF (T)';
+    }
+
+    function musicBeatDuration() {
+      const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
+      const bpm = 104 + tension;
+      return 60 / bpm;
+    }
+
+    function stepToFreq(semitone) {
+      return 220 * Math.pow(2, semitone / 12);
+    }
+
+    function scheduleTone(opts) {
+      if (!audioCtx || !musicBus) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      const t0 = opts.time;
+      const a = opts.attack || 0.006;
+      const d = opts.duration || 0.15;
+      const r = opts.release || 0.04;
+      const v = opts.volume || 0.03;
+      o.type = opts.type || 'triangle';
+      o.frequency.setValueAtTime(opts.freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(v, t0 + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + r);
+      o.connect(g);
+      g.connect(musicBus);
+      o.start(t0);
+      o.stop(t0 + d + r + 0.02);
+    }
+
+    function scheduleMusicStep(t) {
+      const beat = musicBeatDuration();
+      const rootProg = [0, -3, -5, -7];
+      const root = rootProg[Math.floor(musicStep / 8) % rootProg.length];
+      const arp = [0, 3, 7, 10, 7, 3, 12, 10];
+      const leadSemitone = root + arp[musicStep % arp.length];
+      const bassSemitone = root + (musicStep % 4 === 0 ? -12 : -5);
+      const padSemitone = root + (musicStep % 2 === 0 ? 7 : 10);
+
+      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 0.9, volume: 0.024, type: 'sawtooth', attack: 0.004, release: 0.06 });
+      scheduleTone({ time: t + beat * 0.02, freq: stepToFreq(leadSemitone), duration: beat * 0.42, volume: 0.02, type: 'triangle', attack: 0.003, release: 0.03 });
+      if (musicStep % 2 === 0) {
+        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 1.6, volume: 0.012, type: 'sine', attack: 0.03, release: 0.15 });
+      }
+      musicStep++;
+    }
+
+    function tickMusic() {
+      if (!audioCtx || !musicBus || muted || !musicEnabled || state === 'pause') return;
+      if (audioCtx.state === 'suspended') return;
+      const lookAhead = 0.15;
+      if (!musicNextTime) musicNextTime = audioCtx.currentTime + 0.04;
+      while (musicNextTime < audioCtx.currentTime + lookAhead) {
+        scheduleMusicStep(musicNextTime);
+        musicNextTime += musicBeatDuration();
+      }
+    }
 
     function ensureAudio() {
       if (!audioCtx) {
@@ -1075,8 +1171,12 @@
         master = audioCtx.createGain();
         master.gain.value = 0.18;
         master.connect(audioCtx.destination);
+        musicBus = audioCtx.createGain();
+        musicBus.gain.value = 0.42;
+        musicBus.connect(master);
       }
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      tickMusic();
     }
 
     function env(peak, dur, attack) {
@@ -3208,6 +3308,7 @@
       skinList: document.getElementById('skinList'),
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
+      musicBtn: document.getElementById('musicBtn'),
       shopPower: document.getElementById('shopPower'),
       shopSquad: document.getElementById('shopSquad'),
       shopHeal: document.getElementById('shopHeal'),
@@ -3265,6 +3366,7 @@
       if (skinKey === 'gold') fx.push(goldComboActive() ? 'Gold vortex MAX' : 'Gold vortex');
       el.effect.textContent = fx.length ? fx.join(' | ') : 'brak';
       el.bestKills.textContent = bestKills;
+      updateMusicUi();
       updateShopUi();
       updateGunShopUi();
       updateSkinShopUi();
@@ -3458,6 +3560,12 @@
         if (master) master.gain.value = muted ? 0 : 0.18;
         return;
       }
+      if (e.code === 'KeyT' || e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setMusicEnabled(!musicEnabled);
+        ensureAudio();
+        return;
+      }
       if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
         e.preventDefault();
         togglePause();
@@ -3500,6 +3608,13 @@
         applyPower();
         showAlert('MOC: 900', 1.0);
         updateHud();
+      });
+    }
+    if (el.musicBtn) {
+      el.musicBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        setMusicEnabled(!musicEnabled);
+        ensureAudio();
       });
     }
     if (el.overlayShop) {
@@ -3632,6 +3747,7 @@
     function frame(t) {
       const dt = Math.min(0.05, last ? (t - last) / 1000 : 0); last = t;
       if (state === 'play') update(dt);
+      tickMusic();
       updateAmbientDust(dt);
       updateConfetti(dt);
       render();
