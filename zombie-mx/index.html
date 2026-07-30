@@ -2791,7 +2791,7 @@
       if (shakeNow > 0.01) {
         ctx.translate((Math.random() * 2 - 1) * shakeNow, (Math.random() * 2 - 1) * shakeNow);
       }
-      ctx.fillStyle = '#07090d'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, W, H);
       const moonGlow = ctx.createRadialGradient(W * 0.82, H * 0.14, 6, W * 0.82, H * 0.14, 150);
       moonGlow.addColorStop(0, 'rgba(255,96,96,0.28)');
       moonGlow.addColorStop(0.42, 'rgba(183,28,28,0.2)');
@@ -2820,24 +2820,36 @@
         ctx.fillRect(tx - 2, H * 0.42, 4, H * 0.14);
         ctx.fillRect(tx + 9, H * 0.47, 4, H * 0.09);
       }
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      for (let t = 0; t < 4; t++) {
+        const sx = W * 0.12 + t * 260 + Math.sin(nowS * 0.5 + t) * 38;
+        ctx.beginPath();
+        ctx.moveTo(sx, H * 0.42);
+        ctx.lineTo(sx - 18, H * 0.26);
+        ctx.lineTo(sx - 6, H * 0.3);
+        ctx.lineTo(sx + 4, H * 0.17);
+        ctx.lineTo(sx + 15, H * 0.42);
+        ctx.closePath();
+        ctx.fill();
+      }
       const laneGradient = ctx.createLinearGradient(0, CONFIG.wallTop, 0, CONFIG.wallBottom);
-      laneGradient.addColorStop(0, 'rgba(72,24,28,0.14)');
-      laneGradient.addColorStop(0.45, 'rgba(112,34,38,0.1)');
-      laneGradient.addColorStop(1, 'rgba(20,16,18,0.18)');
+      laneGradient.addColorStop(0, 'rgba(72,24,28,0.18)');
+      laneGradient.addColorStop(0.45, 'rgba(112,34,38,0.14)');
+      laneGradient.addColorStop(1, 'rgba(10,8,10,0.3)');
       ctx.fillStyle = laneGradient;
       ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
-      ctx.fillStyle = 'rgba(20,14,16,0.9)'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
+      ctx.fillStyle = 'rgba(10,8,10,0.95)'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
       const beamShiftA = (nowS * 38) % (W + 300) - 150;
       const beamShiftB = (nowS * 24) % (W + 380) - 190;
       const beamA = ctx.createLinearGradient(beamShiftA - 120, 0, beamShiftA + 140, H);
       beamA.addColorStop(0, 'rgba(255,255,255,0)');
-      beamA.addColorStop(0.5, 'rgba(167,52,58,0.08)');
+      beamA.addColorStop(0.5, 'rgba(167,52,58,0.12)');
       beamA.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = beamA;
       ctx.fillRect(0, 0, W, H);
       const beamB = ctx.createLinearGradient(beamShiftB + 180, 0, beamShiftB - 140, H);
       beamB.addColorStop(0, 'rgba(255,255,255,0)');
-      beamB.addColorStop(0.5, 'rgba(255,122,122,0.05)');
+      beamB.addColorStop(0.5, 'rgba(255,122,122,0.08)');
       beamB.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = beamB;
       ctx.fillRect(0, 0, W, H);
@@ -2845,7 +2857,7 @@
         for (let i = 0; i < ambientDust.length; i++) {
           const p = ambientDust[i];
           ctx.globalAlpha = p.a;
-          ctx.fillStyle = p.tone < 0.65 ? '#d7ccc8' : (p.tone < 0.85 ? '#ff9e80' : '#ff5252');
+          ctx.fillStyle = p.tone < 0.55 ? '#8d6e63' : (p.tone < 0.8 ? '#ff8a80' : '#ff1744');
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
@@ -2854,8 +2866,8 @@
       }
       const fog = ctx.createLinearGradient(0, H * 0.18, 0, H);
       fog.addColorStop(0, 'rgba(255,92,92,0.02)');
-      fog.addColorStop(0.55, 'rgba(170,35,35,' + (0.06 + horrorLevel * 0.06) + ')');
-      fog.addColorStop(1, 'rgba(8,8,10,' + (0.18 + horrorLevel * 0.06) + ')');
+      fog.addColorStop(0.55, 'rgba(170,35,35,' + (0.1 + horrorLevel * 0.08) + ')');
+      fog.addColorStop(1, 'rgba(8,8,10,' + (0.3 + horrorLevel * 0.08) + ')');
       ctx.fillStyle = fog;
       ctx.fillRect(0, 0, W, H);
       if (gunKey === 'goldengun') {
@@ -3384,13 +3396,16 @@
       }
       const vignette = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.2, W * 0.5, H * 0.5, H * 0.82);
       vignette.addColorStop(0, 'rgba(255,255,255,0)');
-      vignette.addColorStop(1, 'rgba(0,0,0,0.68)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.82)');
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, W, H);
-      if (horrorPulse > 0.92) {
-        ctx.fillStyle = 'rgba(183,28,28,0.05)';
+      if (horrorPulse > 0.88) {
+        ctx.fillStyle = 'rgba(183,28,28,0.09)';
         ctx.fillRect(0, 0, W, H);
       }
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(0, 0, W, 28);
+      ctx.fillRect(0, H - 30, W, 30);
       drawConfetti();
       if (state === 'pause') {
         ctx.fillStyle = 'rgba(6,10,14,.45)';
