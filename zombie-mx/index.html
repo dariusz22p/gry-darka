@@ -1215,6 +1215,7 @@
     }
 
     function zombieHpForWave(w) {
+      if (Math.floor(w) >= CONFIG.waves.total) return 1;
       return zHp * Math.pow(CONFIG.zombie.hpWaveMul, zombieTierForWave(w));
     }
 
@@ -1245,6 +1246,7 @@
 
     // Wymagane "zabicia" (score) na dana fale; fale intro lzejsze (killNeedMul).
     function killNeedForWave(w) {
+      if (Math.floor(w) >= CONFIG.waves.total) return 1;
       const sw = effectiveWaveForScaling(w);
       let need = CONFIG.waves.killsBase * Math.pow(2, Math.max(0, sw - 1));
       if (sw <= CONFIG.intro.waves) need *= CONFIG.intro.killNeedMul;
