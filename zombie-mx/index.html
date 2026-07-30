@@ -2042,6 +2042,9 @@
     }
 
     function makeZombie(x, y, opts) {
+      const spawnBlood = typeof opts.bloodLevel === 'number'
+        ? clamp(opts.bloodLevel, 0, 1)
+        : (Math.random() < (opts.boss ? 0.72 : 0.38) ? (0.42 + Math.random() * 0.58) : 0);
       return {
         x: x,
         y: y,
@@ -2056,7 +2059,8 @@
         laneY: y,
         trackOff: opts.trackOff,
         hitSlow: 0,
-        mass: opts.mass || 1
+        mass: opts.mass || 1,
+        bloody: spawnBlood
       };
     }
 
@@ -3046,13 +3050,30 @@
         ctx.lineTo(-headR * 0.08, eyeY + headR * 0.48);
         ctx.stroke();
 
-        // Rot and blood spots for realism.
-        ctx.fillStyle = 'rgba(118,30,24,0.52)';
-        ctx.beginPath();
-        ctx.arc(-torsoW * 0.18, torsoH * 0.05, headR * 0.16, 0, Math.PI * 2);
-        ctx.arc(torsoW * 0.21, -torsoH * 0.18, headR * 0.12, 0, Math.PI * 2);
-        ctx.arc(-headR * 0.34, -torsoH * 0.5, headR * 0.1, 0, Math.PI * 2);
-        ctx.fill();
+        // Only some zombies are heavily bloody.
+        const bloodiness = typeof z.bloody === 'number' ? z.bloody : 0;
+        if (bloodiness > 0.05) {
+          ctx.fillStyle = 'rgba(130,16,20,' + (0.26 + bloodiness * 0.56) + ')';
+          ctx.beginPath();
+          ctx.arc(-torsoW * 0.18, torsoH * 0.05, headR * (0.14 + bloodiness * 0.1), 0, Math.PI * 2);
+          ctx.arc(torsoW * 0.21, -torsoH * 0.18, headR * (0.1 + bloodiness * 0.08), 0, Math.PI * 2);
+          ctx.arc(-headR * 0.34, -torsoH * 0.5, headR * (0.08 + bloodiness * 0.07), 0, Math.PI * 2);
+          if (bloodiness > 0.5) {
+            ctx.arc(headR * 0.12, torsoH * 0.26, headR * 0.16, 0, Math.PI * 2);
+          }
+          ctx.fill();
+
+          if (bloodiness > 0.62) {
+            ctx.strokeStyle = 'rgba(105,8,12,' + (0.3 + bloodiness * 0.45) + ')';
+            ctx.lineWidth = Math.max(0.8, headR * 0.12);
+            ctx.beginPath();
+            ctx.moveTo(-torsoW * 0.22, -torsoH * 0.12);
+            ctx.lineTo(-torsoW * 0.14, torsoH * 0.42);
+            ctx.moveTo(headR * 0.16, -torsoH * 0.28);
+            ctx.lineTo(headR * 0.12, torsoH * 0.18);
+            ctx.stroke();
+          }
+        }
 
         ctx.restore();
 
