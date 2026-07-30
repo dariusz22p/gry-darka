@@ -2763,8 +2763,51 @@
         const sk = currentSkin();
         const gun = currentGun();
         ctx.save();
-        ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width * goldComboScale;
-        ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
+        const gunLen = Math.max(14, gun.length * goldComboScale);
+        const gunW = Math.max(2.2, gun.width * goldComboScale);
+        const muzzleX = x - gunLen;
+        const rearX = x + 1.6 * goldComboScale;
+        const recX = x - gunLen * 0.52;
+        const recW = Math.max(8, gunLen * 0.32);
+        const barrelW = Math.max(1.8, gunW * 0.48);
+        const bodyH = Math.max(4, gunW * 0.96);
+        const outline = 'rgba(8,12,18,0.88)';
+        const stockDark = 'rgba(28,38,52,0.96)';
+        // Main receiver/body
+        ctx.fillStyle = gun.body;
+        ctx.fillRect(recX, y - bodyH * 0.5, recW, bodyH);
+        // Stock + cheek rest
+        ctx.fillStyle = stockDark;
+        ctx.beginPath();
+        ctx.moveTo(rearX, y - bodyH * 0.42);
+        ctx.lineTo(x - gunLen * 0.19, y - bodyH * 0.46);
+        ctx.lineTo(x - gunLen * 0.24, y + bodyH * 0.2);
+        ctx.lineTo(rearX, y + bodyH * 0.36);
+        ctx.closePath();
+        ctx.fill();
+        // Upper rail and sight line
+        ctx.fillStyle = 'rgba(181,212,240,0.34)';
+        ctx.fillRect(recX - 0.5, y - bodyH * 0.72, recW * 0.88, Math.max(1, gunW * 0.16));
+        // Barrel
+        ctx.fillStyle = gun.barrel;
+        ctx.fillRect(muzzleX + 3, y - barrelW * 0.5, (recX - (muzzleX + 3)) + 1, barrelW);
+        // Handguard detail
+        ctx.fillStyle = 'rgba(16,24,34,0.72)';
+        ctx.fillRect(muzzleX + 10, y - barrelW * 0.95, Math.max(4, gunLen * 0.18), Math.max(1.2, barrelW * 0.55));
+        // Magazine + pistol grip
+        ctx.fillStyle = 'rgba(25,34,46,0.96)';
+        ctx.fillRect(recX + recW * 0.35, y + bodyH * 0.3, Math.max(2.2, gunW * 0.42), Math.max(4.4, gunW * 1.18));
+        ctx.fillRect(recX + recW * 0.16, y + bodyH * 0.14, Math.max(1.8, gunW * 0.35), Math.max(3.2, gunW * 0.8));
+        // Muzzle brake + flash hider
+        ctx.fillStyle = 'rgba(205,223,238,0.92)';
+        ctx.fillRect(muzzleX - 1.2, y - barrelW * 0.72, Math.max(1.8, gunW * 0.28), Math.max(2.4, barrelW * 1.45));
+        ctx.fillStyle = 'rgba(15,22,31,0.92)';
+        ctx.fillRect(muzzleX - 1.6, y - barrelW * 0.22, Math.max(0.9, gunW * 0.12), Math.max(0.9, barrelW * 0.44));
+        // Outline pass to sharpen silhouette
+        ctx.strokeStyle = outline;
+        ctx.lineWidth = Math.max(0.7, gunW * 0.1);
+        ctx.strokeRect(recX, y - bodyH * 0.5, recW, bodyH);
+        ctx.strokeRect(muzzleX + 3, y - barrelW * 0.5, (recX - (muzzleX + 3)) + 1, barrelW);
         if (goldenGunActive) {
           ctx.shadowColor = goldCombo ? 'rgba(191, 155, 255, 1)' : 'rgba(128, 216, 255, 0.95)';
           ctx.shadowBlur = (goldCombo ? 24 : 10) + goldenGunPulse * (goldCombo ? 28 : 12);
@@ -2782,8 +2825,6 @@
           ctx.closePath();
           ctx.fill();
         }
-        ctx.fillStyle = gun.body;
-        ctx.fillRect(x - Math.max(10, gun.length * 0.55 * goldComboScale), y - Math.max(3, gun.width * 0.5 * goldComboScale), Math.max(9, gun.length * 0.42 * goldComboScale), Math.max(6, gun.width * goldComboScale));
         const humanPulse = 0.52 + 0.48 * Math.sin(nowS * 5.5 + i * 0.16);
         const auraR = (CONFIG.shooter.r + 5 + humanPulse * 2.2) * goldComboScale;
         const aura = ctx.createRadialGradient(x, y, CONFIG.shooter.r * 0.4, x, y, auraR);
