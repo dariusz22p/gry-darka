@@ -1116,7 +1116,7 @@
 
     function musicBeatDuration() {
       const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
-      const bpm = 50 + tension * 0.18;
+      const bpm = 42 + tension * 0.12;
       return 60 / bpm;
     }
 
@@ -1129,15 +1129,15 @@
       const o = audioCtx.createOscillator();
       const g = audioCtx.createGain();
       o.type = 'sine';
-      o.frequency.setValueAtTime(145, t);
-      o.frequency.exponentialRampToValueAtTime(48, t + 0.11);
+      o.frequency.setValueAtTime(118, t);
+      o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.linearRampToValueAtTime(amp, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
       o.connect(g);
       g.connect(musicBus);
       o.start(t);
-      o.stop(t + 0.17);
+      o.stop(t + 0.23);
     }
 
     function scheduleNoiseHit(t, amp, hpFreq, len) {
@@ -1181,40 +1181,60 @@
 
     function scheduleMusicStep(t) {
       const beat = musicBeatDuration();
-      const rootProg = [0, -2, -5, -7];
-      const root = rootProg[Math.floor(musicStep / 8) % rootProg.length];
-      const phrase = musicStep % 12;
-      const arp = [0, 1, 3, 1, 6, 5, 8, 6, 1, 0, -1, 1];
+      const rootProg = [0, -1, -5, -8];
+      const root = rootProg[Math.floor(musicStep / 6) % rootProg.length];
+      const phrase = musicStep % 16;
+      const arp = [0, -1, 1, 0, 6, 5, 7, 6, 1, 0, -2, -1, 8, 7, 6, 5];
       const leadSemitone = root + arp[phrase];
-      const bassSemitone = root + (phrase % 6 === 0 ? -12 : (phrase % 3 === 0 ? -17 : -7));
-      const padSemitone = root + (phrase % 2 === 0 ? 6 : 8);
+      const bassSemitone = root + (phrase % 8 === 0 ? -24 : (phrase % 4 === 0 ? -12 : -19));
+      const padSemitone = root + (phrase % 2 === 0 ? 3 : 8);
 
       const stress = Math.min(1, (wave || 1) / 60);
-      const leadVol = 0.018 + stress * 0.006;
-      const bassVol = 0.058 + stress * 0.014;
-      const padVol = 0.016 + stress * 0.004;
-      const droneVol = 0.022 + stress * 0.006;
+      const leadVol = 0.014 + stress * 0.005;
+      const bassVol = 0.07 + stress * 0.016;
+      const padVol = 0.012 + stress * 0.004;
+      const droneVol = 0.03 + stress * 0.008;
 
-      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.4, volume: bassVol, type: 'sawtooth', attack: 0.01, release: 0.18, detune: -18 });
-      if (phrase !== 2 && phrase !== 7 && phrase !== 10) {
-        scheduleTone({ time: t + beat * 0.08, freq: stepToFreq(leadSemitone), duration: beat * 0.28, volume: leadVol, type: 'triangle', attack: 0.004, release: 0.06, detune: (phrase % 2 === 0 ? -14 : 13) });
+      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.65, volume: bassVol, type: 'sawtooth', attack: 0.012, release: 0.24, detune: -26 });
+      if (phrase !== 1 && phrase !== 4 && phrase !== 10 && phrase !== 13) {
+        scheduleTone({ time: t + beat * 0.06, freq: stepToFreq(leadSemitone), duration: beat * 0.22, volume: leadVol, type: 'triangle', attack: 0.004, release: 0.05, detune: (phrase % 2 === 0 ? -19 : 17) });
       }
       if (musicStep % 3 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 2.8, volume: padVol, type: 'sine', attack: 0.05, release: 0.34, detune: -7 });
+        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 3.4, volume: padVol, type: 'sine', attack: 0.06, release: 0.42, detune: -11 });
       }
       if (musicStep % 4 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 4.1, volume: droneVol, type: 'triangle', attack: 0.11, release: 0.62, detune: -28 });
-        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 4.8, volume: droneVol * 0.86, type: 'sine', attack: 0.16, release: 0.78, detune: 12 });
-        scheduleTone({ time: t + beat * 0.24, freq: stepToFreq(root + 1), duration: beat * 0.24, volume: 0.012 + stress * 0.004, type: 'square', attack: 0.002, release: 0.04, detune: -24 });
+        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 4.8, volume: droneVol, type: 'triangle', attack: 0.14, release: 0.8, detune: -34 });
+        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 5.8, volume: droneVol * 0.94, type: 'sine', attack: 0.2, release: 1.0, detune: 14 });
+        scheduleTone({ time: t + beat * 0.22, freq: stepToFreq(root + 1), duration: beat * 0.18, volume: 0.011 + stress * 0.003, type: 'square', attack: 0.002, release: 0.03, detune: -28 });
       }
-      if (musicStep % 12 === 5) {
-        scheduleTone({ time: t + beat * 0.16, freq: stepToFreq(root + 6), duration: beat * 0.16, volume: 0.01 + stress * 0.003, type: 'square', attack: 0.001, release: 0.02, detune: 24 });
+      if (musicStep % 16 === 5 || musicStep % 16 === 12) {
+        scheduleTone({ time: t + beat * 0.16, freq: stepToFreq(root + 6), duration: beat * 0.14, volume: 0.009 + stress * 0.003, type: 'square', attack: 0.001, release: 0.02, detune: 31 });
+      }
+      if (musicStep % 16 === 9) {
+        scheduleTone({ time: t + beat * 0.3, freq: stepToFreq(root + 11), duration: beat * 0.38, volume: 0.013 + stress * 0.004, type: 'triangle', attack: 0.01, release: 0.08, detune: -22 });
+      }
+      if (musicStep % 32 === 0) {
+        const wail = audioCtx.createOscillator();
+        const wg = audioCtx.createGain();
+        const wt = t + beat * 0.36;
+        wail.type = 'sine';
+        wail.frequency.setValueAtTime(stepToFreq(root + 10), wt);
+        wail.frequency.exponentialRampToValueAtTime(stepToFreq(root + 1), wt + beat * 0.9);
+        wail.detune.setValueAtTime(-8, wt);
+        wail.detune.linearRampToValueAtTime(18, wt + beat * 0.9);
+        wg.gain.setValueAtTime(0.0001, wt);
+        wg.gain.linearRampToValueAtTime(0.018 + stress * 0.005, wt + 0.05);
+        wg.gain.exponentialRampToValueAtTime(0.0001, wt + beat * 1.1);
+        wail.connect(wg);
+        wg.connect(musicBus);
+        wail.start(wt);
+        wail.stop(wt + beat * 1.15);
       }
 
-      if (musicStep % 4 === 0) scheduleKick(t, 0.08 + stress * 0.02);
-      if (musicStep % 12 === 2 || musicStep % 12 === 9) scheduleNoiseHit(t + beat * 0.04, 0.026 + stress * 0.01, 800, 0.16);
-      if (musicStep % 6 === 4) scheduleNoiseHit(t + beat * 0.18, 0.022 + stress * 0.008, 2200, 0.07);
-      scheduleNoiseHit(t + beat * 0.62, 0.02 + stress * 0.006, 2900, 0.05);
+      if (musicStep % 4 === 0) scheduleKick(t, 0.09 + stress * 0.025);
+      if (musicStep % 16 === 2 || musicStep % 16 === 9 || musicStep % 16 === 14) scheduleNoiseHit(t + beat * 0.04, 0.032 + stress * 0.01, 650, 0.18);
+      if (musicStep % 8 === 4) scheduleNoiseHit(t + beat * 0.16, 0.025 + stress * 0.008, 1800, 0.1);
+      scheduleNoiseHit(t + beat * 0.58, 0.018 + stress * 0.006, 2600, 0.06);
 
       musicStep++;
     }
@@ -1239,16 +1259,16 @@
         master.gain.value = MASTER_VOL;
         master.connect(audioCtx.destination);
         musicBus = audioCtx.createGain();
-        musicBus.gain.value = 0.82;
+        musicBus.gain.value = 0.92;
         musicComp = audioCtx.createDynamicsCompressor();
-        musicComp.threshold.value = -28;
+        musicComp.threshold.value = -34;
         musicComp.knee.value = 24;
-        musicComp.ratio.value = 4;
+        musicComp.ratio.value = 5;
         musicComp.attack.value = 0.006;
-        musicComp.release.value = 0.18;
+        musicComp.release.value = 0.22;
         musicBus.connect(musicComp);
         musicComp.connect(master);
-        noiseBuffer = noiseBuf(0.35);
+        noiseBuffer = noiseBuf(0.6);
       }
       if (audioCtx.state === 'suspended') audioCtx.resume();
       tickMusic();
