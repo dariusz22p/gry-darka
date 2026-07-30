@@ -582,10 +582,10 @@
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">☢️</button>
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2000👥</button>
           <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">900⚡</button>
-          <button id="mobileJumpBtn" aria-label="Skok do fali 1000">1000</button>
+          <button id="mobileJumpBtn" aria-label="Skok do fali 1 bilion">1T</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
-            <div class="stat"><span>Fala</span><b id="wave">1 / 1000</b></div>
+            <div class="stat"><span>Fala</span><b id="wave">1 / 1000000000000</b></div>
             <div class="stat"><span>Do fali</span><b id="nextWave" class="soft">22.0s</b></div>
             <div class="stat"><span>Boss za</span><b id="nextBoss" class="soft">4 spawny</b></div>
             <div class="stat"><span>Boss (fala)</span><b id="bossNow" class="soft">200 hit | 200 pkt</b></div>
@@ -660,7 +660,7 @@
           <span><kbd>B</kbd> ustaw moc na 100</span>
           <span><kbd>O</kbd> ustaw bomby na 200</span>
           <span><kbd>1</kbd> skok na fal&#281; 100</span>
-          <span><kbd>8</kbd> skok na fal&#281; 1000</span>
+          <span><kbd>8</kbd> skok na fal&#281; 1 bilion</span>
           <span><kbd>5</kbd> losowy power-up</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>R</kbd> restart</span>
@@ -727,7 +727,7 @@
       loot: { slowMul: 0.72, slowDur: 10, recruitDur: 10 },
       panel: { x: 40, bandH: 86, recruitPer: 50, powerPer: 50 }, // pasy: góra=ludzie, dół=moc (mniejsze)
       growth: { recruitMul: 1.3, powerMul: 1.55 },
-      waves: { total: 1000, killsBase: 1080, breakDuration: 2.2 },
+      waves: { total: 1000000000000, killsBase: 1080, breakDuration: 2.2 },
       // Fale intro (1..intro.waves) lzejsze: mniejszy prog zabic, rzadszy/mniejszy spawn, wolniejsze zombie. Bossy dopiero od boss.firstWave.
       intro: { waves: 2, killNeedMul: 0.55, spawnEveryMul: 1.5, burstReduce: 2, speedMul: 0.82 },
       warning: { bossLead: 1.25, bossFlash: 1.2 },
@@ -2857,7 +2857,7 @@
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
         hideOverlay();
-        jumpToWave(1000);
+        jumpToWave(1000000000000);
         return;
       }
       if (e.code === 'Digit5' || e.code === 'Numpad5' || e.key === '5' || e.keyCode === 53 || e.keyCode === 101 || e.which === 53 || e.which === 101) {
@@ -3038,7 +3038,7 @@
         if (state === 'lose' || state === 'win') reset();
         if (state === 'pause') state = 'play';
         hideOverlay();
-        jumpToWave(1000);
+        jumpToWave(1000000000000);
       });
     }
 
