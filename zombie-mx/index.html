@@ -1965,7 +1965,8 @@
           a: 0.08 + Math.random() * 0.24,
           s: CONFIG.atmosphere.dustSpeedMin + Math.random() * (CONFIG.atmosphere.dustSpeedMax - CONFIG.atmosphere.dustSpeedMin),
           wobble: Math.random() * Math.PI * 2,
-          wobbleSpeed: 0.6 + Math.random() * 2.2
+          wobbleSpeed: 0.6 + Math.random() * 2.2,
+          tone: Math.random()
         });
       }
     }
@@ -2784,29 +2785,59 @@
       ctx.shadowColor = 'transparent';
       const now = performance.now();
       const nowS = now * 0.001;
+      const horrorPulse = 0.5 + 0.5 * Math.sin(nowS * 0.85);
+      const horrorLevel = 0.25 + Math.min(0.55, (wave || 1) / 220) + horrorPulse * 0.08;
       const shakeNow = cameraShakeTimer > 0 ? cameraShake : 0;
       if (shakeNow > 0.01) {
         ctx.translate((Math.random() * 2 - 1) * shakeNow, (Math.random() * 2 - 1) * shakeNow);
       }
-      ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#07090d'; ctx.fillRect(0, 0, W, H);
+      const moonGlow = ctx.createRadialGradient(W * 0.82, H * 0.14, 6, W * 0.82, H * 0.14, 150);
+      moonGlow.addColorStop(0, 'rgba(255,96,96,0.28)');
+      moonGlow.addColorStop(0.42, 'rgba(183,28,28,0.2)');
+      moonGlow.addColorStop(1, 'rgba(183,28,28,0)');
+      ctx.fillStyle = moonGlow;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(250,150,150,0.82)';
+      ctx.beginPath();
+      ctx.arc(W * 0.82, H * 0.14, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(48,18,18,0.95)';
+      ctx.beginPath();
+      ctx.arc(W * 0.84, H * 0.14, 17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(8,8,10,0.94)';
+      for (let t = 0; t < 5; t++) {
+        const tx = W * 0.08 + t * 182;
+        ctx.beginPath();
+        ctx.moveTo(tx, H * 0.56);
+        ctx.lineTo(tx - 10, H * 0.36);
+        ctx.lineTo(tx + 2, H * 0.42);
+        ctx.lineTo(tx + 12, H * 0.28);
+        ctx.lineTo(tx + 20, H * 0.56);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(tx - 2, H * 0.42, 4, H * 0.14);
+        ctx.fillRect(tx + 9, H * 0.47, 4, H * 0.09);
+      }
       const laneGradient = ctx.createLinearGradient(0, CONFIG.wallTop, 0, CONFIG.wallBottom);
-      laneGradient.addColorStop(0, 'rgba(54,78,104,0.08)');
-      laneGradient.addColorStop(0.45, 'rgba(105,146,179,0.06)');
-      laneGradient.addColorStop(1, 'rgba(25,35,47,0.1)');
+      laneGradient.addColorStop(0, 'rgba(72,24,28,0.14)');
+      laneGradient.addColorStop(0.45, 'rgba(112,34,38,0.1)');
+      laneGradient.addColorStop(1, 'rgba(20,16,18,0.18)');
       ctx.fillStyle = laneGradient;
       ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
-      ctx.fillStyle = '#1a2230'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
+      ctx.fillStyle = 'rgba(20,14,16,0.9)'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
       const beamShiftA = (nowS * 38) % (W + 300) - 150;
       const beamShiftB = (nowS * 24) % (W + 380) - 190;
       const beamA = ctx.createLinearGradient(beamShiftA - 120, 0, beamShiftA + 140, H);
       beamA.addColorStop(0, 'rgba(255,255,255,0)');
-      beamA.addColorStop(0.5, 'rgba(119,202,255,0.08)');
+      beamA.addColorStop(0.5, 'rgba(167,52,58,0.08)');
       beamA.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = beamA;
       ctx.fillRect(0, 0, W, H);
       const beamB = ctx.createLinearGradient(beamShiftB + 180, 0, beamShiftB - 140, H);
       beamB.addColorStop(0, 'rgba(255,255,255,0)');
-      beamB.addColorStop(0.5, 'rgba(255,187,96,0.06)');
+      beamB.addColorStop(0.5, 'rgba(255,122,122,0.05)');
       beamB.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = beamB;
       ctx.fillRect(0, 0, W, H);
@@ -2814,13 +2845,19 @@
         for (let i = 0; i < ambientDust.length; i++) {
           const p = ambientDust[i];
           ctx.globalAlpha = p.a;
-          ctx.fillStyle = '#b3e5fc';
+          ctx.fillStyle = p.tone < 0.65 ? '#d7ccc8' : (p.tone < 0.85 ? '#ff9e80' : '#ff5252');
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
+      const fog = ctx.createLinearGradient(0, H * 0.18, 0, H);
+      fog.addColorStop(0, 'rgba(255,92,92,0.02)');
+      fog.addColorStop(0.55, 'rgba(170,35,35,' + (0.06 + horrorLevel * 0.06) + ')');
+      fog.addColorStop(1, 'rgba(8,8,10,' + (0.18 + horrorLevel * 0.06) + ')');
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 0, W, H);
       if (gunKey === 'goldengun') {
         const t = performance.now() * 0.0018;
         const nebA = 0.12 + 0.06 * Math.sin(t * 2.3);
@@ -3341,15 +3378,19 @@
         ctx.globalAlpha = 1;
       }
       const scanA = 0.04 + 0.01 * Math.sin(nowS * 4.4);
-      ctx.fillStyle = 'rgba(170,220,255,' + scanA + ')';
+      ctx.fillStyle = 'rgba(255,92,92,' + (scanA + 0.01) + ')';
       for (let y = 0; y < H; y += 4) {
         ctx.fillRect(0, y, W, 1);
       }
       const vignette = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.2, W * 0.5, H * 0.5, H * 0.82);
       vignette.addColorStop(0, 'rgba(255,255,255,0)');
-      vignette.addColorStop(1, 'rgba(0,0,0,0.42)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.68)');
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, W, H);
+      if (horrorPulse > 0.92) {
+        ctx.fillStyle = 'rgba(183,28,28,0.05)';
+        ctx.fillRect(0, 0, W, H);
+      }
       drawConfetti();
       if (state === 'pause') {
         ctx.fillStyle = 'rgba(6,10,14,.45)';
