@@ -2334,6 +2334,7 @@
       const goldenGunActive = gunKey === 'goldengun';
       const goldCombo = goldSkinActive && goldenGunActive;
       const goldComboMul = goldCombo ? 10 : 1;
+      const goldComboScale = goldCombo ? 1.35 : 1;
       const goldPulse = goldSkinActive ? ((0.65 + 0.35 * Math.sin(performance.now() * 0.012)) * goldComboMul) : 0;
       const goldenGunPulse = goldenGunActive ? ((0.6 + 0.4 * Math.sin(performance.now() * 0.016)) * goldComboMul) : 0;
       for (let i = 0; i < N; i++) {
@@ -2343,13 +2344,13 @@
         const sk = currentSkin();
         const gun = currentGun();
         ctx.save();
-        ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width;
+        ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width * goldComboScale;
         ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
         if (goldenGunActive) {
           ctx.shadowColor = goldCombo ? 'rgba(255, 245, 190, 0.98)' : 'rgba(255, 224, 128, 0.95)';
-          ctx.shadowBlur = (goldCombo ? 18 : 10) + goldenGunPulse * (goldCombo ? 24 : 12);
-          const coneTip = x - gun.length - 8;
-          const coneWidth = (goldCombo ? 8 : 6) + goldenGunPulse * (goldCombo ? 6 : 4);
+          ctx.shadowBlur = (goldCombo ? 24 : 10) + goldenGunPulse * (goldCombo ? 28 : 12);
+          const coneTip = x - gun.length - (goldCombo ? 14 : 8);
+          const coneWidth = ((goldCombo ? 8 : 6) + goldenGunPulse * (goldCombo ? 6 : 4)) * goldComboScale;
           const cone = ctx.createLinearGradient(x - gun.length, y, coneTip, y);
           cone.addColorStop(0, goldCombo ? 'rgba(255,255,230,1)' : 'rgba(255,245,182,0.95)');
           cone.addColorStop(0.5, goldCombo ? 'rgba(255,223,120,1)' : 'rgba(255,213,79,0.95)');
@@ -2363,11 +2364,11 @@
           ctx.fill();
         }
         ctx.fillStyle = gun.body;
-        ctx.fillRect(x - Math.max(10, gun.length * 0.55), y - Math.max(3, gun.width * 0.5), Math.max(9, gun.length * 0.42), Math.max(6, gun.width));
+        ctx.fillRect(x - Math.max(10, gun.length * 0.55 * goldComboScale), y - Math.max(3, gun.width * 0.5 * goldComboScale), Math.max(9, gun.length * 0.42 * goldComboScale), Math.max(6, gun.width * goldComboScale));
         if (goldSkinActive) {
           ctx.shadowColor = goldCombo ? 'rgba(255, 248, 210, 1)' : 'rgba(255, 223, 120, 0.95)';
-          ctx.shadowBlur = (goldCombo ? 24 : 12) + goldPulse * (goldCombo ? 40 : 18);
-          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + (goldCombo ? 12 : 6));
+          ctx.shadowBlur = (goldCombo ? 30 : 12) + goldPulse * (goldCombo ? 46 : 18);
+          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + (goldCombo ? 18 : 6));
           g.addColorStop(0, '#ffffff');
           g.addColorStop(0.15, goldCombo ? '#fffef7' : '#fffde7');
           g.addColorStop(0.5, goldCombo ? '#fff176' : '#ffd54f');
@@ -2376,20 +2377,20 @@
         } else {
           ctx.fillStyle = sk.fill;
         }
-        ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r * goldComboScale, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = sk.stroke; ctx.lineWidth = 2; ctx.stroke();
         if (goldSkinActive) {
           ctx.globalAlpha = goldCombo ? 0.7 : 0.35 + goldPulse * 0.35;
           ctx.strokeStyle = goldCombo ? '#fffde7' : '#fff8cf';
-          ctx.lineWidth = goldCombo ? 2.6 : 1.6;
+          ctx.lineWidth = (goldCombo ? 2.6 : 1.6) * goldComboScale;
           ctx.beginPath();
-          ctx.arc(x, y, CONFIG.shooter.r + 2.4, 0, Math.PI * 2);
+          ctx.arc(x, y, (CONFIG.shooter.r + 2.4) * goldComboScale, 0, Math.PI * 2);
           ctx.stroke();
           ctx.globalAlpha = goldCombo ? 0.42 : 0.18 + goldPulse * 0.16;
           ctx.fillStyle = goldCombo ? '#fffde7' : '#fffad5';
           ctx.beginPath();
-          ctx.arc(x - 4, y - 4, (goldCombo ? 3.2 : 1.5) + goldPulse, 0, Math.PI * 2);
-          ctx.arc(x + 6, y + 2, (goldCombo ? 2.4 : 1.1) + goldPulse * 0.8, 0, Math.PI * 2);
+          ctx.arc(x - 4, y - 4, ((goldCombo ? 3.2 : 1.5) + goldPulse) * goldComboScale, 0, Math.PI * 2);
+          ctx.arc(x + 6, y + 2, ((goldCombo ? 2.4 : 1.1) + goldPulse * 0.8) * goldComboScale, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
