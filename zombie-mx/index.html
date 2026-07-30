@@ -776,12 +776,6 @@
       move: { speed: 175 },              // STAŁA prędkość ruchu kolumny (px/s)
       shooter: { maxN: 2000, r: 5, baseFireRate: 4.3, baseDmg: 10, bulletSpeed: 720 },
       zombie: { r: 6, hp: 16, speed: 26, dmg: 9, spawnEvery: 0.72, trackSpeed: 18, trackSpread: 18, hitSlowDur: 0.38, hitSlowMul: 0.55, hitRecoil: 7, hpWaveMul: 1.5, scoreBase: 1, scoreWaveMul: 1.5, massBase: 1, massWaveMul: 1.5 },
-      zombieTypes: {
-        shambler: { label: 'Shambler', fill: '#6aa84f', stroke: '#3d6b2e', hpMul: 1.0, speedMul: 1.0, dmgMul: 1.0, massMul: 1.0, rMul: 1.0, trackMul: 1.0, wobble: 0.0 },
-        crawler: { label: 'Crawler', fill: '#4fa0a8', stroke: '#2e666b', hpMul: 0.8, speedMul: 1.48, dmgMul: 0.7, massMul: 0.75, rMul: 0.72, trackMul: 1.18, wobble: 4.5 },
-        brute: { label: 'Brute', fill: '#8e6ac0', stroke: '#553d8a', hpMul: 1.75, speedMul: 0.72, dmgMul: 1.4, massMul: 1.8, rMul: 1.32, trackMul: 0.78, wobble: 0.6 },
-        spitter: { label: 'Spitter', fill: '#c05a4f', stroke: '#8a3733', hpMul: 1.05, speedMul: 0.88, dmgMul: 1.0, massMul: 1.0, rMul: 1.08, trackMul: 1.1, wobble: 2.6 }
-      },
       // Kolor zwyklych zombie zmienia sie co 5 fal (tier = floor((fala-1)/5)).
       zombieColors: [
         { fill: '#6aa84f', stroke: '#3d6b2e' }, // fale 1-5   zielony
@@ -1464,25 +1458,6 @@
       return arr[idx];
     }
 
-    function zombieTypeForWave(w) {
-      const sw = effectiveWaveForScaling(w);
-      if (sw < 3) return 'shambler';
-      if (sw < 8) return Math.random() < 0.32 ? 'crawler' : 'shambler';
-      if (sw < 16) return Math.random() < 0.28 ? 'brute' : (Math.random() < 0.28 ? 'spitter' : 'shambler');
-      if (sw < 30) {
-        const roll = Math.random();
-        if (roll < 0.35) return 'crawler';
-        if (roll < 0.62) return 'spitter';
-        if (roll < 0.82) return 'brute';
-        return 'shambler';
-      }
-      const roll = Math.random();
-      if (roll < 0.34) return 'crawler';
-      if (roll < 0.58) return 'spitter';
-      if (roll < 0.82) return 'brute';
-      return 'shambler';
-    }
-
     function zombieHpForWave(w) {
       if (Math.floor(w) >= CONFIG.waves.total) return 1;
       return zHp * Math.pow(CONFIG.zombie.hpWaveMul, zombieTierForWave(w));
@@ -2032,7 +2007,6 @@
     }
 
     function makeZombie(x, y, opts) {
-      const type = opts.type || 'shambler';
       return {
         x: x,
         y: y,
@@ -2042,13 +2016,10 @@
         speed: opts.speed,
         dmg: opts.dmg,
         boss: !!opts.boss,
-        zombieType: type,
         miniType: opts.miniType || null,
         score: Math.max(1, opts.score || 1),
         laneY: y,
         trackOff: opts.trackOff,
-        typeWobble: opts.typeWobble || 0,
-        acidTimer: opts.acidTimer || 0,
         hitSlow: 0,
         mass: opts.mass || 1
       };
@@ -2479,20 +2450,15 @@
           const offset = (s - (burst - 1) / 2) * minGap;
           const packedOffset = Math.max(-halfSpanCap, Math.min(halfSpanCap, offset));
           const y = clamp(packCenter + packedOffset + (Math.random() * 2 - 1) * Math.min(0.35, minGap * 0.08), laneTop + 8, laneBot - 8);
-          const type = zombieTypeForWave(scaleWave);
-          const zType = CONFIG.zombieTypes[type] || CONFIG.zombieTypes.shambler;
           zombies.push(makeZombie(-18 - s * 12, y, {
-            hp: Math.max(4, Math.round(normalHp * zType.hpMul)),
-            r: Math.max(3, Math.round(CONFIG.zombie.r * zType.rMul)),
-            speed: zSpeed * introSpeedMul * zType.speedMul,
-            dmg: CONFIG.zombie.dmg * zType.dmgMul,
+            hp: normalHp,
+            r: CONFIG.zombie.r,
+            speed: zSpeed * introSpeedMul,
+            dmg: CONFIG.zombie.dmg,
             boss: false,
             score: normalScore,
-            mass: normalMass * zType.massMul,
-            trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread,
-            type: type,
-            typeWobble: zType.wobble,
-            acidTimer: type === 'spitter' ? 0.6 + Math.random() * 0.9 : 0
+            mass: normalMass,
+            trackOff: (Math.random() * 2 - 1) * CONFIG.zombie.trackSpread
           }));
         }
         if (spawnCycles % CONFIG.pickup.everySpawnCycle === 0 && pickups.length < 2) {
@@ -2584,7 +2550,6 @@
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
-        const zType = z.boss ? null : (CONFIG.zombieTypes[z.zombieType] || CONFIG.zombieTypes.shambler);
         if (goldSkinVortexActive) {
           const vdx = vortexCenterX - z.x;
           const vdy = vortexCenterY - z.y;
@@ -2609,21 +2574,12 @@
         if (z.hitSlow > 0) z.hitSlow = Math.max(0, z.hitSlow - dt);
         const fieldSlowMul = slowFieldTimer > 0 ? CONFIG.loot.slowMul : 1;
         const hitSlowMul = z.hitSlow > 0 ? CONFIG.zombie.hitSlowMul : 1;
-        const typeTrackMul = zType ? zType.trackMul : 1;
         z.x += z.speed * chargeMul * fieldSlowMul * hitSlowMul * dt;
-        const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? (mini ? mini.trackMul : CONFIG.boss.trackMul) : typeTrackMul);
+        const followSpeed = CONFIG.zombie.trackSpeed * (z.boss ? (mini ? mini.trackMul : CONFIG.boss.trackMul) : 1);
         const laneTarget = (z.laneY || z.y) + (z.trackOff || 0);
-        const wobble = zType ? Math.sin(nowS * (2.2 + zType.wobble * 0.2) + z.x * 0.03) * zType.wobble : 0;
-        const dy = laneTarget + wobble - z.y;
+        const dy = laneTarget - z.y;
         const yStep = Math.sign(dy) * Math.min(Math.abs(dy), followSpeed * dt);
         z.y = clamp(z.y + yStep, laneTop + z.r, laneBot - z.r);
-        if (zType && zType === CONFIG.zombieTypes.spitter) {
-          z.acidTimer -= dt;
-          if (z.acidTimer <= 0) {
-            z.acidTimer = 1.2 + Math.random() * 0.9;
-            fx.push({ x: z.x - z.r * 1.4, y: z.y + Math.sin(nowS * 9 + z.x * 0.02) * 2, life: 0.48, c: 'rgba(172,255,96,0.28)', r: 9 });
-          }
-        }
         if (goldSkinVortexActive) {
           const postDx = vortexCenterX - z.x;
           const postDy = vortexCenterY - z.y;
@@ -2905,15 +2861,13 @@
       const goldenWave = Math.floor(effectiveWaveForScaling(wave)) >= 100;
       for (const z of zombies) {
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
-        const zType = z.boss ? null : (CONFIG.zombieTypes[z.zombieType] || CONFIG.zombieTypes.shambler);
-        const baseFill = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : (zType ? zType.fill : zc.fill));
-        const edge = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : (zType ? zType.stroke : zc.stroke));
+        const baseFill = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill);
+        const edge = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : zc.stroke);
         const modelScale = z.boss ? 1.32 : 1.55;
-        const typeScale = zType ? zType.rMul : 1;
         const walk = Math.sin(nowS * 7.2 + z.x * 0.045);
-        const torsoW = z.r * typeScale * (z.boss ? 1.28 : 1.08);
-        const torsoH = z.r * typeScale * (z.boss ? 1.85 : 1.5);
-        const headR = z.r * typeScale * (z.boss ? 0.74 : 0.6);
+        const torsoW = z.r * (z.boss ? 1.28 : 1.08);
+        const torsoH = z.r * (z.boss ? 1.85 : 1.5);
+        const headR = z.r * (z.boss ? 0.74 : 0.6);
         const armY = z.y - torsoH * 0.2;
 
         ctx.save();
@@ -2943,14 +2897,6 @@
         ctx.ellipse(0, -torsoH * 0.05, torsoW * 0.66, torsoH * 0.74, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-
-        if (zType && zType === CONFIG.zombieTypes.brute) {
-          ctx.fillStyle = 'rgba(18,20,24,0.95)';
-          ctx.fillRect(-torsoW * 0.62, -torsoH * 0.12, torsoW * 0.1, torsoH * 0.52);
-          ctx.fillRect(torsoW * 0.52, -torsoH * 0.12, torsoW * 0.1, torsoH * 0.52);
-          ctx.fillStyle = 'rgba(196,164,124,0.25)';
-          ctx.fillRect(-torsoW * 0.3, -torsoH * 0.28, torsoW * 0.6, 2);
-        }
 
         ctx.fillStyle = 'rgba(25,32,40,0.75)';
         ctx.fillRect(-torsoW * 0.2, -torsoH * 0.08, torsoW * 0.16, torsoH * 0.5);
@@ -2982,14 +2928,6 @@
         ctx.ellipse(0, -torsoH * 0.55, headR * 1.02, headR * 0.92, -0.05, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-
-        if (zType && zType === CONFIG.zombieTypes.crawler) {
-          ctx.fillStyle = 'rgba(24,30,26,0.9)';
-          ctx.beginPath();
-          ctx.arc(-headR * 0.32, -torsoH * 0.62, headR * 0.18, 0, Math.PI * 2);
-          ctx.arc(headR * 0.05, -torsoH * 0.65, headR * 0.14, 0, Math.PI * 2);
-          ctx.fill();
-        }
 
         // Eyes, brows, mouth and scar pass.
         const eyeY = -torsoH * 0.58;
@@ -3032,28 +2970,6 @@
         ctx.arc(torsoW * 0.21, -torsoH * 0.18, headR * 0.12, 0, Math.PI * 2);
         ctx.arc(-headR * 0.34, -torsoH * 0.5, headR * 0.1, 0, Math.PI * 2);
         ctx.fill();
-
-        if (zType && zType === CONFIG.zombieTypes.spitter) {
-          ctx.fillStyle = 'rgba(173,255,94,0.8)';
-          ctx.beginPath();
-          ctx.arc(headR * 0.18, eyeY + headR * 0.34, headR * 0.12, 0, Math.PI * 2);
-          ctx.arc(headR * 0.34, eyeY + headR * 0.41, headR * 0.08, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        if (zType && zType === CONFIG.zombieTypes.crawler) {
-          ctx.fillStyle = 'rgba(28,38,28,0.82)';
-          ctx.fillRect(-torsoW * 0.72, torsoH * 0.03, torsoW * 0.28, 1.8);
-          ctx.fillRect(torsoW * 0.44, torsoH * 0.05, torsoW * 0.26, 1.8);
-        }
-
-        if (zType && zType === CONFIG.zombieTypes.brute) {
-          ctx.strokeStyle = 'rgba(255,220,170,0.18)';
-          ctx.lineWidth = 1.1;
-          ctx.beginPath();
-          ctx.arc(0, -torsoH * 0.07, torsoW * 0.8, 0, Math.PI * 2);
-          ctx.stroke();
-        }
 
         ctx.restore();
 
