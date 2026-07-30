@@ -1097,7 +1097,7 @@
     }
 
     function goldComboBoost() {
-      return goldComboActive() ? 10 : 1;
+      return goldComboActive() ? 20 : 1;
     }
 
     function applyPower() {
@@ -2091,7 +2091,7 @@
       const effectiveDmg = dmg * (dmgBoostTimer > 0 ? CONFIG.powerups.dmgMul : 1);
       const baseInterval = 1 / Math.max(0.001, effectiveFireRate);
       const gun = currentGun();
-      const bulletSpeed = CONFIG.shooter.bulletSpeed * gun.speedMul;
+      const bulletSpeed = CONFIG.shooter.bulletSpeed * gun.speedMul * (goldComboActive() ? 2 : 1);
       let firedNow = false;
       for (let i = 0; i < N; i++) {
         memberShotTimers[i] -= dt;
