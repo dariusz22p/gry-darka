@@ -1092,9 +1092,17 @@
     function maxY() { return CONFIG.wallBottom - squadHalfHeight(); }
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
+    function goldComboActive() {
+      return skinKey === 'gold' && gunKey === 'goldengun';
+    }
+
+    function goldComboBoost() {
+      return goldComboActive() ? 10 : 1;
+    }
+
     function applyPower() {
       const gun = currentGun();
-      fireRate = (CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel) * gun.fireMul;
+      fireRate = (CONFIG.shooter.baseFireRate + CONFIG.powerStep.fireAdd * powerLevel) * gun.fireMul * goldComboBoost();
       dmg = CONFIG.shooter.baseDmg * Math.pow(CONFIG.powerStep.dmgMul, powerLevel) * gun.dmgMul;
     }
 
@@ -1273,6 +1281,7 @@
     function setSkin(nextKey) {
       if (!SKINS[nextKey] || !ownedSkins[nextKey]) return false;
       skinKey = nextKey;
+      applyPower();
       saveRecords();
       updateSkinShopUi();
       updateHud();
@@ -2322,9 +2331,11 @@
       ctx.fillRect(CONFIG.breachX, colY - half - 8, W - CONFIG.breachX, (half + 8) * 2);
       // zwarta kupa ekipy
       const goldSkinActive = skinKey === 'gold';
-      const goldPulse = goldSkinActive ? (0.65 + 0.35 * Math.sin(performance.now() * 0.012)) : 0;
       const goldenGunActive = gunKey === 'goldengun';
-      const goldenGunPulse = goldenGunActive ? (0.6 + 0.4 * Math.sin(performance.now() * 0.016)) : 0;
+      const goldCombo = goldSkinActive && goldenGunActive;
+      const goldComboMul = goldCombo ? 10 : 1;
+      const goldPulse = goldSkinActive ? ((0.65 + 0.35 * Math.sin(performance.now() * 0.012)) * goldComboMul) : 0;
+      const goldenGunPulse = goldenGunActive ? ((0.6 + 0.4 * Math.sin(performance.now() * 0.016)) * goldComboMul) : 0;
       for (let i = 0; i < N; i++) {
         const o = memberOffset(i);
         const x = CONFIG.squadX + o.x;
@@ -2335,14 +2346,14 @@
         ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width;
         ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
         if (goldenGunActive) {
-          ctx.shadowColor = 'rgba(255, 224, 128, 0.95)';
-          ctx.shadowBlur = 10 + goldenGunPulse * 12;
+          ctx.shadowColor = goldCombo ? 'rgba(255, 245, 190, 0.98)' : 'rgba(255, 224, 128, 0.95)';
+          ctx.shadowBlur = (goldCombo ? 18 : 10) + goldenGunPulse * (goldCombo ? 24 : 12);
           const coneTip = x - gun.length - 8;
-          const coneWidth = 6 + goldenGunPulse * 4;
+          const coneWidth = (goldCombo ? 8 : 6) + goldenGunPulse * (goldCombo ? 6 : 4);
           const cone = ctx.createLinearGradient(x - gun.length, y, coneTip, y);
-          cone.addColorStop(0, 'rgba(255,245,182,0.95)');
-          cone.addColorStop(0.5, 'rgba(255,213,79,0.95)');
-          cone.addColorStop(1, 'rgba(184,134,11,0.15)');
+          cone.addColorStop(0, goldCombo ? 'rgba(255,255,230,1)' : 'rgba(255,245,182,0.95)');
+          cone.addColorStop(0.5, goldCombo ? 'rgba(255,223,120,1)' : 'rgba(255,213,79,0.95)');
+          cone.addColorStop(1, goldCombo ? 'rgba(184,134,11,0.28)' : 'rgba(184,134,11,0.15)');
           ctx.fillStyle = cone;
           ctx.beginPath();
           ctx.moveTo(x - gun.length + 1, y - coneWidth);
@@ -2354,13 +2365,13 @@
         ctx.fillStyle = gun.body;
         ctx.fillRect(x - Math.max(10, gun.length * 0.55), y - Math.max(3, gun.width * 0.5), Math.max(9, gun.length * 0.42), Math.max(6, gun.width));
         if (goldSkinActive) {
-          ctx.shadowColor = 'rgba(255, 223, 120, 0.95)';
-          ctx.shadowBlur = 12 + goldPulse * 18;
-          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + 6);
+          ctx.shadowColor = goldCombo ? 'rgba(255, 248, 210, 1)' : 'rgba(255, 223, 120, 0.95)';
+          ctx.shadowBlur = (goldCombo ? 24 : 12) + goldPulse * (goldCombo ? 40 : 18);
+          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + (goldCombo ? 12 : 6));
           g.addColorStop(0, '#ffffff');
-          g.addColorStop(0.2, '#fffde7');
-          g.addColorStop(0.5, '#ffd54f');
-          g.addColorStop(1, '#a86f00');
+          g.addColorStop(0.15, goldCombo ? '#fffef7' : '#fffde7');
+          g.addColorStop(0.5, goldCombo ? '#fff176' : '#ffd54f');
+          g.addColorStop(1, goldCombo ? '#ffca28' : '#a86f00');
           ctx.fillStyle = g;
         } else {
           ctx.fillStyle = sk.fill;
@@ -2368,17 +2379,17 @@
         ctx.beginPath(); ctx.arc(x, y, CONFIG.shooter.r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = sk.stroke; ctx.lineWidth = 2; ctx.stroke();
         if (goldSkinActive) {
-          ctx.globalAlpha = 0.35 + goldPulse * 0.35;
-          ctx.strokeStyle = '#fff8cf';
-          ctx.lineWidth = 1.6;
+          ctx.globalAlpha = goldCombo ? 0.7 : 0.35 + goldPulse * 0.35;
+          ctx.strokeStyle = goldCombo ? '#fffde7' : '#fff8cf';
+          ctx.lineWidth = goldCombo ? 2.6 : 1.6;
           ctx.beginPath();
           ctx.arc(x, y, CONFIG.shooter.r + 2.4, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.globalAlpha = 0.18 + goldPulse * 0.16;
-          ctx.fillStyle = '#fffad5';
+          ctx.globalAlpha = goldCombo ? 0.42 : 0.18 + goldPulse * 0.16;
+          ctx.fillStyle = goldCombo ? '#fffde7' : '#fffad5';
           ctx.beginPath();
-          ctx.arc(x - 4, y - 4, 1.5 + goldPulse, 0, Math.PI * 2);
-          ctx.arc(x + 6, y + 2, 1.1 + goldPulse * 0.8, 0, Math.PI * 2);
+          ctx.arc(x - 4, y - 4, (goldCombo ? 3.2 : 1.5) + goldPulse, 0, Math.PI * 2);
+          ctx.arc(x + 6, y + 2, (goldCombo ? 2.4 : 1.1) + goldPulse * 0.8, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
