@@ -2959,64 +2959,81 @@
         }
         ctx.restore();
       }
-      // pociski
-      for (const b of bullets) {
-        ctx.save();
-        const bw = b.width || 10;
-        const bh = b.height || 4;
-        const pulse = 0.55 + 0.45 * Math.sin(nowS * 24 + (b.phase || 0));
-        const trail = Math.max(6, bw * (0.65 + pulse * 0.35));
-        ctx.globalAlpha = b.isGolden ? (0.34 + pulse * 0.18) : (0.24 + pulse * 0.13);
-        ctx.fillStyle = b.isGolden ? 'rgba(179,136,255,0.62)' : 'rgba(112,205,255,0.34)';
-        ctx.fillRect(b.x - bw * 0.5 - trail, b.y - bh * 0.5, trail + bw * 0.55, bh);
-        ctx.globalAlpha = b.isGolden ? (0.46 + pulse * 0.2) : (0.3 + pulse * 0.16);
-        ctx.fillStyle = b.isGolden ? 'rgba(128,216,255,0.74)' : 'rgba(255,245,210,0.5)';
-        ctx.fillRect(b.x - bw * 0.45 - trail * 0.62, b.y - bh * 0.22, trail * 0.62 + bw * 0.45, bh * 0.44);
-        ctx.globalAlpha = 1;
-        if (b.isGolden) {
-          const cosmicPulse = 0.5 + 0.5 * Math.sin((performance.now() * 0.02) + (b.phase || 0));
-          ctx.shadowColor = 'rgba(155, 89, 255, 0.98)';
-          ctx.shadowBlur = 12 + cosmicPulse * 10;
-          const glow = ctx.createLinearGradient(b.x - (b.width || 10) / 2, b.y, b.x + (b.width || 10) / 2, b.y);
-          glow.addColorStop(0, '#e1f5fe');
-          glow.addColorStop(0.35, '#b388ff');
-          glow.addColorStop(0.68, '#80d8ff');
-          glow.addColorStop(1, '#ffd54f');
-          ctx.fillStyle = glow;
-          ctx.shadowColor = 'rgba(122,214,255,0.66)';
-          ctx.shadowBlur = 4 + pulse * 4;
-          const tracer = ctx.createLinearGradient(b.x - bw / 2, b.y, b.x + bw / 2, b.y);
-          tracer.addColorStop(0, 'rgba(255,255,255,0.96)');
-          tracer.addColorStop(0.45, '#b3e5fc');
-          tracer.addColorStop(1, b.color || '#ffe082');
-          ctx.fillStyle = tracer;
-          ctx.fillStyle = b.color || '#ffe082';
-        ctx.fillRect(b.x - bw / 2, b.y - bh / 2, bw, bh);
-        ctx.globalAlpha = 0.88;
-        ctx.fillStyle = 'rgba(255,255,255,0.94)';
-        ctx.fillRect(b.x - bw * 0.08, b.y - bh * 0.25, bw * 0.36, bh * 0.5);
-        ctx.fillRect(b.x - (b.width || 10) / 2, b.y - (b.height || 4) / 2, b.width || 10, b.height || 4);
-        if (b.isGolden) {
-          ctx.globalAlpha = 0.55;
-          ctx.fillRect(b.x - bw, b.y - 1, Math.max(6, bw * 0.8), 2);
-          ctx.globalAlpha = 0.6;
-          ctx.fillStyle = '#fff59d';
-          const orbR = 0.8 + pulse * 1.2;
-          ctx.beginPath();
-          ctx.arc(b.x + Math.cos(nowS * 13 + (b.phase || 0)) * (bw * 0.4), b.y + Math.sin(nowS * 13 + (b.phase || 0)) * (bh * 0.84), orbR, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.globalAlpha = 0.44;
-          ctx.fillStyle = 'rgba(170,235,255,0.84)';
-          const dotR = 0.45 + pulse * 0.5;
-          ctx.beginPath();
-          ctx.arc(b.x + Math.cos(nowS * 9 + (b.phase || 0)) * (bw * 0.22), b.y + Math.sin(nowS * 9 + (b.phase || 0)) * (bh * 0.58), dotR, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillRect(b.x - (b.width || 10), b.y - 1, Math.max(6, (b.width || 10) * 0.8), 2);
-          ctx.globalAlpha = 1;
-        }
-        ctx.restore();
-      }
+// pociski
+for (const b of bullets) {
+  ctx.save();
+  const bw = b.width || 10;
+  const bh = b.height || 4;
+  const pulse = 0.55 + 0.45 * Math.sin(nowS * 24 + (b.phase || 0));
+  const trail = Math.max(6, bw * (0.65 + pulse * 0.35));
+  ctx.globalAlpha = b.isGolden ? (0.34 + pulse * 0.18) : (0.24 + pulse * 0.13);
+  ctx.fillStyle = b.isGolden ? 'rgba(179,136,255,0.62)' : 'rgba(112,205,255,0.34)';
+  ctx.fillRect(b.x - bw * 0.5 - trail, b.y - bh * 0.5, trail + bw * 0.55, bh);
+
+  ctx.globalAlpha = b.isGolden ? (0.46 + pulse * 0.2) : (0.3 + pulse * 0.16);
+  ctx.fillStyle = b.isGolden ? 'rgba(128,216,255,0.74)' : 'rgba(255,245,210,0.5)';
+  ctx.fillRect(b.x - bw * 0.45 - trail * 0.62, b.y - bh * 0.22, trail * 0.62 + bw * 0.45, bh * 0.44);
+
+  ctx.globalAlpha = 1;
+  if (b.isGolden) {
+    const cosmicPulse = 0.5 + 0.5 * Math.sin((performance.now() * 0.02) + (b.phase || 0));
+    ctx.shadowColor = 'rgba(155, 89, 255, 0.98)';
+    ctx.shadowBlur = 12 + cosmicPulse * 10;
+    const glow = ctx.createLinearGradient(b.x - bw / 2, b.y, b.x + bw / 2, b.y);
+    glow.addColorStop(0, '#e1f5fe');
+    glow.addColorStop(0.35, '#b388ff');
+    glow.addColorStop(0.68, '#80d8ff');
+    glow.addColorStop(1, '#ffd54f');
+    ctx.fillStyle = glow;
+  } else {
+    ctx.shadowColor = 'rgba(122,214,255,0.66)';
+    ctx.shadowBlur = 4 + pulse * 4;
+    const tracer = ctx.createLinearGradient(b.x - bw / 2, b.y, b.x + bw / 2, b.y);
+    tracer.addColorStop(0, 'rgba(255,255,255,0.96)');
+    tracer.addColorStop(0.45, '#b3e5fc');
+    tracer.addColorStop(1, b.color || '#ffe082');
+    ctx.fillStyle = tracer;
+  }
+
+  ctx.fillRect(b.x - bw / 2, b.y - bh / 2, bw, bh);
+  ctx.globalAlpha = 0.88;
+  ctx.fillStyle = 'rgba(255,255,255,0.94)';
+  ctx.fillRect(b.x - bw * 0.08, b.y - bh * 0.25, bw * 0.36, bh * 0.5);
+
+  if (b.isGolden) {
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = 'rgba(179,136,255,0.65)';
+    ctx.fillRect(b.x - bw, b.y - 1, Math.max(6, bw * 0.8), 2);
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = '#fff59d';
+    const orbR = 0.8 + pulse * 1.2;
+    ctx.beginPath();
+    ctx.arc(
+      b.x + Math.cos(nowS * 13 + (b.phase || 0)) * (bw * 0.4),
+      b.y + Math.sin(nowS * 13 + (b.phase || 0)) * (bh * 0.84),
+      orbR,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  } else {
+    ctx.globalAlpha = 0.44;
+    ctx.fillStyle = 'rgba(170,235,255,0.84)';
+    const dotR = 0.45 + pulse * 0.5;
+    ctx.beginPath();
+    ctx.arc(
+      b.x + Math.cos(nowS * 9 + (b.phase || 0)) * (bw * 0.22),
+      b.y + Math.sin(nowS * 9 + (b.phase || 0)) * (bh * 0.58),
+      dotR,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
       // efekty
       for (const f of fx) {
         if (f.type === 'shard') {
