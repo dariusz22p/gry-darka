@@ -2702,6 +2702,7 @@
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
         const baseFill = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill);
         const edge = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : zc.stroke);
+        const modelScale = z.boss ? 1.2 : 1.38;
         const walk = Math.sin(nowS * 7.2 + z.x * 0.045);
         const torsoW = z.r * (z.boss ? 1.28 : 1.08);
         const torsoH = z.r * (z.boss ? 1.85 : 1.5);
@@ -2710,6 +2711,7 @@
 
         ctx.save();
         ctx.translate(z.x, z.y);
+        ctx.scale(modelScale, modelScale);
 
         // Legs first so upper body can overlap and look volumetric.
         ctx.lineCap = 'round';
@@ -2819,9 +2821,10 @@
         }
         if (z.hp < z.maxhp) {
           const bw = z.r * 2.1;
-          ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw, 5);
+          const hpY = z.y - z.r - 10 - (modelScale - 1) * z.r * 1.8;
+          ctx.fillStyle = '#0f141b'; ctx.fillRect(z.x - bw / 2, hpY, bw, 5);
           ctx.fillStyle = goldenWave ? '#ffec8b' : (z.boss ? '#ffb199' : '#8bd450');
-          ctx.fillRect(z.x - bw / 2, z.y - z.r - 10, bw * (z.hp / z.maxhp), 5);
+          ctx.fillRect(z.x - bw / 2, hpY, bw * (z.hp / z.maxhp), 5);
         }
       }
       // dropy broni
