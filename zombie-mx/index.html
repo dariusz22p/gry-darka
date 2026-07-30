@@ -6,10 +6,24 @@
 <title>Zombie MX</title>
 <meta name="theme-color" content="#12181f" />
 <style>
+  :root {
+    --bg0: #070b11;
+    --bg1: #0f1724;
+    --bg2: #1a2940;
+    --panel: rgba(20, 30, 44, 0.82);
+    --panel-strong: rgba(24, 36, 52, 0.92);
+    --line: rgba(112, 170, 224, 0.33);
+    --line-soft: rgba(128, 190, 255, 0.2);
+    --text: #eaf3ff;
+    --soft: #bdd0e6;
+    --accent: #65d8ff;
+    --accent-hot: #ffd166;
+  }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; overscroll-behavior: none;
-    background: #12181f; color: #e8edf2;
+    background: radial-gradient(1200px 560px at 12% -4%, #223656 0%, var(--bg1) 46%, var(--bg0) 100%);
+    color: var(--text);
     font-family: "Segoe UI", system-ui, sans-serif;
     -webkit-user-select: none; user-select: none;
     width: 100%; height: 100%;
@@ -34,6 +48,8 @@
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+    border-left: 1px solid var(--line-soft);
+    padding-left: 8px;
   }
   #sidebar::-webkit-scrollbar { width: 8px; }
   #sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
@@ -53,9 +69,10 @@
     min-width: 0;
     min-height: 24px;
     padding: 4px 8px;
-    border: 1px solid #2f3d4e;
+    border: 1px solid var(--line);
     border-radius: 6px;
-    background: #18212c;
+    background: linear-gradient(180deg, rgba(41, 57, 78, 0.5), rgba(15, 22, 33, 0.7));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 18px rgba(0,0,0,.2);
   }
   #hud .stat span,
   #hud .stat b,
@@ -70,14 +87,15 @@
   #hud .stat span { font-size: 10px; }
   #hud .stat b { font-size: 11px; }
   #hud b { color: #fff; }
-  #hud b.soft { color: #c7d3df; font-weight: 600; }
+  #hud b.soft { color: var(--soft); font-weight: 600; }
   #shop {
     display: grid;
     gap: 4px;
     padding: 6px;
-    border: 1px solid #2f3d4e;
+    border: 1px solid var(--line);
     border-radius: 6px;
-    background: #18212c;
+    background: linear-gradient(180deg, rgba(28,41,59,.8), rgba(17,24,35,.92));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 14px 24px rgba(0,0,0,.22);
     max-height: 68vh;
     overflow-y: auto;
     min-height: 0;
@@ -88,21 +106,26 @@
   #shopTitle {
     font-size: 10px;
     font-weight: 700;
-    color: #ffd180;
+    color: var(--accent-hot);
     letter-spacing: .4px;
   }
   .shopBtn {
     width: 100%;
-    border: 1px solid #3a4c60;
+    border: 1px solid var(--line);
     border-radius: 6px;
-    background: #253244;
-    color: #e8edf2;
+    background: linear-gradient(180deg, rgba(44,62,86,.86), rgba(26,36,50,.95));
+    color: var(--text);
     padding: 5px 6px;
     font-size: 10px;
     text-align: left;
     cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
   }
-  .shopBtn:hover { background: #2f4056; }
+  .shopBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 14px rgba(0,0,0,.25);
+    border-color: rgba(122, 214, 255, 0.7);
+  }
   .shopBtn:disabled {
     opacity: .45;
     cursor: not-allowed;
@@ -110,16 +133,16 @@
   }
   #power900Btn {
     width: 100%;
-    border: 1px solid #3a4c60;
+    border: 1px solid rgba(255,209,102,.52);
     border-radius: 6px;
-    background: #2c3a4b;
-    color: #ffd180;
+    background: linear-gradient(180deg, rgba(62,84,112,.9), rgba(35,49,67,.95));
+    color: var(--accent-hot);
     padding: 5px 8px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
   }
-  #power900Btn:hover { background: #34465b; }
+  #power900Btn:hover { background: linear-gradient(180deg, rgba(72,96,128,.95), rgba(39,54,74,.98)); }
   #ingameHudTop, #ingameHudBottom {
     position: absolute;
     right: 2px;
@@ -176,19 +199,32 @@
   #ingameHudTop b.soft,
   #ingameHudBottom b.soft { color: rgba(199,211,223,.62); font-weight: 600; }
   #difficulty {
-    background: #202b3a; color: #e8edf2; border: 1px solid #3a4c60;
+    background: linear-gradient(180deg, rgba(39,53,72,.95), rgba(28,39,55,.95)); color: var(--text); border: 1px solid var(--line);
     border-radius: 6px; padding: 2px 6px; font-family: inherit; font-size: 11px;
   }
   .base { min-width: 0; }
   .bar { flex: 1; height: 14px; border-radius: 7px; background: #26313f; border: 1px solid #3a4c60; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ef5350, #b71c1c); transition: width .12s linear; }
-  #stage { position: relative; border-radius: 0; overflow: hidden; box-shadow: none; }
+  #stage {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(101, 216, 255, 0.26);
+    box-shadow: 0 18px 48px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.04) inset;
+  }
   #stageCol { min-width: 0; grid-area: stage; max-width: 920px; width: 100%; margin: 0 auto; }
-  canvas#game { display: block; width: 100%; height: auto; background: #0f141b; touch-action: none; }
+  canvas#game {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: radial-gradient(circle at 35% 10%, #1d2e46 0%, #0f141b 52%, #0a1016 100%);
+    touch-action: none;
+  }
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px; background: rgba(8,12,17,.78);
+    align-items: center; justify-content: center; gap: 14px; background: radial-gradient(circle at 30% 20%, rgba(36,52,76,.72), rgba(7,11,16,.86));
     z-index: 4;
+    backdrop-filter: blur(2px);
   }
   #winConfetti {
     position: absolute;
@@ -217,13 +253,14 @@
   #overlay p { margin: 0; opacity: .85; }
   #overlay button, .back {
     cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
-    font-size: 15px; font-weight: 600; background: #4f9dff; color: #fff; text-decoration: none;
+    font-size: 15px; font-weight: 700; background: linear-gradient(180deg, #60b4ff, #3988df); color: #fff; text-decoration: none;
+    box-shadow: 0 8px 18px rgba(0,0,0,.28);
   }
-  #overlay button:hover { background: #3b8bf0; }
+  #overlay button:hover { background: linear-gradient(180deg, #6bc0ff, #3f96f1); }
   .shopSectionTitle {
     font-size: 10px;
     font-weight: 800;
-    color: #9fb2c6;
+    color: #bad1ea;
     letter-spacing: .6px;
     margin-top: 4px;
   }
@@ -300,10 +337,10 @@
   #skinList::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 999px; }
   #skinList::-webkit-scrollbar-thumb { background: #3a4c60; border-radius: 999px; }
   .skinItem {
-    border: 1px solid #33465c;
+    border: 1px solid var(--line);
     border-radius: 8px;
     padding: 8px;
-    background: #202b3a;
+    background: linear-gradient(180deg, rgba(41,57,78,.66), rgba(28,40,56,.86));
     display: grid;
     gap: 6px;
   }
@@ -320,16 +357,17 @@
     font-size: 11px;
   }
   .skinBtn {
-    border: 1px solid #3a4c60;
+    border: 1px solid var(--line);
     border-radius: 6px;
-    background: #2c3a4b;
-    color: #e8edf2;
+    background: linear-gradient(180deg, rgba(49,68,92,.85), rgba(32,45,62,.92));
+    color: var(--text);
     font-size: 11px;
     font-weight: 700;
     padding: 4px 8px;
     cursor: pointer;
+    transition: transform .12s ease, border-color .12s ease;
   }
-  .skinBtn:hover { background: #34465b; }
+  .skinBtn:hover { transform: translateY(-1px); border-color: rgba(122,214,255,.7); }
   .skinBtn:disabled {
     opacity: .5;
     cursor: not-allowed;
@@ -337,20 +375,28 @@
   #alert {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22);
-    background: rgba(7,11,16,.72); color: #ffd180; font-weight: 700; letter-spacing: .8px;
+    background: linear-gradient(180deg, rgba(17,25,38,.86), rgba(8,12,18,.92)); color: #ffd180; font-weight: 800; letter-spacing: .8px;
     opacity: 0; transition: opacity .18s linear; pointer-events: none;
     z-index: 3;
+    box-shadow: 0 10px 28px rgba(0,0,0,.34);
   }
   #alert.show { opacity: 1; }
   .homeLink:hover { opacity: .7; }
   .variant-badge {
     position: absolute; bottom: 6px; right: 6px; z-index: 2;
     font-size: 18px; font-weight: 900; letter-spacing: 2px;
-    background: rgba(0, 217, 255, 0.2); border: 2px solid #00d9ff;
-    padding: 4px 12px; border-radius: 6px; color: #00d9ff;
-    opacity: 0.7; transition: opacity .15s ease;
+    background: linear-gradient(180deg, rgba(0, 217, 255, 0.26), rgba(0, 118, 173, 0.22));
+    border: 2px solid #51deff;
+    padding: 4px 12px; border-radius: 8px; color: #8de9ff;
+    opacity: 0.78; transition: opacity .15s ease;
+    box-shadow: 0 0 18px rgba(54,198,255,.35);
+    animation: badgePulse 2.6s ease-in-out infinite;
   }
   #stage:hover .variant-badge { opacity: 1; }
+  @keyframes badgePulse {
+    0%, 100% { transform: translateY(0); box-shadow: 0 0 18px rgba(54,198,255,.35); }
+    50% { transform: translateY(-2px); box-shadow: 0 0 24px rgba(54,198,255,.5); }
+  }
   #mobileBombBtn {
     display: none;
     position: absolute;
@@ -466,14 +512,23 @@
     font-size: 9px; line-height: 1.22; opacity: .9;
     display: grid; gap: 3px;
     padding: 6px 8px;
-    border: 1px solid #2f3d4e;
+    border: 1px solid var(--line);
     border-radius: 8px;
-    background: #18212c;
+    background: linear-gradient(180deg, rgba(30,44,63,.74), rgba(18,27,39,.9));
   }
   #help span, #help a { min-height: 14px; display: flex; align-items: center; }
-  .back { background: #2c3a4b; color: #9fb2c6; padding: 2px 7px; font-size: 9px; }
-  .back:hover { background: #34465b; color: #e8edf2; }
-  kbd { background: #2c3a4b; border: 1px solid #3a4c60; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; font-size: 9px; }
+  .back { background: linear-gradient(180deg, rgba(49,68,92,.85), rgba(32,45,62,.92)); color: var(--soft); padding: 2px 7px; font-size: 9px; }
+  .back:hover { background: linear-gradient(180deg, rgba(59,81,108,.9), rgba(36,51,70,.95)); color: var(--text); }
+  kbd {
+    background: linear-gradient(180deg, rgba(44,63,87,.9), rgba(27,39,56,.95));
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 9px;
+    color: #d9e9ff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  }
   @media (max-width: 980px) {
     #layout {
       grid-template-columns: 1fr;
@@ -2467,6 +2522,8 @@
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
+      const now = performance.now();
+      const nowS = now * 0.001;
       ctx.fillStyle = '#0f141b'; ctx.fillRect(0, 0, W, H);
       const laneGradient = ctx.createLinearGradient(0, CONFIG.wallTop, 0, CONFIG.wallBottom);
       laneGradient.addColorStop(0, 'rgba(54,78,104,0.08)');
@@ -2475,6 +2532,20 @@
       ctx.fillStyle = laneGradient;
       ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
       ctx.fillStyle = '#1a2230'; ctx.fillRect(0, CONFIG.wallTop, W, CONFIG.wallBottom - CONFIG.wallTop);
+      const beamShiftA = (nowS * 38) % (W + 300) - 150;
+      const beamShiftB = (nowS * 24) % (W + 380) - 190;
+      const beamA = ctx.createLinearGradient(beamShiftA - 120, 0, beamShiftA + 140, H);
+      beamA.addColorStop(0, 'rgba(255,255,255,0)');
+      beamA.addColorStop(0.5, 'rgba(119,202,255,0.08)');
+      beamA.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = beamA;
+      ctx.fillRect(0, 0, W, H);
+      const beamB = ctx.createLinearGradient(beamShiftB + 180, 0, beamShiftB - 140, H);
+      beamB.addColorStop(0, 'rgba(255,255,255,0)');
+      beamB.addColorStop(0.5, 'rgba(255,187,96,0.06)');
+      beamB.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = beamB;
+      ctx.fillRect(0, 0, W, H);
       if (ambientDust.length) {
         for (let i = 0; i < ambientDust.length; i++) {
           const p = ambientDust[i];
@@ -2568,6 +2639,14 @@
       }
       // dropy broni
       for (const p of pickups) {
+        const pulse = 0.5 + 0.5 * Math.sin(nowS * 6.5 + p.x * 0.04);
+        ctx.globalAlpha = 0.24 + pulse * 0.24;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + 4 + pulse * 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
         ctx.fillStyle = p.color;
         ctx.strokeStyle = '#0d2330';
         ctx.lineWidth = 2;
@@ -2751,6 +2830,16 @@
         ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (2 - f.life * 4), 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
       }
+      const scanA = 0.04 + 0.01 * Math.sin(nowS * 4.4);
+      ctx.fillStyle = 'rgba(170,220,255,' + scanA + ')';
+      for (let y = 0; y < H; y += 4) {
+        ctx.fillRect(0, y, W, 1);
+      }
+      const vignette = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.2, W * 0.5, H * 0.5, H * 0.82);
+      vignette.addColorStop(0, 'rgba(255,255,255,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.42)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, W, H);
       drawConfetti();
       if (state === 'pause') {
         ctx.fillStyle = 'rgba(6,10,14,.45)';
