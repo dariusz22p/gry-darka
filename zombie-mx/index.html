@@ -2700,18 +2700,116 @@
       const goldenWave = Math.floor(effectiveWaveForScaling(wave)) >= 100;
       for (const z of zombies) {
         const mini = z.miniType ? CONFIG.miniBoss[z.miniType] : null;
-        ctx.fillStyle = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill);
-        ctx.strokeStyle = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : zc.stroke);
-        ctx.lineWidth = z.boss ? 3 : 2;
-        ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = z.boss ? 'rgba(24,14,14,0.95)' : 'rgba(18,22,25,0.9)';
-        const eyeR = z.boss ? 2.2 : 1.3;
-        const eyeOffX = z.boss ? 4.1 : 2.3;
-        const eyeOffY = z.boss ? 1.7 : 1.1;
+        const baseFill = goldenWave ? '#ffd54f' : (z.boss ? (mini ? mini.color : '#ff8a65') : zc.fill);
+        const edge = goldenWave ? '#a86f00' : (z.boss ? '#bf4c2b' : zc.stroke);
+        const walk = Math.sin(nowS * 7.2 + z.x * 0.045);
+        const torsoW = z.r * (z.boss ? 1.28 : 1.08);
+        const torsoH = z.r * (z.boss ? 1.85 : 1.5);
+        const headR = z.r * (z.boss ? 0.74 : 0.6);
+        const armY = z.y - torsoH * 0.2;
+
+        ctx.save();
+        ctx.translate(z.x, z.y);
+
+        // Legs first so upper body can overlap and look volumetric.
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(36,46,56,0.94)';
+        ctx.lineWidth = z.boss ? 4.2 : 2.8;
         ctx.beginPath();
-        ctx.arc(z.x + eyeOffX, z.y - eyeOffY, eyeR, 0, Math.PI * 2);
-        ctx.arc(z.x - eyeOffX * 0.1, z.y + eyeOffY, eyeR * 0.75, 0, Math.PI * 2);
+        ctx.moveTo(-torsoW * 0.28, torsoH * 0.12);
+        ctx.lineTo(-torsoW * 0.36 + walk * 1.8, torsoH * 0.84);
+        ctx.moveTo(torsoW * 0.2, torsoH * 0.14);
+        ctx.lineTo(torsoW * 0.28 - walk * 1.6, torsoH * 0.86);
+        ctx.stroke();
+
+        // Torso with dirty cloth tone and chest shadows.
+        const cloth = ctx.createLinearGradient(0, -torsoH * 0.62, 0, torsoH * 0.8);
+        cloth.addColorStop(0, baseFill);
+        cloth.addColorStop(0.54, z.boss ? '#5a2f26' : '#465a49');
+        cloth.addColorStop(1, z.boss ? '#28150f' : '#1a232b');
+        ctx.fillStyle = cloth;
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = z.boss ? 2.8 : 1.9;
+        ctx.beginPath();
+        ctx.ellipse(0, -torsoH * 0.05, torsoW * 0.66, torsoH * 0.74, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(25,32,40,0.75)';
+        ctx.fillRect(-torsoW * 0.2, -torsoH * 0.08, torsoW * 0.16, torsoH * 0.5);
+        ctx.fillRect(torsoW * 0.05, torsoH * 0.02, torsoW * 0.14, torsoH * 0.44);
+
+        // Arms and forearms.
+        ctx.strokeStyle = z.boss ? 'rgba(58,22,20,0.95)' : 'rgba(52,68,55,0.95)';
+        ctx.lineWidth = z.boss ? 3.9 : 2.6;
+        ctx.beginPath();
+        ctx.moveTo(-torsoW * 0.52, armY - z.y);
+        ctx.lineTo(-torsoW * 0.18, -torsoH * 0.18);
+        ctx.lineTo(-torsoW * 0.48 + walk * 1.7, torsoH * 0.22);
+        ctx.moveTo(torsoW * 0.5, armY - z.y);
+        ctx.lineTo(torsoW * 0.18, -torsoH * 0.16);
+        ctx.lineTo(torsoW * 0.46 - walk * 1.5, torsoH * 0.26);
+        ctx.stroke();
+
+        // Neck and head with skin highlight and cheekbone shadow.
+        ctx.fillStyle = z.boss ? '#7a4f3f' : '#7f9d76';
+        ctx.fillRect(-torsoW * 0.08, -torsoH * 0.68, torsoW * 0.16, torsoH * 0.16);
+        const skin = ctx.createRadialGradient(0, -torsoH * 0.55, headR * 0.25, 0, -torsoH * 0.55, headR * 1.15);
+        skin.addColorStop(0, z.boss ? '#c8947a' : '#b4c89b');
+        skin.addColorStop(0.65, z.boss ? '#8c5a49' : '#7c976d');
+        skin.addColorStop(1, z.boss ? '#523127' : '#4f6651');
+        ctx.fillStyle = skin;
+        ctx.strokeStyle = 'rgba(24,30,36,0.88)';
+        ctx.lineWidth = z.boss ? 2.4 : 1.5;
+        ctx.beginPath();
+        ctx.ellipse(0, -torsoH * 0.55, headR * 1.02, headR * 0.92, -0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Eyes, brows, mouth and scar pass.
+        const eyeY = -torsoH * 0.58;
+        const eyeX = headR * 0.42;
+        ctx.fillStyle = 'rgba(236,242,226,0.92)';
+        ctx.beginPath();
+        ctx.ellipse(-eyeX, eyeY, headR * 0.18, headR * 0.13, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX, eyeY + headR * 0.03, headR * 0.18, headR * 0.13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(23,28,33,0.95)';
+        ctx.beginPath();
+        ctx.arc(-eyeX + headR * 0.03, eyeY, headR * 0.06, 0, Math.PI * 2);
+        ctx.arc(eyeX + headR * 0.02, eyeY + headR * 0.02, headR * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(20,22,24,0.86)';
+        ctx.lineWidth = Math.max(0.8, z.boss ? 1.7 : 1.1);
+        ctx.beginPath();
+        ctx.moveTo(-eyeX - headR * 0.22, eyeY - headR * 0.2);
+        ctx.lineTo(-eyeX + headR * 0.22, eyeY - headR * 0.12);
+        ctx.moveTo(eyeX - headR * 0.22, eyeY - headR * 0.12);
+        ctx.lineTo(eyeX + headR * 0.24, eyeY - headR * 0.2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(58,20,20,0.92)';
+        ctx.lineWidth = Math.max(0.9, z.boss ? 1.8 : 1.2);
+        ctx.beginPath();
+        ctx.moveTo(-headR * 0.26, eyeY + headR * 0.38);
+        ctx.lineTo(headR * 0.34, eyeY + headR * 0.34 + Math.sin(nowS * 10 + z.y * 0.05) * 0.3);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(142,34,34,0.86)';
+        ctx.lineWidth = Math.max(0.8, z.boss ? 1.4 : 1);
+        ctx.beginPath();
+        ctx.moveTo(-headR * 0.5, eyeY + headR * 0.16);
+        ctx.lineTo(-headR * 0.08, eyeY + headR * 0.48);
+        ctx.stroke();
+
+        // Rot and blood spots for realism.
+        ctx.fillStyle = 'rgba(118,30,24,0.52)';
+        ctx.beginPath();
+        ctx.arc(-torsoW * 0.18, torsoH * 0.05, headR * 0.16, 0, Math.PI * 2);
+        ctx.arc(torsoW * 0.21, -torsoH * 0.18, headR * 0.12, 0, Math.PI * 2);
+        ctx.arc(-headR * 0.34, -torsoH * 0.5, headR * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
         if (z.boss) {
           ctx.strokeStyle = 'rgba(255,235,170,0.75)';
           ctx.lineWidth = 1.3;
