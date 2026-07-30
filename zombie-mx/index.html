@@ -2323,6 +2323,8 @@
       // zwarta kupa ekipy
       const goldSkinActive = skinKey === 'gold';
       const goldPulse = goldSkinActive ? (0.65 + 0.35 * Math.sin(performance.now() * 0.012)) : 0;
+      const goldenGunActive = gunKey === 'goldengun';
+      const goldenGunPulse = goldenGunActive ? (0.6 + 0.4 * Math.sin(performance.now() * 0.016)) : 0;
       for (let i = 0; i < N; i++) {
         const o = memberOffset(i);
         const x = CONFIG.squadX + o.x;
@@ -2332,15 +2334,33 @@
         ctx.save();
         ctx.strokeStyle = gun.barrel; ctx.lineCap = 'round'; ctx.lineWidth = gun.width;
         ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - gun.length, y); ctx.stroke();
+        if (goldenGunActive) {
+          ctx.shadowColor = 'rgba(255, 224, 128, 0.95)';
+          ctx.shadowBlur = 10 + goldenGunPulse * 12;
+          const coneTip = x - gun.length - 8;
+          const coneWidth = 6 + goldenGunPulse * 4;
+          const cone = ctx.createLinearGradient(x - gun.length, y, coneTip, y);
+          cone.addColorStop(0, 'rgba(255,245,182,0.95)');
+          cone.addColorStop(0.5, 'rgba(255,213,79,0.95)');
+          cone.addColorStop(1, 'rgba(184,134,11,0.15)');
+          ctx.fillStyle = cone;
+          ctx.beginPath();
+          ctx.moveTo(x - gun.length + 1, y - coneWidth);
+          ctx.lineTo(coneTip, y);
+          ctx.lineTo(x - gun.length + 1, y + coneWidth);
+          ctx.closePath();
+          ctx.fill();
+        }
         ctx.fillStyle = gun.body;
         ctx.fillRect(x - Math.max(10, gun.length * 0.55), y - Math.max(3, gun.width * 0.5), Math.max(9, gun.length * 0.42), Math.max(6, gun.width));
         if (goldSkinActive) {
           ctx.shadowColor = 'rgba(255, 223, 120, 0.95)';
-          ctx.shadowBlur = 10 + goldPulse * 20;
-          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + 4);
-          g.addColorStop(0, '#fffde7');
-          g.addColorStop(0.48, '#ffd54f');
-          g.addColorStop(1, '#b8860b');
+          ctx.shadowBlur = 12 + goldPulse * 18;
+          const g = ctx.createRadialGradient(x - 1, y - 2, 1, x, y, CONFIG.shooter.r + 6);
+          g.addColorStop(0, '#ffffff');
+          g.addColorStop(0.2, '#fffde7');
+          g.addColorStop(0.5, '#ffd54f');
+          g.addColorStop(1, '#a86f00');
           ctx.fillStyle = g;
         } else {
           ctx.fillStyle = sk.fill;
@@ -2354,6 +2374,12 @@
           ctx.beginPath();
           ctx.arc(x, y, CONFIG.shooter.r + 2.4, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.globalAlpha = 0.18 + goldPulse * 0.16;
+          ctx.fillStyle = '#fffad5';
+          ctx.beginPath();
+          ctx.arc(x - 4, y - 4, 1.5 + goldPulse, 0, Math.PI * 2);
+          ctx.arc(x + 6, y + 2, 1.1 + goldPulse * 0.8, 0, Math.PI * 2);
+          ctx.fill();
         }
         ctx.restore();
       }
