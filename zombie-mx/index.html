@@ -1162,7 +1162,8 @@
     }
 
     function stepToFreq(semitone) {
-      return 55 * Math.pow(2, semitone / 12);
+      // Keep horror mood but stay in clearly audible range on laptop/phone speakers.
+      return 110 * Math.pow(2, semitone / 12);
     }
 
     function scheduleFilteredTone(opts) {
@@ -1195,10 +1196,10 @@
 
     function scheduleRumble(t, profile) {
       const rumbleVol = 0.03 + profile.pressure * 0.04;
-      const baseRoot = [-14, -12, -16][profile.variant];
+      const baseRoot = [-8, -6, -10][profile.variant];
       scheduleFilteredTone({
         time: t,
-        freq: stepToFreq(baseRoot - 24),
+        freq: stepToFreq(baseRoot - 12),
         duration: musicBeatDuration() * 3.8,
         volume: rumbleVol,
         type: 'sawtooth',
@@ -1210,7 +1211,7 @@
       });
       scheduleFilteredTone({
         time: t + musicBeatDuration() * 0.1,
-        freq: stepToFreq(baseRoot - 12),
+        freq: stepToFreq(baseRoot),
         duration: musicBeatDuration() * 2.7,
         volume: rumbleVol * 0.55,
         type: 'triangle',
@@ -1250,7 +1251,7 @@
       const pulseVol = 0.028 + profile.pressure * 0.03;
       scheduleFilteredTone({
         time: t,
-        freq: stepToFreq(-19),
+        freq: stepToFreq(-12),
         duration: 0.2,
         volume: pulseVol,
         type: 'sine',
@@ -1263,7 +1264,7 @@
       if (profile.pressure > 0.28) {
         scheduleFilteredTone({
           time: t + 0.045,
-          freq: stepToFreq(-7),
+          freq: stepToFreq(0),
           duration: 0.15,
           volume: pulseVol * 0.72,
           type: 'triangle',
@@ -1388,7 +1389,7 @@
       const beat = musicBeatDuration();
       const profile = gameplayMusicProfile();
       const barStep = musicStep % 16;
-      const rootSteps = [-14, -12, -16, -9];
+      const rootSteps = [-8, -6, -10, -4];
       const root = rootSteps[(Math.floor(musicStep / 16) + profile.variant) % rootSteps.length];
 
       if (barStep % 8 === 0) {
@@ -1416,6 +1417,19 @@
           detune: 11,
           cutoff: 760,
           q: 1.3,
+          filterType: 'bandpass'
+        });
+        scheduleFilteredTone({
+          time: t + beat * 0.15,
+          freq: stepToFreq(root + 12),
+          duration: beat * 2.2,
+          volume: 0.014 + profile.pressure * 0.012,
+          type: 'triangle',
+          attack: 0.02,
+          release: 0.25,
+          detune: 3,
+          cutoff: 1450,
+          q: 1.1,
           filterType: 'bandpass'
         });
       }
