@@ -1078,7 +1078,7 @@
     };
     let ownedGuns = defaultOwnedGuns();
 
-    // ---- Dźwięk (Web Audio, syntezowany) ----
+    // ---- Dźwięk (Web Audio, syntezowany - upbeat) ----
     let audioCtx = null, master = null, muted = false;
     let musicBus = null;
     let musicComp = null;
@@ -1088,11 +1088,11 @@
     let musicNextTime = 0;
     const MASTER_VOL = 0.3;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
-    const MUSIC_ENGINE_KEY = 'mx_music_engine_v2';
+    const MUSIC_ENGINE_KEY = 'mx_music_engine_v3';
 
     try {
-      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '2') {
-        localStorage.setItem(MUSIC_ENGINE_KEY, '2');
+      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '3') {
+        localStorage.setItem(MUSIC_ENGINE_KEY, '3');
         localStorage.setItem(MUSIC_PREF_KEY, '1');
       }
       musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== '0';
@@ -1116,12 +1116,12 @@
 
     function musicBeatDuration() {
       const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
-      const bpm = 42 + tension * 0.12;
+      const bpm = 102 + tension * 0.22;
       return 60 / bpm;
     }
 
     function stepToFreq(semitone) {
-      return 220 * Math.pow(2, semitone / 12);
+      return 261.63 * Math.pow(2, semitone / 12);
     }
 
     function scheduleKick(t, amp) {
@@ -1129,15 +1129,15 @@
       const o = audioCtx.createOscillator();
       const g = audioCtx.createGain();
       o.type = 'sine';
-      o.frequency.setValueAtTime(118, t);
-      o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+      o.frequency.setValueAtTime(142, t);
+      o.frequency.exponentialRampToValueAtTime(56, t + 0.12);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.linearRampToValueAtTime(amp, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
       o.connect(g);
       g.connect(musicBus);
       o.start(t);
-      o.stop(t + 0.23);
+      o.stop(t + 0.2);
     }
 
     function scheduleNoiseHit(t, amp, hpFreq, len) {
@@ -1156,6 +1156,14 @@
       g.connect(musicBus);
       src.start(t);
       src.stop(t + len + 0.02);
+    }
+
+    function scheduleSnare(t, amp) {
+      scheduleNoiseHit(t, amp, 1350, 0.12);
+    }
+
+    function scheduleHat(t, amp) {
+      scheduleNoiseHit(t, amp, 5200, 0.045);
     }
 
     function scheduleTone(opts) {
@@ -1181,60 +1189,41 @@
 
     function scheduleMusicStep(t) {
       const beat = musicBeatDuration();
-      const rootProg = [0, -1, -5, -8];
-      const root = rootProg[Math.floor(musicStep / 6) % rootProg.length];
-      const phrase = musicStep % 16;
-      const arp = [0, -1, 1, 0, 6, 5, 7, 6, 1, 0, -2, -1, 8, 7, 6, 5];
-      const leadSemitone = root + arp[phrase];
-      const bassSemitone = root + (phrase % 8 === 0 ? -24 : (phrase % 4 === 0 ? -12 : -19));
-      const padSemitone = root + (phrase % 2 === 0 ? 3 : 8);
+      const stress = Math.min(1, (wave || 1) / 120);
+      const barStep = musicStep % 16;
+      const chordProg = [0, 5, 9, 7];
+      const root = chordProg[Math.floor(musicStep / 16) % chordProg.length];
+      const triad = [0, 4, 7];
+      const leadPattern = [0, 2, 4, 7, 9, 7, 4, 2, 0, 2, 4, 7, 11, 9, 7, 4];
 
-      const stress = Math.min(1, (wave || 1) / 60);
-      const leadVol = 0.014 + stress * 0.005;
-      const bassVol = 0.07 + stress * 0.016;
-      const padVol = 0.012 + stress * 0.004;
-      const droneVol = 0.03 + stress * 0.008;
+      const bassVol = 0.06 + stress * 0.016;
+      const chordVol = 0.011 + stress * 0.003;
+      const leadVol = 0.012 + stress * 0.005;
+      const kickVol = 0.082 + stress * 0.02;
+      const snareVol = 0.028 + stress * 0.01;
+      const hatVol = 0.012 + stress * 0.006;
 
-      scheduleTone({ time: t, freq: stepToFreq(bassSemitone), duration: beat * 1.65, volume: bassVol, type: 'sawtooth', attack: 0.012, release: 0.24, detune: -26 });
-      if (phrase !== 1 && phrase !== 4 && phrase !== 10 && phrase !== 13) {
-        scheduleTone({ time: t + beat * 0.06, freq: stepToFreq(leadSemitone), duration: beat * 0.22, volume: leadVol, type: 'triangle', attack: 0.004, release: 0.05, detune: (phrase % 2 === 0 ? -19 : 17) });
-      }
-      if (musicStep % 3 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(padSemitone), duration: beat * 3.4, volume: padVol, type: 'sine', attack: 0.06, release: 0.42, detune: -11 });
-      }
-      if (musicStep % 4 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(root - 12), duration: beat * 4.8, volume: droneVol, type: 'triangle', attack: 0.14, release: 0.8, detune: -34 });
-        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 5.8, volume: droneVol * 0.94, type: 'sine', attack: 0.2, release: 1.0, detune: 14 });
-        scheduleTone({ time: t + beat * 0.22, freq: stepToFreq(root + 1), duration: beat * 0.18, volume: 0.011 + stress * 0.003, type: 'square', attack: 0.002, release: 0.03, detune: -28 });
-      }
-      if (musicStep % 16 === 5 || musicStep % 16 === 12) {
-        scheduleTone({ time: t + beat * 0.16, freq: stepToFreq(root + 6), duration: beat * 0.14, volume: 0.009 + stress * 0.003, type: 'square', attack: 0.001, release: 0.02, detune: 31 });
-      }
-      if (musicStep % 16 === 9) {
-        scheduleTone({ time: t + beat * 0.3, freq: stepToFreq(root + 11), duration: beat * 0.38, volume: 0.013 + stress * 0.004, type: 'triangle', attack: 0.01, release: 0.08, detune: -22 });
-      }
-      if (musicStep % 32 === 0) {
-        const wail = audioCtx.createOscillator();
-        const wg = audioCtx.createGain();
-        const wt = t + beat * 0.36;
-        wail.type = 'sine';
-        wail.frequency.setValueAtTime(stepToFreq(root + 10), wt);
-        wail.frequency.exponentialRampToValueAtTime(stepToFreq(root + 1), wt + beat * 0.9);
-        wail.detune.setValueAtTime(-8, wt);
-        wail.detune.linearRampToValueAtTime(18, wt + beat * 0.9);
-        wg.gain.setValueAtTime(0.0001, wt);
-        wg.gain.linearRampToValueAtTime(0.018 + stress * 0.005, wt + 0.05);
-        wg.gain.exponentialRampToValueAtTime(0.0001, wt + beat * 1.1);
-        wail.connect(wg);
-        wg.connect(musicBus);
-        wail.start(wt);
-        wail.stop(wt + beat * 1.15);
+      if (barStep % 4 === 0) {
+        const bassTone = barStep % 8 === 0 ? root - 24 : root - 19;
+        scheduleTone({ time: t, freq: stepToFreq(bassTone), duration: beat * 2.2, volume: bassVol, type: 'sawtooth', attack: 0.01, release: 0.16, detune: -9 });
       }
 
-      if (musicStep % 4 === 0) scheduleKick(t, 0.09 + stress * 0.025);
-      if (musicStep % 16 === 2 || musicStep % 16 === 9 || musicStep % 16 === 14) scheduleNoiseHit(t + beat * 0.04, 0.032 + stress * 0.01, 650, 0.18);
-      if (musicStep % 8 === 4) scheduleNoiseHit(t + beat * 0.16, 0.025 + stress * 0.008, 1800, 0.1);
-      scheduleNoiseHit(t + beat * 0.58, 0.018 + stress * 0.006, 2600, 0.06);
+      if (barStep % 8 === 0) {
+        const chordDur = beat * 7.2;
+        scheduleTone({ time: t, freq: stepToFreq(root + triad[0]), duration: chordDur, volume: chordVol, type: 'triangle', attack: 0.045, release: 0.22, detune: -7 });
+        scheduleTone({ time: t + beat * 0.04, freq: stepToFreq(root + triad[1]), duration: chordDur, volume: chordVol * 0.9, type: 'triangle', attack: 0.045, release: 0.22, detune: 0 });
+        scheduleTone({ time: t + beat * 0.08, freq: stepToFreq(root + triad[2]), duration: chordDur, volume: chordVol * 0.86, type: 'triangle', attack: 0.045, release: 0.22, detune: 7 });
+      }
+
+      if (barStep !== 3 && barStep !== 7 && barStep !== 11) {
+        const lead = root + leadPattern[barStep];
+        scheduleTone({ time: t + beat * 0.03, freq: stepToFreq(lead), duration: beat * 0.72, volume: leadVol, type: 'square', attack: 0.003, release: 0.08, detune: (barStep % 2 === 0 ? -5 : 5) });
+      }
+
+      if (barStep % 4 === 0) scheduleKick(t, kickVol);
+      if (barStep % 8 === 4) scheduleSnare(t + beat * 0.02, snareVol);
+      if (barStep % 2 === 1) scheduleHat(t + beat * 0.01, hatVol);
+      if (barStep % 4 === 2) scheduleHat(t + beat * 0.18, hatVol * 0.9);
 
       musicStep++;
     }
