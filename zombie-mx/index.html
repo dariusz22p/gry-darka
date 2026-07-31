@@ -707,7 +707,7 @@
             </select>
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
-          <div class="stat"><button id="musicBtn" type="button">HORROR: ON (T)</button></div>
+          <div class="stat"><button id="musicBtn" type="button">MUZYKA: ON (T)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
             <div class="shopSectionTitle">GUNS</div>
@@ -1083,7 +1083,7 @@
     };
     let ownedGuns = defaultOwnedGuns();
 
-    // ---- Dzwiek (Web Audio, syntezowany - horror ambience) ----
+    // ---- Dzwiek (Web Audio, syntezowany - cool action synth) ----
     let audioCtx = null, master = null, muted = false;
     let musicBus = null;
     let musicComp = null;
@@ -1098,12 +1098,12 @@
     const MASTER_VOL = 0.34;
     const MUSIC_BUS_BASE = 0.96;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
-    const MUSIC_ENGINE_KEY = 'mx_music_engine_v6';
+    const MUSIC_ENGINE_KEY = 'mx_music_engine_v7';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
 
     try {
-      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '6') {
-        localStorage.setItem(MUSIC_ENGINE_KEY, '6');
+      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '7') {
+        localStorage.setItem(MUSIC_ENGINE_KEY, '7');
         localStorage.setItem(MUSIC_PREF_KEY, '1');
       }
       musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== '0';
@@ -1134,7 +1134,7 @@
 
     function updateMusicUi() {
       if (!el || !el.musicBtn) return;
-      el.musicBtn.textContent = musicEnabled ? 'HORROR: ON (T)' : 'HORROR: OFF (T)';
+      el.musicBtn.textContent = musicEnabled ? 'MUZYKA: ON (T)' : 'MUZYKA: OFF (T)';
     }
 
     function musicBeatDuration() {
@@ -1144,7 +1144,7 @@
       const waveProgress = Math.min(1, waveKillNeed > 0 ? waveKills / waveKillNeed : 0);
       const hordeFear = Math.min(1, (zombies ? zombies.length : 0) / 65);
       const tension = Math.min(1, waveFear * 0.42 + deathFear * 0.28 + waveProgress * 0.45 + hordeFear * 0.5);
-      const bpm = 54 + tension * 34;
+      const bpm = 86 + tension * 38;
       return 60 / bpm;
     }
 
@@ -1350,6 +1350,29 @@
       });
     }
 
+    function scheduleCoolTopline(t, root, profile, barStep, beat) {
+      const riffs = [
+        [12, 14, 15, 17, 15, 14, 12, 10],
+        [12, 10, 12, 15, 14, 12, 10, 8],
+        [15, 14, 12, 10, 12, 14, 15, 17]
+      ];
+      const riff = riffs[profile.variant];
+      const n = root + riff[(barStep / 2) % riff.length];
+      scheduleFilteredTone({
+        time: t,
+        freq: stepToFreq(n),
+        duration: beat * 0.62,
+        volume: 0.01 + profile.pressure * 0.012,
+        type: 'square',
+        attack: 0.006,
+        release: 0.1,
+        detune: barStep % 4 === 0 ? -6 : 6,
+        cutoff: 2100,
+        q: 1.25,
+        filterType: 'bandpass'
+      });
+    }
+
     function scheduleChoirBed(t, root, profile, beat) {
       scheduleFilteredTone({
         time: t + beat * 0.06,
@@ -1459,7 +1482,7 @@
       const beat = musicBeatDuration();
       const profile = gameplayMusicProfile();
       const barStep = musicStep % 16;
-      const rootSteps = [-8, -6, -10, -4];
+      const rootSteps = [-5, -2, -7, -3];
       const root = rootSteps[(Math.floor(musicStep / 16) + profile.variant) % rootSteps.length];
 
       if (barStep % 8 === 0) {
@@ -1508,12 +1531,16 @@
       if (barStep % 2 === 1) scheduleCreak(t + beat * 0.02, profile, barStep);
       scheduleApproachPulse(t + beat * 0.01, profile, barStep);
       if (barStep % 2 === 0) scheduleHauntedLead(t + beat * 0.08, root, profile, barStep, beat);
+      if (barStep % 2 === 0) scheduleCoolTopline(t + beat * 0.04, root, profile, barStep, beat);
 
       if (barStep % 2 === 0) {
         scheduleKick(t + beat * 0.01, 0.03 + profile.pressure * 0.045);
       }
       if (barStep % 4 === 2) {
         scheduleSnare(t + beat * 0.025, 0.006 + profile.pressure * 0.01);
+      }
+      if (barStep % 2 === 1) {
+        scheduleHat(t + beat * 0.015, 0.008 + profile.pressure * 0.007);
       }
 
       if (profile.pressure > 0.62 && barStep === 12) {
