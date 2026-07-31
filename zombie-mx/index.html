@@ -165,18 +165,6 @@
     cursor: pointer;
   }
   #musicBtn:hover { background: linear-gradient(180deg, rgba(62,105,138,.95), rgba(35,61,82,.98)); }
-  #scareBtn {
-    width: 100%;
-    border: 1px solid rgba(255,138,128,.55);
-    border-radius: 6px;
-    background: linear-gradient(180deg, rgba(116,50,50,.9), rgba(72,28,28,.95));
-    color: #ffd7d2;
-    padding: 5px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  #scareBtn:hover { background: linear-gradient(180deg, rgba(130,56,56,.95), rgba(82,34,34,.98)); }
   #ingameHudTop, #ingameHudBottom {
     position: absolute;
     right: 2px;
@@ -506,30 +494,6 @@
     background: linear-gradient(180deg, rgba(65,92,125,.95), rgba(36,53,74,.98));
     transform: scale(0.92);
   }
-  #mobileScareBtn {
-    display: none;
-    position: absolute;
-    left: 6px;
-    top: calc(50% + 200px);
-    width: 64px;
-    height: 34px;
-    border: 1px solid rgba(255,138,128,.58);
-    border-radius: 9px;
-    background: linear-gradient(180deg, rgba(116,50,50,.9), rgba(72,28,28,.95));
-    color: rgba(255,230,230,.94);
-    font-size: 11px;
-    font-weight: 800;
-    font-family: var(--font-title);
-    letter-spacing: .6px;
-    cursor: pointer;
-    z-index: 2;
-    touch-action: manipulation;
-    pointer-events: auto;
-  }
-  #mobileScareBtn:active {
-    background: linear-gradient(180deg, rgba(130,56,56,.95), rgba(82,34,34,.98));
-    transform: scale(0.92);
-  }
   #mobileSquadBtn {
     display: none;
     position: absolute;
@@ -650,7 +614,7 @@
     }
   }
   @media (pointer: coarse), (max-width: 767px), (max-height: 500px) {
-    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn, #mobilePowerBtn, #mobileScareBtn { display: block; }
+    #mobileBombBtn, #mobileNukeBtn, #mobileJumpBtn, #mobileSquadBtn, #mobilePowerBtn { display: block; }
   }
   @media (orientation: landscape) and (max-height: 600px) {
     #wrap {
@@ -708,7 +672,6 @@
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2K</button>
           <button id="mobilePowerBtn" aria-label="Ustaw moc na 900">PWR</button>
           <button id="mobileJumpBtn" aria-label="Skok do fali 1 bilion">1T</button>
-          <button id="mobileScareBtn" aria-label="Test jump scare">SCAR</button>
           <div id="winConfetti" aria-hidden="true"></div>
           <div id="ingameHudTop" aria-label="HUD gry - informacje o fali">
             <div class="stat"><span>Fala</span><b id="wave">1 / 1000000000000</b></div>
@@ -745,7 +708,6 @@
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
           <div class="stat"><button id="musicBtn" type="button">HORROR: ON (T)</button></div>
-          <div class="stat"><button id="scareBtn" type="button">JUMP SCARE (J)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
             <div class="shopSectionTitle">GUNS</div>
@@ -912,6 +874,8 @@
     let cameraShakeTimer = 0;
     let jumpScareTimer = 0;
     let jumpScareKind = '';
+    let introJumpScareDone = false;
+    let playTime = 0;
     let shopPowerBuys = 0;
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
@@ -2096,6 +2060,8 @@
       cameraShakeTimer = 0;
       jumpScareTimer = 0;
       jumpScareKind = '';
+      introJumpScareDone = false;
+      playTime = 0;
       initAmbientDust();
       shopPowerBuys = 0;
       shopSquadBuys = 0;
@@ -2926,6 +2892,7 @@
 
     // ---- Aktualizacja ----
     function update(dt) {
+      playTime += dt;
       if (alertTimer > 0) {
         alertTimer -= dt;
         if (alertTimer <= 0) hideAlert();
@@ -2975,6 +2942,15 @@
         pickups = [];
         bullets = [];
         showAlert('PRZYGOTUJ SIE - FALA ' + wave, Math.max(0.6, prepTimer - 0.2));
+        if (wave >= 2 && wave % 3 === 0) {
+          triggerJumpScare('boss');
+        }
+      }
+
+      if (!introJumpScareDone && wave === 1 && (kills >= 8 || playTime >= 6)) {
+        introJumpScareDone = true;
+        triggerJumpScare('breach');
+        showAlert('COS NADCHODZI...', 0.9);
       }
 
       // ruch kolumny — STAŁA prędkość do celu (rolka/klawiatura/palec ustawiają targetY)
@@ -4060,7 +4036,6 @@
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
       musicBtn: document.getElementById('musicBtn'),
-      scareBtn: document.getElementById('scareBtn'),
       shopPower: document.getElementById('shopPower'),
       shopSquad: document.getElementById('shopSquad'),
       shopHeal: document.getElementById('shopHeal'),
@@ -4083,8 +4058,7 @@
       mobileNukeBtn: document.getElementById('mobileNukeBtn'),
       mobileSquadBtn: document.getElementById('mobileSquadBtn'),
       mobilePowerBtn: document.getElementById('mobilePowerBtn'),
-      mobileJumpBtn: document.getElementById('mobileJumpBtn'),
-      mobileScareBtn: document.getElementById('mobileScareBtn')
+      mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
@@ -4376,14 +4350,6 @@
         ensureAudio();
       });
     }
-    if (el.scareBtn) {
-      el.scareBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        ensureAudio();
-        triggerJumpScare('boss');
-        showAlert('JUMP SCARE', 0.65);
-      });
-    }
     if (el.overlayShop) {
       el.overlayShop.addEventListener('click', function (e) {
         e.preventDefault();
@@ -4507,14 +4473,6 @@
         if (state === 'pause') state = 'play';
         hideOverlay();
         jumpToWave(1000000000000);
-      });
-    }
-    if (el.mobileScareBtn) {
-      el.mobileScareBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        ensureAudio();
-        triggerJumpScare('boss');
-        showAlert('JUMP SCARE', 0.65);
       });
     }
 
