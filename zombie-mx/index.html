@@ -871,6 +871,8 @@
     let breachFlashTimer = 0;
     let cameraShake = 0;
     let cameraShakeTimer = 0;
+    let jumpScareTimer = 0;
+    let jumpScareKind = '';
     let shopPowerBuys = 0;
     let shopSquadBuys = 0;
     let shopHealBuys = 0;
@@ -1093,12 +1095,12 @@
     const MASTER_VOL = 0.34;
     const MUSIC_BUS_BASE = 0.96;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
-    const MUSIC_ENGINE_KEY = 'mx_music_engine_v5';
+    const MUSIC_ENGINE_KEY = 'mx_music_engine_v6';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
 
     try {
-      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '5') {
-        localStorage.setItem(MUSIC_ENGINE_KEY, '5');
+      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '6') {
+        localStorage.setItem(MUSIC_ENGINE_KEY, '6');
         localStorage.setItem(MUSIC_PREF_KEY, '1');
       }
       musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== '0';
@@ -1309,6 +1311,71 @@
       });
     }
 
+    function scheduleHauntedLead(t, root, profile, barStep, beat) {
+      const motifs = [
+        [12, 10, 7, 3, 7, 10, 12, 15],
+        [12, 8, 7, 3, 5, 8, 12, 10],
+        [15, 12, 10, 7, 10, 12, 15, 17]
+      ];
+      const motif = motifs[profile.variant];
+      const note = root + motif[(barStep / 2) % motif.length];
+      scheduleFilteredTone({
+        time: t,
+        freq: stepToFreq(note),
+        duration: beat * 0.82,
+        volume: 0.008 + profile.pressure * 0.015,
+        type: 'triangle',
+        attack: 0.012,
+        release: 0.16,
+        detune: (barStep % 4 === 0 ? -9 : 11),
+        cutoff: 1780,
+        q: 1.45,
+        filterType: 'bandpass'
+      });
+      scheduleFilteredTone({
+        time: t + beat * 0.03,
+        freq: stepToFreq(note + (profile.variant === 1 ? 1 : 0)),
+        duration: beat * 0.7,
+        volume: 0.004 + profile.pressure * 0.008,
+        type: 'sine',
+        attack: 0.016,
+        release: 0.18,
+        detune: 18,
+        cutoff: 1420,
+        q: 2.0,
+        filterType: 'bandpass'
+      });
+    }
+
+    function scheduleChoirBed(t, root, profile, beat) {
+      scheduleFilteredTone({
+        time: t + beat * 0.06,
+        freq: stepToFreq(root + 7),
+        duration: beat * 6.6,
+        volume: 0.007 + profile.pressure * 0.01,
+        type: 'triangle',
+        attack: 0.18,
+        release: 0.44,
+        detune: -4,
+        cutoff: 980,
+        q: 0.9,
+        filterType: 'bandpass'
+      });
+      scheduleFilteredTone({
+        time: t + beat * 0.11,
+        freq: stepToFreq(root + 10),
+        duration: beat * 5.8,
+        volume: 0.006 + profile.pressure * 0.009,
+        type: 'sine',
+        attack: 0.22,
+        release: 0.5,
+        detune: 7,
+        cutoff: 1240,
+        q: 1.15,
+        filterType: 'bandpass'
+      });
+    }
+
     function scheduleKick(t, amp) {
       if (!audioCtx || !musicBus) return;
       const o = audioCtx.createOscillator();
@@ -1432,10 +1499,12 @@
           q: 1.1,
           filterType: 'bandpass'
         });
+        scheduleChoirBed(t, root, profile, beat);
       }
 
       if (barStep % 2 === 1) scheduleCreak(t + beat * 0.02, profile, barStep);
       scheduleApproachPulse(t + beat * 0.01, profile, barStep);
+      if (barStep % 2 === 0) scheduleHauntedLead(t + beat * 0.08, root, profile, barStep, beat);
 
       if (barStep % 2 === 0) {
         scheduleKick(t + beat * 0.01, 0.03 + profile.pressure * 0.045);
@@ -1521,10 +1590,38 @@
           q: 1.5,
           filterType: 'bandpass'
         });
+        scheduleFilteredTone({
+          time: t + beat * 0.12,
+          freq: stepToFreq(root + 12),
+          duration: beat * 2.2,
+          volume: 0.01 + creep * 0.012,
+          type: 'triangle',
+          attack: 0.03,
+          release: 0.22,
+          detune: -12,
+          cutoff: 1520,
+          q: 1.4,
+          filterType: 'bandpass'
+        });
       }
 
       if (barStep % 2 === 1) {
         scheduleNoiseHit(t + beat * 0.04, 0.004 + creep * 0.009, 860 + variant * 160, 0.11 + creep * 0.08);
+      }
+      if (barStep % 4 === 0) {
+        scheduleFilteredTone({
+          time: t + beat * 0.08,
+          freq: stepToFreq(root + [12, 10, 8, 7][(barStep / 4) % 4]),
+          duration: beat * 0.95,
+          volume: 0.008 + creep * 0.012,
+          type: 'triangle',
+          attack: 0.012,
+          release: 0.18,
+          detune: 10,
+          cutoff: 1680,
+          q: 1.6,
+          filterType: 'bandpass'
+        });
       }
       if (barStep % 4 === 2) {
         scheduleKick(t + beat * 0.02, 0.026 + creep * 0.03);
@@ -1717,6 +1814,37 @@
         o.connect(g); g.connect(master);
         o.start(t); o.stop(t + 0.11);
       });
+    }
+
+    function sfxJumpScare(kind) {
+      if (!audioCtx || muted) return;
+      const base = audioCtx.currentTime;
+      duckMusic(0.62, 0.22);
+      const sting = audioCtx.createOscillator();
+      sting.type = kind === 'boss' ? 'sawtooth' : 'square';
+      sting.frequency.setValueAtTime(kind === 'boss' ? 210 : 160, base);
+      sting.frequency.exponentialRampToValueAtTime(kind === 'boss' ? 710 : 420, base + 0.06);
+      sting.frequency.exponentialRampToValueAtTime(kind === 'boss' ? 260 : 180, base + 0.22);
+      const stingGain = env(kind === 'boss' ? 0.12 : 0.1, 0.24, 0.0015);
+      sting.connect(stingGain); stingGain.connect(master);
+      sting.start(base); sting.stop(base + 0.26);
+
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuf(0.22);
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = kind === 'boss' ? 1180 : 760;
+      bp.Q.value = 1.8;
+      const noiseGain = env(kind === 'boss' ? 0.07 : 0.05, 0.18, 0.001);
+      noise.connect(bp); bp.connect(noiseGain); noiseGain.connect(master);
+      noise.start(base); noise.stop(base + 0.2);
+    }
+
+    function triggerJumpScare(kind) {
+      jumpScareKind = kind || 'breach';
+      jumpScareTimer = Math.max(jumpScareTimer, kind === 'boss' ? 0.72 : 0.46);
+      addCameraShake(kind === 'boss' ? 5.4 : 3.6, kind === 'boss' ? 0.3 : 0.18);
+      sfxJumpScare(jumpScareKind);
     }
 
     function memberOffset(i) {
@@ -1927,6 +2055,8 @@
       breachFlashTimer = 0;
       cameraShake = 0;
       cameraShakeTimer = 0;
+      jumpScareTimer = 0;
+      jumpScareKind = '';
       initAmbientDust();
       shopPowerBuys = 0;
       shopSquadBuys = 0;
@@ -2774,6 +2904,7 @@
         }
       }
       if (breachFlashTimer > 0) breachFlashTimer = Math.max(0, breachFlashTimer - dt);
+      if (jumpScareTimer > 0) jumpScareTimer = Math.max(0, jumpScareTimer - dt);
       if (cameraShakeTimer > 0) {
         cameraShakeTimer = Math.max(0, cameraShakeTimer - dt);
         cameraShake *= 0.9;
@@ -2828,6 +2959,7 @@
         const miniType = getMiniTypeForWave(scaleWave);
         showAlert((miniType ? ('MINI-BOSS: ' + miniLabel(miniType)) : 'BOSS NADCHODZI!'), CONFIG.warning.bossFlash);
         sfxAlert();
+        triggerJumpScare('boss');
       }
 
       // spawn zombie
@@ -2997,6 +3129,7 @@
           baseHp -= breachDmg;
           breachFlashTimer = Math.max(breachFlashTimer, 0.22);
           addCameraShake(z.boss ? 4.2 : 2.5, z.boss ? 0.24 : 0.16);
+          triggerJumpScare(z.boss ? 'boss' : 'breach');
           loseRecruit(z.boss ? 2 : 1);
           sfxBreach();
           fx.push({ x: CONFIG.breachX, y: z.y, life: 0.3, c: '#ff5252', r: 20 });
@@ -3285,6 +3418,49 @@
         const a = Math.min(0.35, breachFlashTimer * 1.6);
         ctx.fillStyle = 'rgba(255,82,82,' + a + ')';
         ctx.fillRect(CONFIG.breachX - 14, CONFIG.wallTop, W - CONFIG.breachX + 14, CONFIG.wallBottom - CONFIG.wallTop);
+      }
+      if (jumpScareTimer > 0) {
+        const scareT = Math.min(1, jumpScareTimer / (jumpScareKind === 'boss' ? 0.72 : 0.46));
+        const faceAlpha = Math.min(0.88, 0.18 + scareT * 0.92);
+        const eyeAlpha = Math.min(1, 0.4 + scareT * 1.2);
+        const centerX = W * 0.52 + Math.sin(nowS * 30) * 8;
+        const centerY = H * 0.34 + Math.cos(nowS * 24) * 5;
+        ctx.save();
+        ctx.globalAlpha = faceAlpha;
+        ctx.fillStyle = jumpScareKind === 'boss' ? 'rgba(18,22,18,0.94)' : 'rgba(12,10,10,0.9)';
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, jumpScareKind === 'boss' ? 178 : 144, jumpScareKind === 'boss' ? 136 : 108, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.92)';
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY + 94, 118, 54, 0, 0, Math.PI, false);
+        ctx.fill();
+        ctx.globalAlpha = eyeAlpha;
+        ctx.fillStyle = 'rgba(255,32,32,0.96)';
+        ctx.beginPath();
+        ctx.moveTo(centerX - 92, centerY - 18);
+        ctx.lineTo(centerX - 30, centerY - 34);
+        ctx.lineTo(centerX - 54, centerY + 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(centerX + 92, centerY - 18);
+        ctx.lineTo(centerX + 30, centerY - 34);
+        ctx.lineTo(centerX + 54, centerY + 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,240,240,' + Math.min(1, eyeAlpha * 0.92) + ')';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 58, centerY + 52);
+        ctx.lineTo(centerX - 20, centerY + 86);
+        ctx.lineTo(centerX + 16, centerY + 48);
+        ctx.lineTo(centerX + 62, centerY + 84);
+        ctx.stroke();
+        ctx.globalAlpha = Math.min(0.62, scareT * 0.72);
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        for (let sy = 0; sy < H; sy += 10) ctx.fillRect(0, sy, W, 2);
+        ctx.restore();
       }
       if (skinKey === 'gold') {
         const comboVortex = goldComboActive();
