@@ -1088,6 +1088,7 @@
     let musicNextTime = 0;
     let musicScene = 'play';
     let deathMusicCount = 0;
+    let audioUnlocked = false;
     const MASTER_VOL = 0.34;
     const MUSIC_BUS_BASE = 0.96;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
@@ -1574,8 +1575,36 @@
         musicComp.connect(master);
         noiseBuffer = noiseBuf(0.6);
       }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx.state === 'suspended') {
+        const p = audioCtx.resume();
+        if (p && typeof p.then === 'function') {
+          p.then(function () { tickMusic(); }).catch(function () {});
+        }
+      }
       tickMusic();
+    }
+
+    function tryUnlockAudio() {
+      ensureAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'running') {
+        audioUnlocked = true;
+        window.removeEventListener('pointerdown', tryUnlockAudio, true);
+        window.removeEventListener('touchstart', tryUnlockAudio, true);
+        window.removeEventListener('mousedown', tryUnlockAudio, true);
+        window.removeEventListener('keydown', tryUnlockAudio, true);
+      }
+    }
+
+    function installAudioUnlockHooks() {
+      window.addEventListener('pointerdown', tryUnlockAudio, { capture: true, passive: true });
+      window.addEventListener('touchstart', tryUnlockAudio, { capture: true, passive: true });
+      window.addEventListener('mousedown', tryUnlockAudio, { capture: true, passive: true });
+      window.addEventListener('keydown', tryUnlockAudio, { capture: true });
+      if (document.visibilityState === 'visible') ensureAudio();
+      document.addEventListener('visibilitychange', function () {
+        if (!audioUnlocked && document.visibilityState === 'visible') tryUnlockAudio();
+      });
     }
 
     function env(peak, dur, attack) {
@@ -4232,6 +4261,8 @@
       requestAnimationFrame(frame);
     }
     loadRecords();
+    if (!musicEnabled) setMusicEnabled(true);
+    installAudioUnlockHooks();
     reset();
     requestAnimationFrame(frame);
   })();
