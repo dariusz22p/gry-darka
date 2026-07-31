@@ -1095,8 +1095,8 @@
     let deathMusicCount = 0;
     let audioUnlocked = false;
     let audioFaulted = false;
-    const MASTER_VOL = 0.34;
-    const MUSIC_BUS_BASE = 0.96;
+    const MASTER_VOL = 0.52;
+    const MUSIC_BUS_BASE = 1.08;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
     const MUSIC_ENGINE_KEY = 'mx_music_engine_v7';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
@@ -1326,7 +1326,7 @@
         time: t,
         freq: stepToFreq(note),
         duration: beat * 0.82,
-        volume: 0.008 + profile.pressure * 0.015,
+        volume: 0.012 + profile.pressure * 0.02,
         type: 'triangle',
         attack: 0.012,
         release: 0.16,
@@ -1362,7 +1362,7 @@
         time: t,
         freq: stepToFreq(n),
         duration: beat * 0.62,
-        volume: 0.01 + profile.pressure * 0.012,
+        volume: 0.015 + profile.pressure * 0.017,
         type: 'square',
         attack: 0.006,
         release: 0.1,
@@ -1491,7 +1491,7 @@
           time: t + beat * 0.12,
           freq: stepToFreq(root),
           duration: beat * 6.2,
-          volume: 0.008 + profile.pressure * 0.013,
+          volume: 0.012 + profile.pressure * 0.019,
           type: 'triangle',
           attack: 0.1,
           release: 0.42,
@@ -1516,7 +1516,7 @@
           time: t + beat * 0.15,
           freq: stepToFreq(root + 12),
           duration: beat * 2.2,
-          volume: 0.014 + profile.pressure * 0.012,
+          volume: 0.02 + profile.pressure * 0.016,
           type: 'triangle',
           attack: 0.02,
           release: 0.25,
