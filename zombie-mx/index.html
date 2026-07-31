@@ -707,7 +707,7 @@
             </select>
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
-          <div class="stat"><button id="musicBtn" type="button">MUZYKA: ON (T)</button></div>
+          <div class="stat"><button id="musicBtn" type="button">HORROR: ON (T)</button></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
             <div class="shopSectionTitle">GUNS</div>
@@ -1078,7 +1078,7 @@
     };
     let ownedGuns = defaultOwnedGuns();
 
-    // ---- Dźwięk (Web Audio, syntezowany - upbeat) ----
+    // ---- Dzwiek (Web Audio, syntezowany - horror ambience) ----
     let audioCtx = null, master = null, muted = false;
     let musicBus = null;
     let musicComp = null;
@@ -1091,12 +1091,12 @@
     const MASTER_VOL = 0.3;
     const MUSIC_BUS_BASE = 0.9;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
-    const MUSIC_ENGINE_KEY = 'mx_music_engine_v3';
+    const MUSIC_ENGINE_KEY = 'mx_music_engine_v4';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
 
     try {
-      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '3') {
-        localStorage.setItem(MUSIC_ENGINE_KEY, '3');
+      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '4') {
+        localStorage.setItem(MUSIC_ENGINE_KEY, '4');
         localStorage.setItem(MUSIC_PREF_KEY, '1');
       }
       musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== '0';
@@ -1127,24 +1127,140 @@
 
     function updateMusicUi() {
       if (!el || !el.musicBtn) return;
-      el.musicBtn.textContent = musicEnabled ? 'MUZYKA: ON (T)' : 'MUZYKA: OFF (T)';
+      el.musicBtn.textContent = musicEnabled ? 'HORROR: ON (T)' : 'HORROR: OFF (T)';
     }
 
     function musicBeatDuration() {
-      const tension = Math.min(72, Math.floor(effectiveWaveForScaling(wave || 1)));
-      const creepSlow = Math.min(16, deathMusicCount) * 0.35;
-      const bpm = 102 + tension * 0.22 - creepSlow;
+      const scaledWave = Math.max(1, effectiveWaveForScaling(wave || 1));
+      const waveFear = Math.min(1, Math.log2(scaledWave + 1) / 8);
+      const deathFear = Math.min(1, deathMusicCount / 10);
+      const tension = Math.min(1, waveFear * 0.75 + deathFear * 0.55);
+      const bpm = 62 - tension * 15;
       return 60 / bpm;
     }
 
     function gameplayMusicProfile() {
-      const creep = Math.min(1, deathMusicCount / 12);
-      const variant = deathMusicCount % 4;
-      return { creep: creep, variant: variant };
+      const scaledWave = Math.max(1, effectiveWaveForScaling(wave || 1));
+      const waveFear = Math.min(1, Math.log2(scaledWave + 1) / 8);
+      const deathFear = Math.min(1, deathMusicCount / 10);
+      const pressure = Math.min(1, waveFear * 0.8 + deathFear * 0.5);
+      const variant = deathMusicCount % 3;
+      return { pressure: pressure, variant: variant, waveFear: waveFear, deathFear: deathFear };
     }
 
     function stepToFreq(semitone) {
-      return 261.63 * Math.pow(2, semitone / 12);
+      return 55 * Math.pow(2, semitone / 12);
+    }
+
+    function scheduleFilteredTone(opts) {
+      if (!audioCtx || !musicBus) return;
+      const o = audioCtx.createOscillator();
+      const f = audioCtx.createBiquadFilter();
+      const g = audioCtx.createGain();
+      const t0 = opts.time;
+      const a = opts.attack || 0.02;
+      const d = opts.duration || 0.5;
+      const r = opts.release || 0.2;
+      const v = opts.volume || 0.02;
+      const cutoff = opts.cutoff || 420;
+      const q = opts.q || 0.7;
+      o.type = opts.type || 'sawtooth';
+      o.frequency.setValueAtTime(opts.freq, t0);
+      if (typeof opts.detune === 'number') o.detune.setValueAtTime(opts.detune, t0);
+      f.type = opts.filterType || 'lowpass';
+      f.frequency.setValueAtTime(cutoff, t0);
+      f.Q.setValueAtTime(q, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(v, t0 + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + r);
+      o.connect(f);
+      f.connect(g);
+      g.connect(musicBus);
+      o.start(t0);
+      o.stop(t0 + d + r + 0.03);
+    }
+
+    function scheduleRumble(t, profile) {
+      const rumbleVol = 0.018 + profile.pressure * 0.028;
+      const baseRoot = [-14, -12, -16][profile.variant];
+      scheduleFilteredTone({
+        time: t,
+        freq: stepToFreq(baseRoot - 24),
+        duration: musicBeatDuration() * 3.5,
+        volume: rumbleVol,
+        type: 'sawtooth',
+        attack: 0.03,
+        release: 0.25,
+        detune: -14 - profile.pressure * 6,
+        cutoff: 220 + profile.pressure * 140,
+        q: 0.6
+      });
+      scheduleFilteredTone({
+        time: t + musicBeatDuration() * 0.1,
+        freq: stepToFreq(baseRoot - 12),
+        duration: musicBeatDuration() * 2.4,
+        volume: rumbleVol * 0.55,
+        type: 'triangle',
+        attack: 0.04,
+        release: 0.3,
+        detune: 7,
+        cutoff: 300 + profile.pressure * 180,
+        q: 0.8
+      });
+    }
+
+    function scheduleCreak(t, profile, barStep) {
+      if (!audioCtx || !noiseBuffer) return;
+      const noiseLen = 0.09 + profile.pressure * 0.12;
+      const noiseAmp = 0.003 + profile.pressure * 0.009;
+      const hpFreq = 550 + (barStep % 4) * 140 + profile.pressure * 420;
+      scheduleNoiseHit(t, noiseAmp, hpFreq, noiseLen);
+      if (barStep % 8 === 7 || barStep % 8 === 3) {
+        scheduleFilteredTone({
+          time: t + 0.01,
+          freq: stepToFreq(-2 + (barStep % 3)),
+          duration: 0.11,
+          volume: 0.004 + profile.pressure * 0.008,
+          type: 'square',
+          attack: 0.002,
+          release: 0.06,
+          detune: (barStep % 2 ? -28 : 24),
+          cutoff: 1200,
+          q: 2.1,
+          filterType: 'bandpass'
+        });
+      }
+    }
+
+    function scheduleApproachPulse(t, profile, barStep) {
+      if (barStep % 4 !== 0) return;
+      const pulseVol = 0.016 + profile.pressure * 0.02;
+      scheduleFilteredTone({
+        time: t,
+        freq: stepToFreq(-19),
+        duration: 0.22,
+        volume: pulseVol,
+        type: 'sine',
+        attack: 0.004,
+        release: 0.11,
+        detune: -8,
+        cutoff: 260,
+        q: 0.9
+      });
+      if (profile.pressure > 0.45) {
+        scheduleFilteredTone({
+          time: t + 0.06,
+          freq: stepToFreq(-7),
+          duration: 0.18,
+          volume: pulseVol * 0.65,
+          type: 'triangle',
+          attack: 0.005,
+          release: 0.1,
+          detune: 9,
+          cutoff: 380,
+          q: 1.1
+        });
+      }
     }
 
     function scheduleKick(t, amp) {
@@ -1226,107 +1342,134 @@
     function scheduleMusicStep(t) {
       const beat = musicBeatDuration();
       const profile = gameplayMusicProfile();
-      const stress = Math.min(1, (wave || 1) / 120);
       const barStep = musicStep % 16;
-      const chordProgVariants = [
-        [0, 5, 9, 7],
-        [0, 3, 8, 7],
-        [0, 5, 8, 6],
-        [0, 4, 9, 6]
-      ];
-      const chordProg = chordProgVariants[profile.variant];
-      const root = chordProg[Math.floor(musicStep / 16) % chordProg.length];
-      const triadVariants = [
-        [0, 4, 7],
-        [0, 3, 7],
-        [0, 3, 6],
-        [0, 4, 8]
-      ];
-      const triad = triadVariants[profile.variant];
-      const leadPatterns = [
-        [0, 2, 4, 7, 9, 7, 4, 2, 0, 2, 4, 7, 11, 9, 7, 4],
-        [0, 2, 3, 7, 8, 7, 3, 2, 0, 2, 3, 7, 10, 8, 7, 3],
-        [0, 1, 3, 6, 8, 6, 3, 1, 0, 1, 3, 6, 10, 8, 6, 3],
-        [0, 2, 5, 8, 9, 8, 5, 2, 0, 2, 5, 8, 11, 9, 8, 5]
-      ];
-      const leadPattern = leadPatterns[profile.variant];
-      const dissonantStep = profile.variant === 2 ? 1 : 2;
-
-      const bassVol = 0.06 + stress * 0.016 + profile.creep * 0.006;
-      const chordVol = 0.011 + stress * 0.003;
-      const leadVol = 0.012 + stress * 0.005;
-      const kickVol = 0.082 + stress * 0.02;
-      const snareVol = 0.028 + stress * 0.01;
-      const hatVol = 0.012 + stress * 0.006;
-
-      if (barStep % 4 === 0) {
-        const bassTone = barStep % 8 === 0 ? root - 24 : root - 19;
-        scheduleTone({ time: t, freq: stepToFreq(bassTone), duration: beat * 2.2, volume: bassVol, type: profile.creep > 0.6 ? 'square' : 'sawtooth', attack: 0.01, release: 0.16, detune: -9 - profile.creep * 4 });
-      }
+      const rootSteps = [-14, -12, -16, -9];
+      const root = rootSteps[(Math.floor(musicStep / 16) + profile.variant) % rootSteps.length];
 
       if (barStep % 8 === 0) {
-        const chordDur = beat * 7.2;
-        scheduleTone({ time: t, freq: stepToFreq(root + triad[0]), duration: chordDur, volume: chordVol, type: 'triangle', attack: 0.045, release: 0.22, detune: -7 });
-        scheduleTone({ time: t + beat * 0.04, freq: stepToFreq(root + triad[1]), duration: chordDur, volume: chordVol * 0.9, type: 'triangle', attack: 0.045, release: 0.22, detune: 0 });
-        scheduleTone({ time: t + beat * 0.08, freq: stepToFreq(root + triad[2]), duration: chordDur, volume: chordVol * 0.86, type: 'triangle', attack: 0.045, release: 0.22, detune: 7 });
-        if (profile.creep > 0.45) {
-          scheduleTone({ time: t + beat * 0.14, freq: stepToFreq(root + triad[1] + dissonantStep), duration: chordDur * 0.8, volume: chordVol * (0.2 + profile.creep * 0.3), type: 'sine', attack: 0.08, release: 0.28, detune: 11 });
-        }
+        scheduleRumble(t, profile);
+        scheduleFilteredTone({
+          time: t + beat * 0.12,
+          freq: stepToFreq(root),
+          duration: beat * 6.2,
+          volume: 0.008 + profile.pressure * 0.013,
+          type: 'triangle',
+          attack: 0.1,
+          release: 0.42,
+          detune: -5,
+          cutoff: 520,
+          q: 0.9
+        });
+        scheduleFilteredTone({
+          time: t + beat * 0.2,
+          freq: stepToFreq(root + 1 + profile.variant),
+          duration: beat * 5.8,
+          volume: 0.006 + profile.pressure * 0.01,
+          type: 'sine',
+          attack: 0.13,
+          release: 0.5,
+          detune: 11,
+          cutoff: 760,
+          q: 1.3,
+          filterType: 'bandpass'
+        });
       }
 
-      if (barStep !== 3 && barStep !== 7 && barStep !== 11) {
-        const lead = root + leadPattern[barStep];
-        scheduleTone({ time: t + beat * 0.03, freq: stepToFreq(lead), duration: beat * 0.72, volume: leadVol, type: 'square', attack: 0.003, release: 0.08, detune: (barStep % 2 === 0 ? -5 : 5) + profile.creep * 4 });
-      }
+      if (barStep % 2 === 1) scheduleCreak(t + beat * 0.02, profile, barStep);
+      scheduleApproachPulse(t + beat * 0.01, profile, barStep);
 
-      if (profile.creep > 0.35 && (barStep === 5 || barStep === 13)) {
-        scheduleNoiseHit(t + beat * 0.05, 0.005 + profile.creep * 0.006, 1100 + profile.variant * 260, 0.1);
+      if (profile.pressure > 0.72 && (barStep === 6 || barStep === 14)) {
+        scheduleFilteredTone({
+          time: t + beat * 0.03,
+          freq: stepToFreq(5 + profile.variant),
+          duration: beat * 0.7,
+          volume: 0.011 + profile.pressure * 0.01,
+          type: 'square',
+          attack: 0.004,
+          release: 0.1,
+          detune: (barStep === 6 ? -36 : 33),
+          cutoff: 1600,
+          q: 2.2,
+          filterType: 'bandpass'
+        });
       }
-
-      if (barStep % 4 === 0) scheduleKick(t, kickVol);
-      if (barStep % 8 === 4) scheduleSnare(t + beat * 0.02, snareVol);
-      if (barStep % 2 === 1) scheduleHat(t + beat * 0.01, hatVol);
-      if (barStep % 4 === 2) scheduleHat(t + beat * 0.18, hatVol * 0.9);
 
       musicStep++;
     }
 
     function lossBeatDuration() {
-      const creep = Math.min(24, deathMusicCount);
-      const bpm = Math.max(46, 92 - creep * 1.8);
+      const creep = Math.min(1, deathMusicCount / 12);
+      const bpm = 44 - creep * 5;
       return 60 / bpm;
     }
 
     function scheduleLossMusicStep(t) {
       const beat = lossBeatDuration();
-      const variant = deathMusicCount % 4;
+      const variant = deathMusicCount % 3;
       const creep = Math.min(1, deathMusicCount / 10);
       const barStep = musicStep % 16;
-      const root = [-9, -7, -11, -5][variant];
-      const dissonance = [1, 2, 3, 1][variant];
-      const pulsePattern = [0, 4, 8, 12, 14];
-      const ghostPattern = [0, dissonance, 5, dissonance + 7, 3, 2, dissonance + 8, 7];
+      const root = [-15, -12, -18][variant];
 
-      if (pulsePattern.indexOf(barStep) !== -1) {
-        scheduleTone({ time: t, freq: stepToFreq(root - 24), duration: beat * 1.55, volume: 0.046 + creep * 0.02, type: 'sawtooth', attack: 0.01, release: 0.18, detune: -14 });
+      if (barStep % 4 === 0) {
+        scheduleFilteredTone({
+          time: t,
+          freq: stepToFreq(root - 24),
+          duration: beat * 2.2,
+          volume: 0.028 + creep * 0.025,
+          type: 'sawtooth',
+          attack: 0.02,
+          release: 0.25,
+          detune: -18,
+          cutoff: 220,
+          q: 0.7
+        });
       }
 
       if (barStep % 8 === 0) {
-        scheduleTone({ time: t, freq: stepToFreq(root), duration: beat * 7.5, volume: 0.011 + creep * 0.004, type: 'triangle', attack: 0.1, release: 0.4, detune: -8 });
-        scheduleTone({ time: t + beat * 0.09, freq: stepToFreq(root + dissonance + 7), duration: beat * 6.8, volume: 0.009 + creep * 0.005, type: 'sine', attack: 0.13, release: 0.55, detune: 8 });
+        scheduleFilteredTone({
+          time: t + beat * 0.07,
+          freq: stepToFreq(root),
+          duration: beat * 6.9,
+          volume: 0.01 + creep * 0.01,
+          type: 'triangle',
+          attack: 0.14,
+          release: 0.7,
+          detune: -6,
+          cutoff: 520,
+          q: 1.0
+        });
+        scheduleFilteredTone({
+          time: t + beat * 0.16,
+          freq: stepToFreq(root + 1 + variant),
+          duration: beat * 5.7,
+          volume: 0.007 + creep * 0.01,
+          type: 'sine',
+          attack: 0.2,
+          release: 0.75,
+          detune: 14,
+          cutoff: 880,
+          q: 1.5,
+          filterType: 'bandpass'
+        });
       }
 
-      if (barStep % 2 === 0) {
-        const stepIdx = ((barStep / 2) | 0) % ghostPattern.length;
-        const lead = root + ghostPattern[stepIdx] + (deathMusicCount % 3);
-        scheduleTone({ time: t + beat * 0.03, freq: stepToFreq(lead), duration: beat * 0.62, volume: 0.011 + creep * 0.004, type: 'square', attack: 0.003, release: 0.08, detune: (barStep % 4 === 0 ? -11 : 9) });
+      if (barStep % 2 === 1) {
+        scheduleNoiseHit(t + beat * 0.04, 0.004 + creep * 0.009, 860 + variant * 160, 0.11 + creep * 0.08);
       }
-
       if (barStep === 7 || barStep === 15) {
-        scheduleNoiseHit(t + beat * 0.08, 0.014 + creep * 0.01, 900 + variant * 220, 0.14);
-      }
-      if (barStep % 4 === 1) {
-        scheduleHat(t + beat * 0.18, 0.006 + creep * 0.004);
+        scheduleFilteredTone({
+          time: t + beat * 0.02,
+          freq: stepToFreq(8 + variant),
+          duration: beat * 0.8,
+          volume: 0.01 + creep * 0.013,
+          type: 'square',
+          attack: 0.003,
+          release: 0.14,
+          detune: (barStep === 7 ? -42 : 38),
+          cutoff: 1750,
+          q: 2.4,
+          filterType: 'bandpass'
+        });
       }
 
       musicStep++;
