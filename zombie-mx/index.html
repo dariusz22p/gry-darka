@@ -1087,6 +1087,7 @@
     let musicStep = 0;
     let musicNextTime = 0;
     const MASTER_VOL = 0.3;
+    const MUSIC_BUS_BASE = 0.62;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
     const MUSIC_ENGINE_KEY = 'mx_music_engine_v3';
 
@@ -1164,6 +1165,19 @@
 
     function scheduleHat(t, amp) {
       scheduleNoiseHit(t, amp, 5200, 0.045);
+    }
+
+    function duckMusic(levelMul, hold) {
+      if (!audioCtx || !musicBus || !musicEnabled || muted) return;
+      const t = audioCtx.currentTime;
+      const cur = Math.max(0.0001, musicBus.gain.value);
+      const mul = typeof levelMul === 'number' ? levelMul : 0.7;
+      const downTo = Math.max(0.16, MUSIC_BUS_BASE * mul);
+      const restoreAt = t + (hold || 0.09);
+      musicBus.gain.cancelScheduledValues(t);
+      musicBus.gain.setValueAtTime(cur, t);
+      musicBus.gain.linearRampToValueAtTime(downTo, t + 0.006);
+      musicBus.gain.exponentialRampToValueAtTime(Math.max(0.0001, MUSIC_BUS_BASE), restoreAt);
     }
 
     function scheduleTone(opts) {
@@ -1248,7 +1262,7 @@
         master.gain.value = MASTER_VOL;
         master.connect(audioCtx.destination);
         musicBus = audioCtx.createGain();
-        musicBus.gain.value = 0.92;
+        musicBus.gain.value = MUSIC_BUS_BASE;
         musicComp = audioCtx.createDynamicsCompressor();
         musicComp.threshold.value = -34;
         musicComp.knee.value = 24;
@@ -1283,11 +1297,12 @@
     function sfxVolley() {
       if (!audioCtx || muted) return;
       const t = audioCtx.currentTime;
+      duckMusic(0.68, 0.08);
       const osc = audioCtx.createOscillator();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(220, t);
-      osc.frequency.exponentialRampToValueAtTime(120, t + 0.11);
-      const g = env(0.06, 0.13, 0.002);
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(145, t + 0.105);
+      const g = env(0.092, 0.13, 0.0018);
       osc.connect(g); g.connect(master);
       osc.start(t); osc.stop(t + 0.14);
     }
