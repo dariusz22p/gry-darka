@@ -755,6 +755,7 @@
           <span><kbd>5</kbd> losowy power-up</span>
           <span><kbd>U</kbd> wyciszenie</span>
           <span><kbd>T</kbd> muzyka on/off</span>
+          <span><kbd>J</kbd> jump scare test</span>
           <span><kbd>R</kbd> restart</span>
         </div>
       </aside>
@@ -4276,6 +4277,12 @@
         e.preventDefault();
         setMusicEnabled(!musicEnabled);
         ensureAudio();
+        return;
+      }
+      if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        triggerJumpScare('boss');
+        showAlert('JUMP SCARE', 0.65);
         return;
       }
       if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
