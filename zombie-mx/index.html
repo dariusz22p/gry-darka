@@ -1089,6 +1089,7 @@
     let musicScene = 'play';
     let deathMusicCount = 0;
     let audioUnlocked = false;
+    let audioFaulted = false;
     const MASTER_VOL = 0.34;
     const MUSIC_BUS_BASE = 0.96;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
@@ -1534,46 +1535,60 @@
     }
 
     function tickMusic() {
-      if (!audioCtx || !musicBus || muted || !musicEnabled || state === 'pause') return;
+      if (audioFaulted || !audioCtx || !musicBus || muted || !musicEnabled || state === 'pause') return;
       if (audioCtx.state === 'suspended') return;
-      const currentScene = state === 'lose' ? 'lose' : 'play';
-      if (musicScene !== currentScene) {
-        musicScene = currentScene;
-        musicStep = 0;
-        musicNextTime = 0;
-      }
-      const lookAhead = 0.15;
-      if (!musicNextTime) musicNextTime = audioCtx.currentTime + 0.04;
-      while (musicNextTime < audioCtx.currentTime + lookAhead) {
-        if (musicScene === 'lose') {
-          scheduleLossMusicStep(musicNextTime);
-          musicNextTime += lossBeatDuration();
-        } else {
-          scheduleMusicStep(musicNextTime);
-          musicNextTime += musicBeatDuration();
+      try {
+        const currentScene = state === 'lose' ? 'lose' : 'play';
+        if (musicScene !== currentScene) {
+          musicScene = currentScene;
+          musicStep = 0;
+          musicNextTime = 0;
         }
+        const lookAhead = 0.15;
+        if (!musicNextTime) musicNextTime = audioCtx.currentTime + 0.04;
+        while (musicNextTime < audioCtx.currentTime + lookAhead) {
+          if (musicScene === 'lose') {
+            scheduleLossMusicStep(musicNextTime);
+            musicNextTime += lossBeatDuration();
+          } else {
+            scheduleMusicStep(musicNextTime);
+            musicNextTime += musicBeatDuration();
+          }
+        }
+      } catch (err) {
+        audioFaulted = true;
+        musicEnabled = false;
+        updateMusicUi();
       }
     }
 
     function ensureAudio() {
+      if (audioFaulted) return;
       if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        audioCtx = new AC();
-        master = audioCtx.createGain();
-        master.gain.value = MASTER_VOL;
-        master.connect(audioCtx.destination);
-        musicBus = audioCtx.createGain();
-        musicBus.gain.value = MUSIC_BUS_BASE;
-        musicComp = audioCtx.createDynamicsCompressor();
-        musicComp.threshold.value = -34;
-        musicComp.knee.value = 24;
-        musicComp.ratio.value = 5;
-        musicComp.attack.value = 0.006;
-        musicComp.release.value = 0.22;
-        musicBus.connect(musicComp);
-        musicComp.connect(master);
-        noiseBuffer = noiseBuf(0.6);
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          audioCtx = new AC();
+          master = audioCtx.createGain();
+          master.gain.value = MASTER_VOL;
+          master.connect(audioCtx.destination);
+          musicBus = audioCtx.createGain();
+          musicBus.gain.value = MUSIC_BUS_BASE;
+          musicComp = audioCtx.createDynamicsCompressor();
+          musicComp.threshold.value = -34;
+          musicComp.knee.value = 24;
+          musicComp.ratio.value = 5;
+          musicComp.attack.value = 0.006;
+          musicComp.release.value = 0.22;
+          musicBus.connect(musicComp);
+          musicComp.connect(master);
+          noiseBuffer = noiseBuf(0.6);
+        } catch (err) {
+          audioFaulted = true;
+          musicEnabled = false;
+          updateMusicUi();
+          return;
+        }
       }
       if (audioCtx.state === 'suspended') {
         const p = audioCtx.resume();
@@ -4261,7 +4276,6 @@
       requestAnimationFrame(frame);
     }
     loadRecords();
-    if (!musicEnabled) setMusicEnabled(true);
     installAudioUnlockHooks();
     reset();
     requestAnimationFrame(frame);
