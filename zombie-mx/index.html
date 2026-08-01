@@ -1096,14 +1096,14 @@
     let audioUnlocked = false;
     let audioFaulted = false;
     const MASTER_VOL = 0.52;
-    const MUSIC_BUS_BASE = 1.08;
+    const MUSIC_BUS_BASE = 1.24;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
-    const MUSIC_ENGINE_KEY = 'mx_music_engine_v7';
+    const MUSIC_ENGINE_KEY = 'mx_music_engine_v8';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
 
     try {
-      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '7') {
-        localStorage.setItem(MUSIC_ENGINE_KEY, '7');
+      if (localStorage.getItem(MUSIC_ENGINE_KEY) !== '8') {
+        localStorage.setItem(MUSIC_ENGINE_KEY, '8');
         localStorage.setItem(MUSIC_PREF_KEY, '1');
       }
       musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== '0';
@@ -1716,11 +1716,11 @@
           musicBus = audioCtx.createGain();
           musicBus.gain.value = MUSIC_BUS_BASE;
           musicComp = audioCtx.createDynamicsCompressor();
-          musicComp.threshold.value = -34;
-          musicComp.knee.value = 24;
-          musicComp.ratio.value = 5;
-          musicComp.attack.value = 0.006;
-          musicComp.release.value = 0.22;
+          musicComp.threshold.value = -18;
+          musicComp.knee.value = 8;
+          musicComp.ratio.value = 14;
+          musicComp.attack.value = 0.002;
+          musicComp.release.value = 0.1;
           musicBus.connect(musicComp);
           musicComp.connect(master);
           noiseBuffer = noiseBuf(0.6);
