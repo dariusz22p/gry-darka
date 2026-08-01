@@ -667,6 +667,7 @@
       <div id="stageCol">
         <div id="stage">
           <canvas id="game" width="1000" height="520"></canvas>
+          <audio id="playlistAudio" preload="auto" aria-hidden="true"></audio>
           <button id="mobileBombBtn" aria-label="Bomba (po&#322;owa zombie)">BMB</button>
           <button id="mobileNukeBtn" aria-label="Bomba atomowa (2 bomby)">NUK</button>
           <button id="mobileSquadBtn" aria-label="Ustaw ekip&#281; na 2000 os&oacute;b">2K</button>
@@ -1095,6 +1096,10 @@
     let deathMusicCount = 0;
     let audioUnlocked = false;
     let audioFaulted = false;
+    let playlistIndex = 0;
+    const MUSIC_TRACKS = [
+      '../music/funk.mp3'
+    ];
     const MASTER_VOL = 0.52;
     const MUSIC_BUS_BASE = 1.24;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
@@ -1129,12 +1134,48 @@
       try {
         localStorage.setItem(MUSIC_PREF_KEY, musicEnabled ? '1' : '0');
       } catch (e) {}
+      if (MUSIC_TRACKS.length && el && el.playlistAudio) {
+        if (musicEnabled) playPlaylistTrack();
+        else stopPlaylistTrack();
+      }
       updateMusicUi();
     }
 
     function updateMusicUi() {
       if (!el || !el.musicBtn) return;
       el.musicBtn.textContent = musicEnabled ? 'MUZYKA: ON (T)' : 'MUZYKA: OFF (T)';
+    }
+
+    function syncPlaylistTrack() {
+      if (!el || !el.playlistAudio || !MUSIC_TRACKS.length) return;
+      const nextSrc = MUSIC_TRACKS[playlistIndex % MUSIC_TRACKS.length];
+      if (!nextSrc) return;
+      const current = el.playlistAudio.getAttribute('src') || '';
+      if (current !== nextSrc) {
+        el.playlistAudio.src = nextSrc;
+        el.playlistAudio.load();
+      }
+    }
+
+    function stopPlaylistTrack() {
+      if (!el || !el.playlistAudio) return;
+      el.playlistAudio.pause();
+    }
+
+    function playPlaylistTrack() {
+      if (!el || !el.playlistAudio || !MUSIC_TRACKS.length) return;
+      syncPlaylistTrack();
+      el.playlistAudio.volume = 1;
+      const playPromise = el.playlistAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function () {});
+      }
+    }
+
+    function nextPlaylistTrack() {
+      if (!MUSIC_TRACKS.length) return;
+      playlistIndex = (playlistIndex + 1) % MUSIC_TRACKS.length;
+      if (musicEnabled) playPlaylistTrack();
     }
 
     function musicBeatDuration() {
@@ -1676,6 +1717,7 @@
     }
 
     function tickMusic() {
+      if (MUSIC_TRACKS.length) return;
       if (audioFaulted || !audioCtx || !musicBus || muted || !musicEnabled || state === 'pause') return;
       if (audioCtx.state === 'suspended') return;
       try {
@@ -1742,6 +1784,7 @@
 
     function tryUnlockAudio() {
       ensureAudio();
+      if (musicEnabled && MUSIC_TRACKS.length) playPlaylistTrack();
       if (!audioCtx) return;
       if (audioCtx.state === 'running') {
         audioUnlocked = true;
@@ -4047,6 +4090,7 @@
 
     // ---- HUD ----
     const el = {
+      playlistAudio: document.getElementById('playlistAudio'),
       hp: document.getElementById('hpfill'), wave: document.getElementById('wave'),
       squad: document.getElementById('squad'),
       power: document.getElementById('power'),
@@ -4087,6 +4131,15 @@
       mobilePowerBtn: document.getElementById('mobilePowerBtn'),
       mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
+    if (el.playlistAudio) {
+      el.playlistAudio.addEventListener('ended', function () {
+        nextPlaylistTrack();
+      });
+      el.playlistAudio.addEventListener('error', function () {
+        nextPlaylistTrack();
+      });
+      syncPlaylistTrack();
+    }
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
       el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
