@@ -1133,7 +1133,7 @@
     const GAME_VERSION = 'MX 2026-08-01';
     const SCRIPT_VERSION = 'playlist-debug-v1';
     const MASTER_VOL = 0.52;
-    const MUSIC_BUS_BASE = 1.24;
+    const MUSIC_BUS_BASE = 0.86;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
     const MUSIC_ENGINE_KEY = 'mx_music_engine_v8';
     const DEATH_MUSIC_KEY = 'mx_death_music_count';
@@ -1249,7 +1249,7 @@
     function playPlaylistTrack() {
       if (!el || !el.playlistAudio || !MUSIC_TRACKS.length) return;
       syncPlaylistTrack();
-      el.playlistAudio.volume = 1;
+      el.playlistAudio.volume = 0.42;
       const playPromise = el.playlistAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.then(function () {
