@@ -165,6 +165,31 @@
     cursor: pointer;
   }
   #musicBtn:hover { background: linear-gradient(180deg, rgba(62,105,138,.95), rgba(35,61,82,.98)); }
+  #musicDebugBtn {
+    width: 100%;
+    border: 1px solid rgba(255,209,102,.42);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(86,74,42,.9), rgba(57,47,25,.95));
+    color: #ffe6a8;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #musicDebugBtn:hover { background: linear-gradient(180deg, rgba(98,84,48,.95), rgba(63,52,28,.98)); }
+  #musicDebugPanel {
+    display: none;
+    padding: 6px;
+    border: 1px solid rgba(255,209,102,.28);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(25,30,38,.96), rgba(13,17,23,.98));
+    color: #dfe9f6;
+    font-size: 10px;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #musicDebugPanel.show { display: block; }
   #ingameHudTop, #ingameHudBottom {
     position: absolute;
     right: 2px;
@@ -709,6 +734,8 @@
           </div>
           <div class="stat"><button id="power900Btn" type="button">MOC 900 (9)</button></div>
           <div class="stat"><button id="musicBtn" type="button">MUZYKA: ON (T)</button></div>
+          <div class="stat"><button id="musicDebugBtn" type="button">DEBUG MUZYKI</button></div>
+          <div id="musicDebugPanel" aria-live="polite"></div>
           <div id="shop" aria-label="Sklep">
             <div id="shopTitle">SKLEP (za Zabici)</div>
             <div class="shopSectionTitle">GUNS</div>
@@ -1097,9 +1124,14 @@
     let audioUnlocked = false;
     let audioFaulted = false;
     let playlistIndex = 0;
+    let playlistState = 'idle';
+    let playlistLastError = '';
+    let musicDebugOpen = false;
     const MUSIC_TRACKS = [
       '../music/funk.mp3'
     ];
+    const GAME_VERSION = 'MX 2026-08-01';
+    const SCRIPT_VERSION = 'playlist-debug-v1';
     const MASTER_VOL = 0.52;
     const MUSIC_BUS_BASE = 1.24;
     const MUSIC_PREF_KEY = 'mx_music_enabled';
@@ -1144,6 +1176,53 @@
     function updateMusicUi() {
       if (!el || !el.musicBtn) return;
       el.musicBtn.textContent = musicEnabled ? 'MUZYKA: ON (T)' : 'MUZYKA: OFF (T)';
+      updateMusicDebugUi();
+    }
+
+    function playlistCurrentSrc() {
+      if (!el || !el.playlistAudio) return '-';
+      const src = el.playlistAudio.getAttribute('src') || el.playlistAudio.currentSrc || '';
+      return src || '-';
+    }
+
+    function audioErrorText(audio) {
+      if (!audio || !audio.error) return '-';
+      const err = audio.error;
+      return 'code ' + err.code + (playlistLastError ? ' | ' + playlistLastError : '');
+    }
+
+    function updateMusicDebugUi() {
+      if (!el || !el.musicDebugPanel) return;
+      const audio = el.playlistAudio;
+      const lines = [
+        'game: ' + GAME_VERSION,
+        'script: ' + SCRIPT_VERSION,
+        'music_engine: ' + MUSIC_ENGINE_KEY,
+        'music_enabled: ' + (musicEnabled ? 'yes' : 'no'),
+        'audio_faulted: ' + (audioFaulted ? 'yes' : 'no'),
+        'playlist_tracks: ' + MUSIC_TRACKS.length,
+        'playlist_index: ' + playlistIndex,
+        'playlist_state: ' + playlistState,
+        'playlist_src: ' + playlistCurrentSrc()
+      ];
+      if (audio) {
+        lines.push('ready_state: ' + audio.readyState);
+        lines.push('network_state: ' + audio.networkState);
+        lines.push('paused: ' + audio.paused);
+        lines.push('ended: ' + audio.ended);
+        lines.push('error: ' + audioErrorText(audio));
+      }
+      lines.push('tracks:');
+      MUSIC_TRACKS.forEach(function (track, idx) {
+        lines.push((idx === playlistIndex ? '-> ' : '   ') + track);
+      });
+      el.musicDebugPanel.textContent = lines.join('\n');
+      el.musicDebugPanel.classList.toggle('show', musicDebugOpen);
+    }
+
+    function toggleMusicDebug() {
+      musicDebugOpen = !musicDebugOpen;
+      updateMusicDebugUi();
     }
 
     function syncPlaylistTrack() {
@@ -1152,14 +1231,19 @@
       if (!nextSrc) return;
       const current = el.playlistAudio.getAttribute('src') || '';
       if (current !== nextSrc) {
+        playlistState = 'loading';
+        playlistLastError = '';
         el.playlistAudio.src = nextSrc;
         el.playlistAudio.load();
+        updateMusicDebugUi();
       }
     }
 
     function stopPlaylistTrack() {
       if (!el || !el.playlistAudio) return;
       el.playlistAudio.pause();
+      playlistState = 'paused';
+      updateMusicDebugUi();
     }
 
     function playPlaylistTrack() {
@@ -1168,7 +1252,17 @@
       el.playlistAudio.volume = 1;
       const playPromise = el.playlistAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function () {});
+        playPromise.then(function () {
+          playlistState = 'playing';
+          updateMusicDebugUi();
+        }).catch(function (err) {
+          playlistState = 'play-blocked';
+          playlistLastError = err && err.message ? err.message : 'play failed';
+          updateMusicDebugUi();
+        });
+      } else {
+        playlistState = 'playing';
+        updateMusicDebugUi();
       }
     }
 
@@ -4107,6 +4201,8 @@
       difficulty: document.getElementById('difficulty'),
       power900Btn: document.getElementById('power900Btn'),
       musicBtn: document.getElementById('musicBtn'),
+      musicDebugBtn: document.getElementById('musicDebugBtn'),
+      musicDebugPanel: document.getElementById('musicDebugPanel'),
       shopPower: document.getElementById('shopPower'),
       shopSquad: document.getElementById('shopSquad'),
       shopHeal: document.getElementById('shopHeal'),
@@ -4132,14 +4228,36 @@
       mobileJumpBtn: document.getElementById('mobileJumpBtn')
     };
     if (el.playlistAudio) {
+      el.playlistAudio.addEventListener('loadedmetadata', function () {
+        playlistState = 'metadata';
+        updateMusicDebugUi();
+      });
+      el.playlistAudio.addEventListener('canplay', function () {
+        playlistState = 'ready';
+        updateMusicDebugUi();
+      });
+      el.playlistAudio.addEventListener('play', function () {
+        playlistState = 'playing';
+        updateMusicDebugUi();
+      });
+      el.playlistAudio.addEventListener('pause', function () {
+        if (!el.playlistAudio.ended) playlistState = 'paused';
+        updateMusicDebugUi();
+      });
       el.playlistAudio.addEventListener('ended', function () {
+        playlistState = 'ended';
+        updateMusicDebugUi();
         nextPlaylistTrack();
       });
       el.playlistAudio.addEventListener('error', function () {
+        playlistState = 'error';
+        playlistLastError = el.playlistAudio.error ? ('media error code ' + el.playlistAudio.error.code) : 'unknown media error';
+        updateMusicDebugUi();
         nextPlaylistTrack();
       });
       syncPlaylistTrack();
     }
+    updateMusicDebugUi();
     function updateHud() {
       el.hp.style.width = (baseHp / CONFIG.baseHpMax * 100) + '%';
       el.wave.textContent = Math.min(wave, CONFIG.waves.total) + ' / ' + CONFIG.waves.total;
@@ -4428,6 +4546,12 @@
         e.preventDefault();
         setMusicEnabled(!musicEnabled);
         ensureAudio();
+      });
+    }
+    if (el.musicDebugBtn) {
+      el.musicDebugBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        toggleMusicDebug();
       });
     }
     if (el.overlayShop) {
